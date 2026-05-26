@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+#
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alex80_IDE", "Alex80_IDE\Alex80_IDE.csproj", "{919B0D7A-691F-4961-BD51-B39A505B6C32}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembler", "Assembler\Assembler.csproj", "{BF8D2E06-AC29-4795-8D0B-B784E5632201}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{919B0D7A-691F-4961-BD51-B39A505B6C32}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{919B0D7A-691F-4961-BD51-B39A505B6C32}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{919B0D7A-691F-4961-BD51-B39A505B6C32}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{919B0D7A-691F-4961-BD51-B39A505B6C32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BF8D2E06-AC29-4795-8D0B-B784E5632201}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF8D2E06-AC29-4795-8D0B-B784E5632201}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF8D2E06-AC29-4795-8D0B-B784E5632201}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF8D2E06-AC29-4795-8D0B-B784E5632201}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,34 @@
+﻿using Konamiman.Nestor80.Assembler.Relocatable;
+
+namespace Konamiman.Nestor80.Assembler.Expressions.ExpressionParts.ArithmeticOperators
+{
+    internal class MultiplyOperator : BinaryOperator
+    {
+        public static MultiplyOperator Instance = new();
+
+        public override int Precedence => 2;
+
+        public override string Name => "*";
+
+        public override byte ExtendedLinkItemType => 9;
+
+        protected override Address OperateCore(Address value1, Address value2)
+        {
+            // At least one of the operands must be Absolute
+            // Absolute * <mode> = <mode>
+
+            if (!value1.IsAbsolute && !value2.IsAbsolute)
+            {
+                throw new InvalidExpressionException($"*: At least one of the operands must be absolute (attempted {value1.EffectiveType} * {value2.EffectiveType})");
+            }
+
+            var type = value1.IsAbsolute ? value2.Type : value1.Type;
+            var commonName = value1.IsAbsolute ? value2.CommonBlockName : value1.CommonBlockName;
+
+            unchecked
+            {
+                return new Address(type, (ushort)(value1.Value * value2.Value), commonName);
+            }
+        }
+    }
+}

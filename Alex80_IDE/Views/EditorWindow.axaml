@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:global="clr-namespace:"
+        xmlns:views="clr-namespace:Alex80_IDE"
+        x:Class="Alex80_IDE.EditorWindow"
+        x:DataType="global:MainViewModel"
+        Title="Editor assembler"
+        Width="1000"
+        Height="700"
+        MinWidth="620"
+        MinHeight="420"
+        Background="{StaticResource AppBackgroundBrush}"
+        FontFamily="Inter, Segoe UI, Helvetica Neue, Arial">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#111318" />
+        <SolidColorBrush x:Key="SurfaceBrush" Color="#181B22" />
+        <SolidColorBrush x:Key="SurfaceInputBrush" Color="#14171D" />
+        <SolidColorBrush x:Key="BorderSoftBrush" Color="#313744" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F4FA" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#98A2B3" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#4CC9A7" />
+        <SolidColorBrush x:Key="EditorSelectionBrush" Color="#2FAE8E" />
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="TabControl">
+            <Setter Property="Background" Value="{StaticResource AppBackgroundBrush}" />
+        </Style>
+
+        <Style Selector="TabItem">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="Padding" Value="10,7" />
+        </Style>
+
+        <Style Selector="Button.closeTab">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="{x:Null}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+
+        <Style Selector="TextBox.codeEditor">
+            <Setter Property="Background" Value="{StaticResource SurfaceInputBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource BorderSoftBrush}" />
+            <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}" />
+            <Setter Property="SelectionBrush" Value="{StaticResource EditorSelectionBrush}" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
+    </Window.Styles>
+
+    <Border Margin="14"
+            Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource BorderSoftBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+        <TabControl ItemsSource="{Binding OpenDocuments}"
+                    SelectedItem="{Binding SelectedDocument}">
+            <TabControl.ItemTemplate>
+                <DataTemplate x:DataType="global:DocumentViewModel">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="{Binding FileName}" />
+                        <Button Content="x"
+                                Classes="closeTab"
+                                Command="{Binding $parent[views:EditorWindow].((global:MainViewModel)DataContext).CloseTabCommand}"
+                                CommandParameter="{Binding}"
+                                VerticalAlignment="Center" />
+                    </StackPanel>
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+
+            <TabControl.ContentTemplate>
+                <DataTemplate x:DataType="global:DocumentViewModel">
+                    <Grid RowDefinitions="*" Margin="12">
+                        <TextBox Text="{Binding Text, Mode=TwoWay}"
+                                 FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
+                                 FontSize="15"
+                                 AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 TextWrapping="NoWrap"
+                                 Classes="codeEditor"
+                                 HorizontalAlignment="Stretch"
+                                 VerticalAlignment="Stretch" />
+                    </Grid>
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+        </TabControl>
+    </Border>
+</Window>
