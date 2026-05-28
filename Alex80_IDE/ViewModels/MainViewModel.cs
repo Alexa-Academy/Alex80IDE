@@ -38,7 +38,12 @@ public partial class MainViewModel : ObservableObject
     public ICommand AssembleCommand { get; }
     
     [ObservableProperty]
-    private string _cardName;
+    private string _cardName = string.Empty;
+    public string CardBadgeText => string.IsNullOrWhiteSpace(CardName) ? "scheda non connessa" : CardName;
+    partial void OnCardNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(CardBadgeText));
+    }
     
     [ObservableProperty]
     private string _assembledOutput;
