@@ -1,5 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
         xmlns:global="clr-namespace:"
         xmlns:views="clr-namespace:Alex80_IDE"
         x:Class="Alex80_IDE.EditorWindow"
@@ -78,15 +79,18 @@
             <TabControl.ContentTemplate>
                 <DataTemplate x:DataType="global:DocumentViewModel">
                     <Grid RowDefinitions="*" Margin="12">
-                        <TextBox Text="{Binding Text, Mode=TwoWay}"
-                                 FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
-                                 FontSize="15"
-                                 AcceptsReturn="True"
-                                 AcceptsTab="True"
-                                 TextWrapping="NoWrap"
-                                 Classes="codeEditor"
-                                 HorizontalAlignment="Stretch"
-                                 VerticalAlignment="Stretch" />
+                        <edit:TextEditor Document="{Binding EditorDocument}"
+                                         FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
+                                         FontSize="15"
+                                         Background="{StaticResource SurfaceInputBrush}"
+                                         Foreground="{StaticResource TextPrimaryBrush}"
+                                         LineNumbersForeground="{StaticResource TextSecondaryBrush}"
+                                         ShowLineNumbers="True"
+                                         WordWrap="False"
+                                         HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto"
+                                         HorizontalAlignment="Stretch"
+                                         VerticalAlignment="Stretch" />
                     </Grid>
                 </DataTemplate>
             </TabControl.ContentTemplate>

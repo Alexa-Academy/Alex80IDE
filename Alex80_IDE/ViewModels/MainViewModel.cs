@@ -80,6 +80,14 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] 
     private bool _isSerialOpened;
+
+    partial void OnIsSerialOpenedChanged(bool value)
+    {
+        if (!value)
+        {
+            CardName = string.Empty;
+        }
+    }
     
     [ObservableProperty] 
     private bool _isAutoScrollEnabled = true;
