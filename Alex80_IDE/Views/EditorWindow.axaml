@@ -61,40 +61,53 @@
             BorderBrush="{StaticResource BorderSoftBrush}"
             BorderThickness="1"
             CornerRadius="8">
-        <TabControl ItemsSource="{Binding OpenDocuments}"
-                    SelectedItem="{Binding SelectedDocument}">
-            <TabControl.ItemTemplate>
-                <DataTemplate x:DataType="global:DocumentViewModel">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{Binding FileName}" />
-                        <Button Content="x"
-                                Classes="closeTab"
-                                Command="{Binding $parent[views:EditorWindow].((global:MainViewModel)DataContext).CloseTabCommand}"
-                                CommandParameter="{Binding}"
-                                VerticalAlignment="Center" />
-                    </StackPanel>
-                </DataTemplate>
-            </TabControl.ItemTemplate>
+        <Grid RowDefinitions="Auto,*">
+            <StackPanel Orientation="Horizontal"
+                        Spacing="8"
+                        Margin="12"
+                        VerticalAlignment="Center">
+                <Button Command="{Binding NewTabCommand}" Content="Nuova" />
+                <Button Command="{Binding OpenFileCommand}" Content="Apri" />
+                <Button Command="{Binding SaveFileCommand}" Content="Salva" />
+                <Button Command="{Binding AssembleCommand}" Content="Assembla" />
+            </StackPanel>
 
-            <TabControl.ContentTemplate>
-                <DataTemplate x:DataType="global:DocumentViewModel">
-                    <Grid RowDefinitions="*" Margin="12">
-                        <edit:TextEditor Document="{Binding EditorDocument}"
-                                         FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
-                                         FontSize="15"
-                                         Background="{StaticResource SurfaceInputBrush}"
-                                         Foreground="{StaticResource TextPrimaryBrush}"
-                                         LineNumbersForeground="{StaticResource TextSecondaryBrush}"
-                                         SyntaxHighlighting="Z80"
-                                         ShowLineNumbers="True"
-                                         WordWrap="False"
-                                         HorizontalScrollBarVisibility="Auto"
-                                         VerticalScrollBarVisibility="Auto"
-                                         HorizontalAlignment="Stretch"
-                                         VerticalAlignment="Stretch" />
-                    </Grid>
-                </DataTemplate>
-            </TabControl.ContentTemplate>
-        </TabControl>
+            <TabControl Grid.Row="1"
+                        ItemsSource="{Binding OpenDocuments}"
+                        SelectedItem="{Binding SelectedDocument}">
+                <TabControl.ItemTemplate>
+                    <DataTemplate x:DataType="global:DocumentViewModel">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding FileName}" />
+                            <Button Content="x"
+                                    Classes="closeTab"
+                                    Command="{Binding $parent[views:EditorWindow].((global:MainViewModel)DataContext).CloseTabCommand}"
+                                    CommandParameter="{Binding}"
+                                    VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+
+                <TabControl.ContentTemplate>
+                    <DataTemplate x:DataType="global:DocumentViewModel">
+                        <Grid RowDefinitions="*" Margin="12">
+                            <edit:TextEditor Document="{Binding EditorDocument}"
+                                             FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
+                                             FontSize="15"
+                                             Background="{StaticResource SurfaceInputBrush}"
+                                             Foreground="{StaticResource TextPrimaryBrush}"
+                                             LineNumbersForeground="{StaticResource TextSecondaryBrush}"
+                                             SyntaxHighlighting="Z80"
+                                             ShowLineNumbers="True"
+                                             WordWrap="False"
+                                             HorizontalScrollBarVisibility="Auto"
+                                             VerticalScrollBarVisibility="Auto"
+                                             HorizontalAlignment="Stretch"
+                                             VerticalAlignment="Stretch" />
+                        </Grid>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+        </Grid>
     </Border>
 </Window>

@@ -31,7 +31,12 @@ public partial class MainViewModel : ObservableObject
     public DocumentViewModel SelectedDocument
     {
         get => _selectedDocument;
-        set { _selectedDocument = value; OnPropertyChanged(); }
+        set
+        {
+            _selectedDocument = value;
+            OnPropertyChanged();
+            (SaveFileCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
     }
 
     public ICommand NewTabCommand { get; }
@@ -556,6 +561,7 @@ public partial class MainViewModel : ObservableObject
             FileName = "Nuovo.asm",
             Text = ";;; Codice ASM per Alex80\n"
         };
+        doc.IsDirty = true;
         OpenDocuments.Add(doc);
         SelectedDocument = doc;
     }
@@ -583,8 +589,10 @@ public partial class MainViewModel : ObservableObject
             var doc = new DocumentViewModel
             {
                 FileName = Path.GetFileName(path),
+                FilePath = path,
                 Text = text
             };
+            doc.IsDirty = false;
 
             OpenDocuments.Add(doc);
             SelectedDocument = doc;
@@ -594,6 +602,13 @@ public partial class MainViewModel : ObservableObject
     private async Task SaveFileAsync()
     {
         if (SelectedDocument == null) return;
+
+        if (!string.IsNullOrWhiteSpace(SelectedDocument.FilePath))
+        {
+            await File.WriteAllTextAsync(SelectedDocument.FilePath, SelectedDocument.Text);
+            SelectedDocument.IsDirty = false;
+            return;
+        }
 
         var dialog = new SaveFileDialog
         {
@@ -611,7 +626,7 @@ public partial class MainViewModel : ObservableObject
         if (!string.IsNullOrWhiteSpace(path))
         {
             await File.WriteAllTextAsync(path, SelectedDocument.Text);
-            SelectedDocument.FileName = Path.GetFileName(path);
+            SelectedDocument.MarkSaved(path);
         }
     }
     
