@@ -85,6 +85,7 @@
                                          Background="{StaticResource SurfaceInputBrush}"
                                          Foreground="{StaticResource TextPrimaryBrush}"
                                          LineNumbersForeground="{StaticResource TextSecondaryBrush}"
+                                         SyntaxHighlighting="Z80"
                                          ShowLineNumbers="True"
                                          WordWrap="False"
                                          HorizontalScrollBarVisibility="Auto"
