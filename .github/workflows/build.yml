@@ -1,0 +1,45 @@
+name: Build executables
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            artifact: Alex80IDE-windows-x64
+
+          - os: ubuntu-latest
+            rid: linux-x64
+            artifact: Alex80IDE-linux-x64
+
+          - os: macos-latest
+            rid: osx-arm64
+            artifact: Alex80IDE-macos-arm64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore Alex80_IDE.sln
+
+      - name: Publish
+        run: dotnet publish Alex80_IDE/Alex80_IDE.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: Alex80_IDE/bin/Release/net9.0/${{ matrix.rid }}/publish/
