@@ -23,6 +23,10 @@ jobs:
             rid: osx-arm64
             artifact: Alex80IDE-macos-arm64
 
+          - os: macos-latest
+            rid: osx-x64
+            artifact: Alex80IDE-macos-x64
+
     runs-on: ${{ matrix.os }}
 
     steps:
