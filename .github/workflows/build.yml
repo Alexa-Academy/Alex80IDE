@@ -36,10 +36,17 @@ jobs:
         run: dotnet restore Alex80_IDE.sln
 
       - name: Publish
-        run: dotnet publish Alex80_IDE/Alex80_IDE.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
+        run: |
+          dotnet publish Alex80_IDE/Alex80_IDE.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -o publish
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: Alex80_IDE/bin/Release/net9.0/${{ matrix.rid }}/publish/
+          path: publish/
