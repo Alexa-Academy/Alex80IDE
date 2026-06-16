@@ -11,14 +11,62 @@ public partial class MainWindow : Window
     private EditorWindow? _editorWindow;
     private NativeMenuItem? _darkThemeMenuItem;
     private NativeMenuItem? _lightThemeMenuItem;
+    private double _normalWindowWidth;
+    private double _normalWindowHeight;
 
     public MainWindow()
     {
         InitializeComponent();
+        RestoreWindowSize();
+        SizeChanged += OnWindowSizeChanged;
+        Closing += OnWindowClosing;
         ConfigureSystemMenu();
         AppThemeManager.ApplyTo(this);
         UpdateThemeMenuChecks(AppThemeManager.CurrentTheme);
         AppThemeManager.ThemeChanged += OnThemeChanged;
+    }
+
+    private void RestoreWindowSize()
+    {
+        var settings = UserSettings.Load();
+
+        if (settings.MainWindowWidth is >= 1160 and <= 10000)
+        {
+            Width = settings.MainWindowWidth.Value;
+        }
+
+        if (settings.MainWindowHeight is >= 780 and <= 10000)
+        {
+            Height = settings.MainWindowHeight.Value;
+        }
+
+        _normalWindowWidth = Width;
+        _normalWindowHeight = Height;
+
+        if (settings.MainWindowMaximized)
+        {
+            WindowState = WindowState.Maximized;
+        }
+    }
+
+    private void OnWindowSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (WindowState != WindowState.Normal)
+        {
+            return;
+        }
+
+        _normalWindowWidth = e.NewSize.Width;
+        _normalWindowHeight = e.NewSize.Height;
+    }
+
+    private void OnWindowClosing(object? sender, WindowClosingEventArgs e)
+    {
+        var settings = UserSettings.Load();
+        settings.MainWindowWidth = _normalWindowWidth;
+        settings.MainWindowHeight = _normalWindowHeight;
+        settings.MainWindowMaximized = WindowState == WindowState.Maximized;
+        settings.Save();
     }
 
     private void OpenEditorWindow(object? sender, RoutedEventArgs e)

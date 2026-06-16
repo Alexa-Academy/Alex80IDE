@@ -1,14 +1,17 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        xmlns:editing="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
+        xmlns:rendering="clr-namespace:AvaloniaEdit.Rendering;assembly=AvaloniaEdit"
         xmlns:global="clr-namespace:"
         xmlns:views="clr-namespace:Alex80_IDE"
         xmlns:converters="clr-namespace:Alex80_IDE.Converters"
         x:Class="Alex80_IDE.MainWindow"
         x:DataType="global:MainViewModel"
+        Icon="/Assets/alex80.ico"
         Title="Alex80 IDE"
-        Width="1360"
-        Height="930"
+        Width="1480"
+        Height="1000"
         MinWidth="1160"
         MinHeight="780"
         Background="{StaticResource AppBackgroundBrush}"
@@ -29,6 +32,8 @@
         <SolidColorBrush x:Key="DangerSurfaceBrush" Color="#332024" />
         <SolidColorBrush x:Key="DangerTextBrush" Color="#FFDCDC" />
         <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#1C3A35" />
+        <SolidColorBrush x:Key="EditorSelectionBrush" Color="#805FB3F3" />
+        <SolidColorBrush x:Key="EditorSearchResultsBrush" Color="#66F2C94C" />
         <StreamGeometry x:Key="MemoryIconData">M7,5 L7,3 L9,3 L9,5 L11,5 L11,3 L13,3 L13,5 L15,5 L15,3 L17,3 L17,5 L19,5 L19,7 L21,7 L21,9 L19,9 L19,11 L21,11 L21,13 L19,13 L19,15 L21,15 L21,17 L19,17 L19,19 L17,19 L17,21 L15,21 L15,19 L13,19 L13,21 L11,21 L11,19 L9,19 L9,21 L7,21 L7,19 L5,19 L5,17 L3,17 L3,15 L5,15 L5,13 L3,13 L3,11 L5,11 L5,9 L3,9 L3,7 L5,7 L5,5 Z M8,8 L8,16 L16,16 L16,8 Z M10,10 L14,10 L14,14 L10,14 Z</StreamGeometry>
         <StreamGeometry x:Key="SerialIconData">M4,5 L20,5 C21.1,5 22,5.9 22,7 L22,17 C22,18.1 21.1,19 20,19 L4,19 C2.9,19 2,18.1 2,17 L2,7 C2,5.9 2.9,5 4,5 Z M5,7 L5,17 L19,17 L19,7 Z M7,9 L10.5,12 L7,15 L8.3,16 L13,12 L8.3,8 Z M13,14 L17,14 L17,15.7 L13,15.7 Z</StreamGeometry>
 
@@ -40,6 +45,14 @@
     </Window.Resources>
 
     <Window.Styles>
+        <Style Selector="rendering|TextView">
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+
+        <Style Selector="editing|TextArea">
+            <Setter Property="SelectionBrush" Value="{StaticResource EditorSelectionBrush}" />
+        </Style>
+
         <Style Selector="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         </Style>
@@ -302,7 +315,6 @@
                             <Grid RowDefinitions="Auto,*">
                                 <DockPanel Margin="14,14,14,10">
                                     <TextBlock Text="Sorgenti assembler" Classes="sectionTitle" DockPanel.Dock="Left" />
-                                    <TextBlock Text="tab integrati" Classes="caption" DockPanel.Dock="Right" />
                                 </DockPanel>
 
                                 <TabControl Grid.Row="1"
@@ -328,6 +340,7 @@
                                                              Background="{StaticResource SurfaceInputBrush}"
                                                              Foreground="{StaticResource TextPrimaryBrush}"
                                                              LineNumbersForeground="{StaticResource TextSecondaryBrush}"
+                                                             SearchResultsBrush="{StaticResource EditorSearchResultsBrush}"
                                                              SyntaxHighlighting="Z80"
                                                              ShowLineNumbers="True"
                                                              WordWrap="False"
@@ -360,7 +373,6 @@
                                     <Grid RowDefinitions="Auto,30,*">
                                         <DockPanel Margin="14,14,14,10">
                                             <TextBlock Text="Memoria pronta al caricamento" Classes="sectionTitle" DockPanel.Dock="Left" />
-                                            <TextBlock Text="output assembler/binario" Classes="caption" Margin="12,0,0,0" DockPanel.Dock="Right" />
                                         </DockPanel>
 
                                         <Border Grid.Row="1"

@@ -68,6 +68,14 @@ public partial class DocumentViewModel : ObservableObject
         FileName = System.IO.Path.GetFileName(filePath);
         IsDirty = false;
     }
+
+    public void ReloadFromDisk(string text)
+    {
+        _isInitializingText = true;
+        Text = text;
+        _isInitializingText = false;
+        IsDirty = false;
+    }
     
     public ObservableCollection<ListingLine> ListingLines { get; } = new();
     

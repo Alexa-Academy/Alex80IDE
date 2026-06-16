@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SyntaxDefinition name="Z80" extensions=".asm;.z80;.s;.inc" xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+  <Color name="Comment" foreground="#6A9955" fontStyle="italic" />
+  <Color name="String" foreground="#C68048" />
+  <Color name="Number" foreground="#4EA1F3" />
+  <Color name="Instruction" foreground="#5FB3F3" fontWeight="bold" />
+  <Color name="Directive" foreground="#D58CFF" fontWeight="bold" />
+  <Color name="Register" foreground="#4CC9A7" fontWeight="bold" />
+  <Color name="Flag" foreground="#EAB85F" />
+  <Color name="Label" foreground="#F2C94C" fontWeight="bold" />
+  <Color name="Operator" foreground="#C9D2DF" />
+
+  <RuleSet ignoreCase="true">
+    <Span color="Comment" begin=";" />
+    <Span color="String" begin="&quot;" end="&quot;" />
+    <Span color="String" begin="'" end="'" />
+
+    <Rule color="Label">^\s*[A-Za-z_.$?@][A-Za-z0-9_.$?@]*:</Rule>
+    <Rule color="Number">\b0[xX][0-9A-Fa-f]+\b</Rule>
+    <Rule color="Number">\$[0-9A-Fa-f]+\b</Rule>
+    <Rule color="Number">\b[0-9][0-9A-Fa-f]*[Hh]\b</Rule>
+    <Rule color="Number">\b[01]+[Bb]\b</Rule>
+    <Rule color="Number">\b[0-7]+[OoQq]\b</Rule>
+    <Rule color="Number">\b[0-9]+\b</Rule>
+    <Rule color="Operator">[+\-*/%=&lt;&gt;|^~(),\[\]]</Rule>
+
+    <Keywords color="Instruction">
+      <Word>ADC</Word><Word>ADD</Word><Word>AND</Word><Word>BIT</Word><Word>CALL</Word><Word>CCF</Word><Word>CP</Word><Word>CPD</Word><Word>CPDR</Word><Word>CPI</Word><Word>CPIR</Word><Word>CPL</Word>
+      <Word>DAA</Word><Word>DEC</Word><Word>DI</Word><Word>DJNZ</Word><Word>EI</Word><Word>EX</Word><Word>EXX</Word><Word>HALT</Word><Word>IM</Word><Word>IN</Word><Word>INC</Word><Word>IND</Word><Word>INDR</Word><Word>INI</Word><Word>INIR</Word>
+      <Word>JP</Word><Word>JR</Word><Word>LD</Word><Word>LDD</Word><Word>LDDR</Word><Word>LDI</Word><Word>LDIR</Word><Word>NEG</Word><Word>NOP</Word><Word>OR</Word><Word>OTDR</Word><Word>OTIR</Word><Word>OUT</Word><Word>OUTD</Word><Word>OUTI</Word>
+      <Word>POP</Word><Word>PUSH</Word><Word>RES</Word><Word>RET</Word><Word>RETI</Word><Word>RETN</Word><Word>RL</Word><Word>RLA</Word><Word>RLC</Word><Word>RLCA</Word><Word>RLD</Word><Word>RR</Word><Word>RRA</Word><Word>RRC</Word><Word>RRCA</Word><Word>RRD</Word><Word>RST</Word>
+      <Word>SBC</Word><Word>SCF</Word><Word>SET</Word><Word>SLA</Word><Word>SLL</Word><Word>SRA</Word><Word>SRL</Word><Word>SUB</Word><Word>XOR</Word>
+    </Keywords>
+
+    <Keywords color="Directive">
+      <Word>$EJECT</Word><Word>$TITLE</Word>
+      <Word>.8080</Word><Word>.ALIGN</Word><Word>.AREA</Word><Word>.COMMENT</Word><Word>.CPU</Word><Word>.CREF</Word><Word>.DEPHASE</Word><Word>.ERROR</Word><Word>.EXTROOT</Word><Word>.FATAL</Word><Word>.GLOBL</Word><Word>.LALL</Word><Word>.LFCOND</Word><Word>.LIST</Word><Word>.PHASE</Word><Word>.PRINT</Word><Word>.PRINT1</Word><Word>.PRINT2</Word><Word>.PRINTX</Word><Word>.RADIX</Word><Word>.RELAB</Word><Word>.REQUEST</Word><Word>.SALL</Word><Word>.SFCOND</Word><Word>.STRENC</Word><Word>.STRESC</Word><Word>.TFCOND</Word><Word>.WARN</Word><Word>.XALL</Word><Word>.XCREF</Word><Word>.XEXTROOT</Word><Word>.XLIST</Word><Word>.XRELAB</Word><Word>.Z80</Word>
+      <Word>AREA</Word><Word>ASEG</Word><Word>COMMON</Word><Word>COND</Word><Word>CONTM</Word><Word>CSEG</Word><Word>DB</Word><Word>DC</Word><Word>DEFB</Word><Word>DEFM</Word><Word>DEFS</Word><Word>DEFW</Word><Word>DEFZ</Word><Word>DS</Word><Word>DSEG</Word><Word>DW</Word><Word>DZ</Word><Word>ELSE</Word><Word>END</Word><Word>ENDC</Word><Word>ENDIF</Word><Word>ENDM</Word><Word>ENDMOD</Word><Word>ENDOUT</Word><Word>ENTRY</Word><Word>EXITM</Word><Word>EXT</Word><Word>EXTERNAL</Word><Word>EXTRN</Word><Word>GLOBAL</Word><Word>IF</Word><Word>IF1</Word><Word>IF2</Word><Word>IFABS</Word><Word>IFB</Word><Word>IFCPU</Word><Word>IFDEF</Word><Word>IFDIF</Word><Word>IFDIFI</Word><Word>IFE</Word><Word>IFF</Word><Word>IFIDN</Word><Word>IFIDNI</Word><Word>IFNB</Word><Word>IFNCPU</Word><Word>IFNDEF</Word><Word>IFREL</Word><Word>IFT</Word><Word>INCBIN</Word><Word>IRP</Word><Word>IRPC</Word><Word>IRPS</Word><Word>LOCAL</Word><Word>MAINPAGE</Word><Word>MODULE</Word><Word>NAME</Word><Word>ORG</Word><Word>PAGE</Word><Word>PUBLIC</Word><Word>REPT</Word><Word>ROOT</Word><Word>SUBPAGE</Word><Word>SUBTTL</Word><Word>TITLE</Word>
+    </Keywords>
+
+    <Keywords color="Register">
+      <Word>A</Word><Word>B</Word><Word>C</Word><Word>D</Word><Word>E</Word><Word>H</Word><Word>L</Word><Word>AF</Word><Word>AF'</Word><Word>BC</Word><Word>DE</Word><Word>HL</Word><Word>IX</Word><Word>IY</Word><Word>SP</Word><Word>PC</Word><Word>I</Word><Word>R</Word><Word>IXH</Word><Word>IXL</Word><Word>IYH</Word><Word>IYL</Word>
+    </Keywords>
+
+    <Keywords color="Flag">
+      <Word>NZ</Word><Word>Z</Word><Word>NC</Word><Word>PO</Word><Word>PE</Word><Word>P</Word><Word>M</Word>
+    </Keywords>
+  </RuleSet>
+</SyntaxDefinition>

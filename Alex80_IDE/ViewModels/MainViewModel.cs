@@ -10,15 +10,20 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Konamiman.Nestor80.Assembler;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Timers;
 using Alex80_IDE.Models;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Timer = System.Timers.Timer;
 
 public partial class MainViewModel : ObservableObject
 {
     private readonly IDialogService _dialogService;
+    private readonly object _fileWatcherLock = new();
+    private readonly Dictionary<DocumentViewModel, FileSystemWatcher> _fileWatchers = new();
+    private readonly Dictionary<DocumentViewModel, CancellationTokenSource> _reloadDebounceTokens = new();
     
     private const int DefaultClockFreq = 50;
     private const int DefaultStartAdd = 0x0000;
@@ -36,6 +41,7 @@ public partial class MainViewModel : ObservableObject
             _selectedDocument = value;
             OnPropertyChanged();
             (SaveFileCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (AssembleCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
     }
 
@@ -92,6 +98,8 @@ public partial class MainViewModel : ObservableObject
         {
             CardName = string.Empty;
         }
+
+        WriteMemoryCommand.NotifyCanExecuteChanged();
     }
     
     [ObservableProperty] 
@@ -255,7 +263,7 @@ public partial class MainViewModel : ObservableObject
         _serialManager.ReadData((ushort)readStart, (ushort)readSize);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanWriteMemory))]
     private void WriteMemory()
     {
         if (_fileBytesToWrite == null) return;
@@ -271,6 +279,11 @@ public partial class MainViewModel : ObservableObject
         }
 
         _serialManager.WriteData(_fileBytesToWrite, writeStart);
+    }
+
+    private bool CanWriteMemory()
+    {
+        return IsSerialOpened;
     }
     
     [RelayCommand]
@@ -350,6 +363,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (tabToClose != null && OpenDocuments.Contains(tabToClose))
         {
+            StopWatchingDocument(tabToClose);
             OpenDocuments.Remove(tabToClose);
 
             if (SelectedDocument == tabToClose)
@@ -399,8 +413,7 @@ public partial class MainViewModel : ObservableObject
         NewTabCommand = new RelayCommand(_ => AddNewTab());
         OpenFileCommand = new RelayCommand(async _ => await OpenFileAsync());
         SaveFileCommand = new RelayCommand(async _ => await SaveFileAsync(), _ => SelectedDocument != null);
-       // AssembleCommand = new RelayCommand(_ => RunAssembler(), _ => SelectedDocument != null);
-        AssembleCommand = new RelayCommand(_ => RunAssembler());
+        AssembleCommand = new RelayCommand(_ => RunAssembler(), _ => IsSelectedDocumentZ80Source());
         ToggleAssemblerOutputCommand = new RelayCommand(_ => IsAssemblerOutputVisible = !IsAssemblerOutputVisible);
         //AddNewTab(); // apri una scheda iniziale
     }
@@ -584,6 +597,13 @@ public partial class MainViewModel : ObservableObject
         if (result != null && result.Length > 0)
         {
             var path = result[0];
+            var existingDocument = FindOpenDocument(path);
+            if (existingDocument is not null)
+            {
+                SelectedDocument = existingDocument;
+                return;
+            }
+
             var text = await File.ReadAllTextAsync(path);
 
             var doc = new DocumentViewModel
@@ -596,6 +616,7 @@ public partial class MainViewModel : ObservableObject
 
             OpenDocuments.Add(doc);
             SelectedDocument = doc;
+            StartWatchingDocument(doc);
         }
     }
 
@@ -627,11 +648,176 @@ public partial class MainViewModel : ObservableObject
         {
             await File.WriteAllTextAsync(path, SelectedDocument.Text);
             SelectedDocument.MarkSaved(path);
+            StartWatchingDocument(SelectedDocument);
         }
+    }
+
+    private DocumentViewModel? FindOpenDocument(string filePath)
+    {
+        var normalizedPath = NormalizeFilePath(filePath);
+
+        return OpenDocuments.FirstOrDefault(document =>
+            !string.IsNullOrWhiteSpace(document.FilePath) &&
+            string.Equals(NormalizeFilePath(document.FilePath), normalizedPath, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeFilePath(string filePath)
+    {
+        return Path.GetFullPath(filePath);
+    }
+
+    private void StartWatchingDocument(DocumentViewModel document)
+    {
+        StopWatchingDocument(document);
+
+        if (string.IsNullOrWhiteSpace(document.FilePath))
+        {
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(document.FilePath);
+        var fileName = Path.GetFileName(document.FilePath);
+
+        if (string.IsNullOrWhiteSpace(directory) || string.IsNullOrWhiteSpace(fileName) || !Directory.Exists(directory))
+        {
+            return;
+        }
+
+        var watcher = new FileSystemWatcher(directory, fileName)
+        {
+            NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size,
+            EnableRaisingEvents = true
+        };
+
+        watcher.Changed += (_, _) => ScheduleDocumentReload(document);
+        watcher.Created += (_, _) => ScheduleDocumentReload(document);
+        watcher.Renamed += (_, _) => ScheduleDocumentReload(document);
+
+        lock (_fileWatcherLock)
+        {
+            _fileWatchers[document] = watcher;
+        }
+    }
+
+    private void StopWatchingDocument(DocumentViewModel document)
+    {
+        lock (_fileWatcherLock)
+        {
+            if (_reloadDebounceTokens.Remove(document, out var tokenSource))
+            {
+                tokenSource.Cancel();
+                tokenSource.Dispose();
+            }
+
+            if (_fileWatchers.Remove(document, out var watcher))
+            {
+                watcher.Dispose();
+            }
+        }
+    }
+
+    private void ScheduleDocumentReload(DocumentViewModel document)
+    {
+        lock (_fileWatcherLock)
+        {
+            if (_reloadDebounceTokens.Remove(document, out var previousTokenSource))
+            {
+                previousTokenSource.Cancel();
+                previousTokenSource.Dispose();
+            }
+
+            var tokenSource = new CancellationTokenSource();
+            _reloadDebounceTokens[document] = tokenSource;
+
+            _ = ReloadDocumentAfterDelayAsync(document, tokenSource);
+        }
+    }
+
+    private async Task ReloadDocumentAfterDelayAsync(DocumentViewModel document, CancellationTokenSource tokenSource)
+    {
+        try
+        {
+            await Task.Delay(250, tokenSource.Token);
+
+            if (string.IsNullOrWhiteSpace(document.FilePath) || !File.Exists(document.FilePath))
+            {
+                return;
+            }
+
+            var text = await ReadAllTextWithRetryAsync(document.FilePath, tokenSource.Token);
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (OpenDocuments.Contains(document) && document.Text != text)
+                {
+                    document.ReloadFromDisk(text);
+                }
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Impossibile aggiornare il file aperto: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"Impossibile aggiornare il file aperto: {ex.Message}");
+        }
+        finally
+        {
+            lock (_fileWatcherLock)
+            {
+                if (_reloadDebounceTokens.TryGetValue(document, out var currentTokenSource) && currentTokenSource == tokenSource)
+                {
+                    _reloadDebounceTokens.Remove(document);
+                }
+            }
+
+            tokenSource.Dispose();
+        }
+    }
+
+    private static async Task<string> ReadAllTextWithRetryAsync(string filePath, CancellationToken cancellationToken)
+    {
+        const int maxAttempts = 5;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                return await File.ReadAllTextAsync(filePath, cancellationToken);
+            }
+            catch (IOException) when (attempt < maxAttempts)
+            {
+                await Task.Delay(100, cancellationToken);
+            }
+        }
+
+        return await File.ReadAllTextAsync(filePath, cancellationToken);
+    }
+
+    private bool IsSelectedDocumentZ80Source()
+    {
+        if (SelectedDocument is null || string.IsNullOrWhiteSpace(SelectedDocument.FileName))
+        {
+            return false;
+        }
+
+        var extension = Path.GetExtension(SelectedDocument.FileName);
+        return string.Equals(extension, ".asm", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(extension, ".z80", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(extension, ".txt", StringComparison.OrdinalIgnoreCase);
     }
     
     private void RunAssembler()
     {
+        if (!IsSelectedDocumentZ80Source())
+        {
+            return;
+        }
+
         try
         {
             var sourceCode = SelectedDocument.Text;
