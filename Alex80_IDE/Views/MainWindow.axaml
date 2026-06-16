@@ -1,13 +1,17 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        xmlns:editing="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
+        xmlns:rendering="clr-namespace:AvaloniaEdit.Rendering;assembly=AvaloniaEdit"
         xmlns:global="clr-namespace:"
         xmlns:views="clr-namespace:Alex80_IDE"
         xmlns:converters="clr-namespace:Alex80_IDE.Converters"
         x:Class="Alex80_IDE.MainWindow"
         x:DataType="global:MainViewModel"
+        Icon="/Assets/alex80.ico"
         Title="Alex80 IDE"
-        Width="1360"
-        Height="930"
+        Width="1480"
+        Height="1000"
         MinWidth="1160"
         MinHeight="780"
         Background="{StaticResource AppBackgroundBrush}"
@@ -28,6 +32,10 @@
         <SolidColorBrush x:Key="DangerSurfaceBrush" Color="#332024" />
         <SolidColorBrush x:Key="DangerTextBrush" Color="#FFDCDC" />
         <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#1C3A35" />
+        <SolidColorBrush x:Key="EditorSelectionBrush" Color="#805FB3F3" />
+        <SolidColorBrush x:Key="EditorSearchResultsBrush" Color="#66F2C94C" />
+        <StreamGeometry x:Key="MemoryIconData">M7,5 L7,3 L9,3 L9,5 L11,5 L11,3 L13,3 L13,5 L15,5 L15,3 L17,3 L17,5 L19,5 L19,7 L21,7 L21,9 L19,9 L19,11 L21,11 L21,13 L19,13 L19,15 L21,15 L21,17 L19,17 L19,19 L17,19 L17,21 L15,21 L15,19 L13,19 L13,21 L11,21 L11,19 L9,19 L9,21 L7,21 L7,19 L5,19 L5,17 L3,17 L3,15 L5,15 L5,13 L3,13 L3,11 L5,11 L5,9 L3,9 L3,7 L5,7 L5,5 Z M8,8 L8,16 L16,16 L16,8 Z M10,10 L14,10 L14,14 L10,14 Z</StreamGeometry>
+        <StreamGeometry x:Key="SerialIconData">M4,5 L20,5 C21.1,5 22,5.9 22,7 L22,17 C22,18.1 21.1,19 20,19 L4,19 C2.9,19 2,18.1 2,17 L2,7 C2,5.9 2.9,5 4,5 Z M5,7 L5,17 L19,17 L19,7 Z M7,9 L10.5,12 L7,15 L8.3,16 L13,12 L8.3,8 Z M13,14 L17,14 L17,15.7 L13,15.7 Z</StreamGeometry>
 
         <global:HexadecimalConverter x:Key="HexadecimalConverter" />
         <converters:ByteToHexConverter x:Key="ByteToHexConverter" />
@@ -37,6 +45,14 @@
     </Window.Resources>
 
     <Window.Styles>
+        <Style Selector="rendering|TextView">
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+
+        <Style Selector="editing|TextArea">
+            <Setter Property="SelectionBrush" Value="{StaticResource EditorSelectionBrush}" />
+        </Style>
+
         <Style Selector="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         </Style>
@@ -49,6 +65,15 @@
         <Style Selector="TextBlock.sectionTitle">
             <Setter Property="FontSize" Value="13" />
             <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style Selector="TextBlock.memoryHeader">
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="Cascadia Mono, Menlo, Consolas, Courier New" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
 
         <Style Selector="TextBlock.registerLabel">
@@ -80,6 +105,15 @@
             <Setter Property="MinWidth" Value="72" />
         </Style>
 
+        <Style Selector="Border.cardBadge">
+            <Setter Property="Background" Value="{StaticResource BadgeBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AccentStrongBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="999" />
+            <Setter Property="Padding" Value="9,3" />
+            <Setter Property="MinWidth" Value="120" />
+        </Style>
+
         <Style Selector="Button">
             <Setter Property="MinHeight" Value="34" />
             <Setter Property="Padding" Value="14,7" />
@@ -109,6 +143,10 @@
             <Setter Property="Padding" Value="0" />
             <Setter Property="Width" Value="24" />
             <Setter Property="Height" Value="24" />
+        </Style>
+
+        <Style Selector="GridSplitter">
+            <Setter Property="Background" Value="{StaticResource BorderSoftBrush}" />
         </Style>
 
         <Style Selector="ComboBox, TextBox">
@@ -143,13 +181,59 @@
             <Setter Property="FontWeight" Value="SemiBold" />
         </Style>
 
+        <Style Selector="TabControl.bottomToolTabs">
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+        </Style>
+
+        <Style Selector="TabControl.bottomToolTabs > TabItem">
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="MinWidth" Value="44" />
+            <Setter Property="MinHeight" Value="44" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="PathIcon.toolIcon">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+        </Style>
+
+        <Style Selector="TabItem:selected PathIcon.toolIcon">
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+        </Style>
+
         <Style Selector="DataGrid">
             <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
             <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource BorderSoftBrush}" />
+            <Setter Property="FontFamily" Value="Cascadia Mono, Menlo, Consolas, Courier New" />
+            <Setter Property="CanUserSortColumns" Value="False" />
             <Setter Property="GridLinesVisibility" Value="Horizontal" />
             <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource BorderSoftBrush}" />
             <Setter Property="RowBackground" Value="{StaticResource SurfaceBrush}" />
+        </Style>
+
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Padding" Value="0,0,0,0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+            <Setter Property="FontFamily" Value="Cascadia Mono, Menlo, Consolas, Courier New" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            
+        </Style>
+        
+        <Style Selector="DataGrid:focus-within DataGridColumnHeader,
+                 DataGrid DataGridColumnHeader">
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+
+        <Style Selector="DataGridCell TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
         </Style>
     </Window.Styles>
 
@@ -161,14 +245,6 @@
                                FontSize="20"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
-                    <Border Background="{StaticResource BadgeBackgroundBrush}"
-                            BorderBrush="{StaticResource AccentStrongBrush}"
-                            BorderThickness="1"
-                            CornerRadius="999"
-                            Padding="9,3"
-                            VerticalAlignment="Center">
-                        <TextBlock Text="workspace integrato" Classes="caption" Foreground="{StaticResource AccentBrush}" />
-                    </Border>
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -183,8 +259,12 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="Scheda" Classes="caption" VerticalAlignment="Center" />
-                    <TextBox Text="{Binding CardName}" Width="120" Classes="mono" />
+                    <Border Classes="cardBadge" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding CardBadgeText}"
+                                   Classes="caption"
+                                   Foreground="{StaticResource AccentBrush}"
+                                   HorizontalAlignment="Center" />
+                    </Border>
                     <ToggleSwitch Content="Clock Arduino"
                                   IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
                                   IsEnabled="{Binding IsSerialOpened}" />
@@ -205,6 +285,9 @@
                                 <Button Command="{Binding OpenFileCommand}" Content="Apri" />
                                 <Button Command="{Binding SaveFileCommand}" Content="Salva" />
                                 <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary" />
+                                <Button Command="{Binding SendNmiCommand}"
+                                        Content="Start"
+                                        IsEnabled="{Binding IsSerialOpened}" />
                                 <Button Content="Carica bin" Click="LoadFileAsync" />
                             </StackPanel>
 
@@ -227,12 +310,11 @@
                         </Grid>
                     </Border>
 
-                    <Grid Grid.Row="1" ColumnDefinitions="*,470" ColumnSpacing="14">
+                    <Grid Grid.Row="1" RowDefinitions="*,6,260" RowSpacing="0">
                         <Border Classes="panel" Padding="0">
                             <Grid RowDefinitions="Auto,*">
                                 <DockPanel Margin="14,14,14,10">
                                     <TextBlock Text="Sorgenti assembler" Classes="sectionTitle" DockPanel.Dock="Left" />
-                                    <TextBlock Text="tab integrati" Classes="caption" DockPanel.Dock="Right" />
                                 </DockPanel>
 
                                 <TabControl Grid.Row="1"
@@ -252,63 +334,132 @@
 
                                     <TabControl.ContentTemplate>
                                         <DataTemplate x:DataType="global:DocumentViewModel">
-                                            <TextBox Text="{Binding Text, Mode=TwoWay}"
-                                                     AcceptsReturn="True"
-                                                     AcceptsTab="True"
-                                                     TextWrapping="NoWrap"
-                                                     Classes="codeEditor"
-                                                     HorizontalAlignment="Stretch"
-                                                     VerticalAlignment="Stretch" />
+                                            <edit:TextEditor Document="{Binding EditorDocument}"
+                                                             FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
+                                                             FontSize="15"
+                                                             Background="{StaticResource SurfaceInputBrush}"
+                                                             Foreground="{StaticResource TextPrimaryBrush}"
+                                                             LineNumbersForeground="{StaticResource TextSecondaryBrush}"
+                                                             SearchResultsBrush="{StaticResource EditorSearchResultsBrush}"
+                                                             SyntaxHighlighting="Z80"
+                                                             ShowLineNumbers="True"
+                                                             WordWrap="False"
+                                                             HorizontalScrollBarVisibility="Auto"
+                                                             VerticalScrollBarVisibility="Auto"
+                                                             HorizontalAlignment="Stretch"
+                                                             VerticalAlignment="Stretch" />
                                         </DataTemplate>
                                     </TabControl.ContentTemplate>
                                 </TabControl>
                             </Grid>
                         </Border>
 
-                        <Grid Grid.Column="1" RowDefinitions="*,220" RowSpacing="14">
-                            <Border Classes="panel" Padding="0">
-                                <Grid RowDefinitions="Auto,*">
-                                    <DockPanel Margin="14,14,14,10">
-                                        <TextBlock Text="Memoria pronta al caricamento" Classes="sectionTitle" DockPanel.Dock="Left" />
-                                        <TextBlock Text="output assembler/binario" Classes="caption" DockPanel.Dock="Right" />
-                                    </DockPanel>
+                        <GridSplitter Grid.Row="1"
+                                      Height="6"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Stretch"
+                                      ResizeDirection="Rows" />
 
-                                    <DataGrid Grid.Row="1"
-                                              AutoGenerateColumns="False"
-                                              IsReadOnly="True"
-                                              ItemsSource="{Binding DataTable}"
-                                              RowHeight="30"
-                                              HeadersVisibility="Column">
-                                        <DataGrid.Columns>
-                                            <DataGridTextColumn Header="ADDR" Binding="{Binding Address, Converter={StaticResource HexadecimalConverter}}" Width="90" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="00" Binding="{Binding DataArray[0], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="01" Binding="{Binding DataArray[1], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="02" Binding="{Binding DataArray[2], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="03" Binding="{Binding DataArray[3], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="04" Binding="{Binding DataArray[4], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="05" Binding="{Binding DataArray[5], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="06" Binding="{Binding DataArray[6], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="07" Binding="{Binding DataArray[7], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="ASCII" Binding="{Binding Ascii}" Width="*" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                </Grid>
-                            </Border>
+                        <Border Grid.Row="2" Classes="panel" Padding="0" Margin="0,14,0,0">
+                            <TabControl Classes="bottomToolTabs"
+                                        TabStripPlacement="Left">
+                                <TabItem>
+                                    <TabItem.Header>
+                                        <PathIcon Classes="toolIcon"
+                                                  Data="{StaticResource MemoryIconData}"
+                                                  ToolTip.Tip="Memoria" />
+                                    </TabItem.Header>
 
-                            <Border Grid.Row="1" Classes="panel">
-                                <Grid RowDefinitions="Auto,*" RowSpacing="10">
-                                    <TextBlock Text="Seriale" Classes="sectionTitle" />
-                                    <TextBox Grid.Row="1"
-                                             Text="{Binding SerialMessageText}"
-                                             IsReadOnly="True"
-                                             AcceptsReturn="True"
-                                             Classes="mono"
-                                             TextWrapping="NoWrap"
-                                             Name="EditorSerialBox"
-                                             TextChanged="SerialBox_TextChanged" />
-                                </Grid>
-                            </Border>
-                        </Grid>
+                                    <Grid RowDefinitions="Auto,30,*">
+                                        <DockPanel Margin="14,14,14,10">
+                                            <TextBlock Text="Memoria pronta al caricamento" Classes="sectionTitle" DockPanel.Dock="Left" />
+                                        </DockPanel>
+
+                                        <Border Grid.Row="1"
+                                                BorderBrush="{StaticResource BorderSoftBrush}"
+                                                BorderThickness="0,0,0,1">
+                                            <Grid ColumnDefinitions="90,48,54,44,44,44,44,44,44,52,44,44,44,44,44,44,44,*">
+                                                <TextBlock Grid.Column="0" Text="ADDR" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="1" Text="00" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="2" Text="01" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="3" Text="02" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="4" Text="03" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="5" Text="04" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="6" Text="05" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="7" Text="06" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="8" Text="07" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="9" Text="08" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="10" Text="09" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="11" Text="0A" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="12" Text="0B" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="13" Text="0C" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="14" Text="0D" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="15" Text="0E" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="16" Text="0F" Classes="memoryHeader" />
+                                                <TextBlock Grid.Column="17" Text="ASCII" Classes="memoryHeader" />
+                                            </Grid>
+                                        </Border>
+
+                                        <DataGrid Grid.Row="2"
+                                                  AutoGenerateColumns="False"
+                                                  IsReadOnly="True"
+                                                  ItemsSource="{Binding DataTable}"
+                                                  RowHeight="30"
+                                                  HeadersVisibility="None">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="ADDR" Binding="{Binding Address, Converter={StaticResource HexadecimalConverter}}" Width="90" />
+                                                <DataGridTextColumn Header="00" Binding="{Binding DataArray[0], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                                <DataGridTextColumn Header="01" Binding="{Binding DataArray[1], Converter={StaticResource ByteToHexConverter}}" Width="54" />
+                                                <DataGridTextColumn Header="02" Binding="{Binding DataArray[2], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="03" Binding="{Binding DataArray[3], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="04" Binding="{Binding DataArray[4], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="05" Binding="{Binding DataArray[5], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="06" Binding="{Binding DataArray[6], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="07" Binding="{Binding DataArray[7], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="08" Binding="{Binding DataArray[8], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                                <DataGridTextColumn Header="09" Binding="{Binding DataArray[9], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="0A" Binding="{Binding DataArray[10], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="0B" Binding="{Binding DataArray[11], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="0C" Binding="{Binding DataArray[12], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="0D" Binding="{Binding DataArray[13], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="0E" Binding="{Binding DataArray[14], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTextColumn Header="0F" Binding="{Binding DataArray[15], Converter={StaticResource ByteToHexConverter}}" Width="44" />
+                                                <DataGridTemplateColumn Header="ASCII" Width="*">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding Ascii}"
+                                                                       HorizontalAlignment="Left"
+                                                                       TextAlignment="Left"
+                                                                       VerticalAlignment="Center" />
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+                                    </Grid>
+                                </TabItem>
+
+                                <TabItem>
+                                    <TabItem.Header>
+                                        <PathIcon Classes="toolIcon"
+                                                  Data="{StaticResource SerialIconData}"
+                                                  ToolTip.Tip="Log seriale" />
+                                    </TabItem.Header>
+
+                                    <Grid RowDefinitions="Auto,*" RowSpacing="10" Margin="14">
+                                        <TextBlock Text="Log seriale" Classes="sectionTitle" />
+                                        <TextBox Grid.Row="1"
+                                                 Text="{Binding SerialMessageText}"
+                                                 IsReadOnly="True"
+                                                 AcceptsReturn="True"
+                                                 Classes="mono"
+                                                 TextWrapping="NoWrap"
+                                                 Name="EditorSerialBox"
+                                                 TextChanged="SerialBox_TextChanged" />
+                                    </Grid>
+                                </TabItem>
+                            </TabControl>
+                        </Border>
                     </Grid>
                 </Grid>
             </TabItem>
@@ -417,24 +568,24 @@
                                               RowHeight="30"
                                               HeadersVisibility="Column">
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="ADDR" Binding="{Binding Address, Converter={StaticResource HexadecimalConverter}}" Width="90" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="00" Binding="{Binding DataArray[0], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="01" Binding="{Binding DataArray[1], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="02" Binding="{Binding DataArray[2], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="03" Binding="{Binding DataArray[3], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="04" Binding="{Binding DataArray[4], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="05" Binding="{Binding DataArray[5], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="06" Binding="{Binding DataArray[6], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="07" Binding="{Binding DataArray[7], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="08" Binding="{Binding DataArray[8], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="09" Binding="{Binding DataArray[9], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="0A" Binding="{Binding DataArray[10], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="0B" Binding="{Binding DataArray[11], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="0C" Binding="{Binding DataArray[12], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="0D" Binding="{Binding DataArray[13], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="0E" Binding="{Binding DataArray[14], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="0F" Binding="{Binding DataArray[15], Converter={StaticResource ByteToHexConverter}}" Width="52" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="ASCII" Binding="{Binding Ascii}" Width="*" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
+                                            <DataGridTextColumn Header="ADDR" Binding="{Binding Address, Converter={StaticResource HexadecimalConverter}}" Width="90" />
+                                            <DataGridTextColumn Header="00" Binding="{Binding DataArray[0], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="01" Binding="{Binding DataArray[1], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="02" Binding="{Binding DataArray[2], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="03" Binding="{Binding DataArray[3], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="04" Binding="{Binding DataArray[4], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="05" Binding="{Binding DataArray[5], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="06" Binding="{Binding DataArray[6], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="07" Binding="{Binding DataArray[7], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="08" Binding="{Binding DataArray[8], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="09" Binding="{Binding DataArray[9], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="0A" Binding="{Binding DataArray[10], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="0B" Binding="{Binding DataArray[11], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="0C" Binding="{Binding DataArray[12], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="0D" Binding="{Binding DataArray[13], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="0E" Binding="{Binding DataArray[14], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="0F" Binding="{Binding DataArray[15], Converter={StaticResource ByteToHexConverter}}" Width="52" />
+                                            <DataGridTextColumn Header="ASCII" Binding="{Binding Ascii}" Width="*" />
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </Grid>
@@ -458,15 +609,15 @@
                                             <global:AutoScrollBehavior IsAutoScrollEnabled="{Binding IsAutoScrollEnabled}" />
                                         </Interaction.Behaviors>
                                         <DataGrid.Columns>
-                                            <DataGridTextColumn Header="ADDR" Binding="{Binding AddressHex}" Width="90" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                            <DataGridTextColumn Header="DATA" Binding="{Binding DataHex}" Width="76" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
+                                            <DataGridTextColumn Header="ADDR" Binding="{Binding AddressHex}" Width="90" />
+                                            <DataGridTextColumn Header="DATA" Binding="{Binding DataHex}" Width="76" />
                                             <DataGridTemplateColumn Header="RD" Width="54"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Z80_RD, Converter={StaticResource BoolToDotConverter}}" FontSize="22" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                                             <DataGridTemplateColumn Header="WR" Width="54"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Z80_WR, Converter={StaticResource BoolToDotConverter}}" FontSize="22" Foreground="{StaticResource WarningBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                                             <DataGridTemplateColumn Header="IORQ" Width="62"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Z80_IORQ, Converter={StaticResource BoolToDotConverter}}" FontSize="22" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                                             <DataGridTemplateColumn Header="MREQ" Width="68"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Z80_MREQ, Converter={StaticResource BoolToDotConverter}}" FontSize="22" Foreground="{StaticResource AccentBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                                             <DataGridTemplateColumn Header="RFSH" Width="64"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Z80_RFSH, Converter={StaticResource BoolToDotConverter}}" FontSize="22" Foreground="{StaticResource TextSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
                                             <DataGridTemplateColumn Header="M1" Width="54"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock Text="{Binding Z80_M1, Converter={StaticResource BoolToDotConverter}}" FontSize="22" Foreground="{StaticResource DangerBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" /></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
-                                            <DataGridTextColumn Header="MNEMONICO" Binding="{Binding Mnemonic}" Width="*" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
+                                            <DataGridTextColumn Header="MNEMONICO" Binding="{Binding Mnemonic}" Width="*" />
                                         </DataGrid.Columns>
                                     </DataGrid>
                                 </Grid>
@@ -535,16 +686,16 @@
                                           RowHeight="30"
                                           HeadersVisibility="Column">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="ADDR" Binding="{Binding Address, Converter={StaticResource HexadecimalConverter}}" Width="90" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="00" Binding="{Binding DataArray[0], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="01" Binding="{Binding DataArray[1], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="02" Binding="{Binding DataArray[2], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="03" Binding="{Binding DataArray[3], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="04" Binding="{Binding DataArray[4], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="05" Binding="{Binding DataArray[5], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="06" Binding="{Binding DataArray[6], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="07" Binding="{Binding DataArray[7], Converter={StaticResource ByteToHexConverter}}" Width="48" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
-                                        <DataGridTextColumn Header="ASCII" Binding="{Binding Ascii}" Width="*" FontFamily="Cascadia Mono, Menlo, Consolas, Courier New" />
+                                        <DataGridTextColumn Header="ADDR" Binding="{Binding Address, Converter={StaticResource HexadecimalConverter}}" Width="90" />
+                                        <DataGridTextColumn Header="00" Binding="{Binding DataArray[0], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                        <DataGridTextColumn Header="01" Binding="{Binding DataArray[1], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                        <DataGridTextColumn Header="02" Binding="{Binding DataArray[2], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                        <DataGridTextColumn Header="03" Binding="{Binding DataArray[3], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                        <DataGridTextColumn Header="04" Binding="{Binding DataArray[4], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                        <DataGridTextColumn Header="05" Binding="{Binding DataArray[5], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                        <DataGridTextColumn Header="06" Binding="{Binding DataArray[6], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                        <DataGridTextColumn Header="07" Binding="{Binding DataArray[7], Converter={StaticResource ByteToHexConverter}}" Width="48" />
+                                        <DataGridTextColumn Header="ASCII" Binding="{Binding Ascii}" Width="*" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </Grid>

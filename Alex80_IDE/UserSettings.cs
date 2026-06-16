@@ -7,6 +7,9 @@ namespace Alex80_IDE;
 public sealed class UserSettings
 {
     public string Theme { get; set; } = AppTheme.Dark.ToString();
+    public double? MainWindowWidth { get; set; }
+    public double? MainWindowHeight { get; set; }
+    public bool MainWindowMaximized { get; set; }
 
     public static string SettingsPath =>
         Path.Combine(

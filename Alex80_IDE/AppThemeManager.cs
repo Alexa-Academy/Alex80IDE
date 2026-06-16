@@ -49,7 +49,8 @@ public static class AppThemeManager
             SetBrush(window, "DangerSurfaceBrush", "#FCE8E8");
             SetBrush(window, "DangerTextBrush", "#8B1E1E");
             SetBrush(window, "BadgeBackgroundBrush", "#DDF6F1");
-            SetBrush(window, "EditorSelectionBrush", "#9BD8CD");
+            SetBrush(window, "EditorSelectionBrush", "#6638BDF8");
+            SetBrush(window, "EditorSearchResultsBrush", "#66F59E0B");
         }
         else
         {
@@ -67,7 +68,8 @@ public static class AppThemeManager
             SetBrush(window, "DangerSurfaceBrush", "#332024");
             SetBrush(window, "DangerTextBrush", "#FFDCDC");
             SetBrush(window, "BadgeBackgroundBrush", "#1C3A35");
-            SetBrush(window, "EditorSelectionBrush", "#2FAE8E");
+            SetBrush(window, "EditorSelectionBrush", "#805FB3F3");
+            SetBrush(window, "EditorSearchResultsBrush", "#66F2C94C");
         }
     }
 

@@ -1,5 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        xmlns:editing="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
+        xmlns:rendering="clr-namespace:AvaloniaEdit.Rendering;assembly=AvaloniaEdit"
         xmlns:global="clr-namespace:"
         xmlns:views="clr-namespace:Alex80_IDE"
         x:Class="Alex80_IDE.EditorWindow"
@@ -20,10 +23,19 @@
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F4FA" />
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="#98A2B3" />
         <SolidColorBrush x:Key="AccentBrush" Color="#4CC9A7" />
-        <SolidColorBrush x:Key="EditorSelectionBrush" Color="#2FAE8E" />
+        <SolidColorBrush x:Key="EditorSelectionBrush" Color="#805FB3F3" />
+        <SolidColorBrush x:Key="EditorSearchResultsBrush" Color="#66F2C94C" />
     </Window.Resources>
 
     <Window.Styles>
+        <Style Selector="rendering|TextView">
+            <Setter Property="Margin" Value="8,0,0,0" />
+        </Style>
+
+        <Style Selector="editing|TextArea">
+            <Setter Property="SelectionBrush" Value="{StaticResource EditorSelectionBrush}" />
+        </Style>
+
         <Style Selector="TabControl">
             <Setter Property="Background" Value="{StaticResource AppBackgroundBrush}" />
         </Style>
@@ -60,36 +72,54 @@
             BorderBrush="{StaticResource BorderSoftBrush}"
             BorderThickness="1"
             CornerRadius="8">
-        <TabControl ItemsSource="{Binding OpenDocuments}"
-                    SelectedItem="{Binding SelectedDocument}">
-            <TabControl.ItemTemplate>
-                <DataTemplate x:DataType="global:DocumentViewModel">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="{Binding FileName}" />
-                        <Button Content="x"
-                                Classes="closeTab"
-                                Command="{Binding $parent[views:EditorWindow].((global:MainViewModel)DataContext).CloseTabCommand}"
-                                CommandParameter="{Binding}"
-                                VerticalAlignment="Center" />
-                    </StackPanel>
-                </DataTemplate>
-            </TabControl.ItemTemplate>
+        <Grid RowDefinitions="Auto,*">
+            <StackPanel Orientation="Horizontal"
+                        Spacing="8"
+                        Margin="12"
+                        VerticalAlignment="Center">
+                <Button Command="{Binding NewTabCommand}" Content="Nuova" />
+                <Button Command="{Binding OpenFileCommand}" Content="Apri" />
+                <Button Command="{Binding SaveFileCommand}" Content="Salva" />
+                <Button Command="{Binding AssembleCommand}" Content="Assembla" />
+            </StackPanel>
 
-            <TabControl.ContentTemplate>
-                <DataTemplate x:DataType="global:DocumentViewModel">
-                    <Grid RowDefinitions="*" Margin="12">
-                        <TextBox Text="{Binding Text, Mode=TwoWay}"
-                                 FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
-                                 FontSize="15"
-                                 AcceptsReturn="True"
-                                 AcceptsTab="True"
-                                 TextWrapping="NoWrap"
-                                 Classes="codeEditor"
-                                 HorizontalAlignment="Stretch"
-                                 VerticalAlignment="Stretch" />
-                    </Grid>
-                </DataTemplate>
-            </TabControl.ContentTemplate>
-        </TabControl>
+            <TabControl Grid.Row="1"
+                        ItemsSource="{Binding OpenDocuments}"
+                        SelectedItem="{Binding SelectedDocument}">
+                <TabControl.ItemTemplate>
+                    <DataTemplate x:DataType="global:DocumentViewModel">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding FileName}" />
+                            <Button Content="x"
+                                    Classes="closeTab"
+                                    Command="{Binding $parent[views:EditorWindow].((global:MainViewModel)DataContext).CloseTabCommand}"
+                                    CommandParameter="{Binding}"
+                                    VerticalAlignment="Center" />
+                        </StackPanel>
+                    </DataTemplate>
+                </TabControl.ItemTemplate>
+
+                <TabControl.ContentTemplate>
+                    <DataTemplate x:DataType="global:DocumentViewModel">
+                        <Grid RowDefinitions="*" Margin="12">
+                            <edit:TextEditor Document="{Binding EditorDocument}"
+                                             FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
+                                             FontSize="15"
+                                             Background="{StaticResource SurfaceInputBrush}"
+                                             Foreground="{StaticResource TextPrimaryBrush}"
+                                             LineNumbersForeground="{StaticResource TextSecondaryBrush}"
+                                             SearchResultsBrush="{StaticResource EditorSearchResultsBrush}"
+                                             SyntaxHighlighting="Z80"
+                                             ShowLineNumbers="True"
+                                             WordWrap="False"
+                                             HorizontalScrollBarVisibility="Auto"
+                                             VerticalScrollBarVisibility="Auto"
+                                             HorizontalAlignment="Stretch"
+                                             VerticalAlignment="Stretch" />
+                        </Grid>
+                    </DataTemplate>
+                </TabControl.ContentTemplate>
+            </TabControl>
+        </Grid>
     </Border>
 </Window>
