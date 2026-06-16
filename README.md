@@ -44,6 +44,10 @@ ALEX80 is an educational project designed to teach the architecture and programm
 
 The goal is to make computer architecture, digital electronics, and low-level programming accessible through practical experimentation.
 
+The Alexa Academy YouTube channel describes the Alex80 project and its educational goals.
+
+https://www.youtube.com/@alexaacademyit
+
 License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
