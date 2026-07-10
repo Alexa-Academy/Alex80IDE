@@ -284,7 +284,9 @@
                                 <Button Command="{Binding NewTabCommand}" Content="Nuova" />
                                 <Button Command="{Binding OpenFileCommand}" Content="Apri" />
                                 <Button Command="{Binding SaveFileCommand}" Content="Salva" />
+                                <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome" />
                                 <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary" />
+                                <Button Command="{Binding SaveArduinoArrayCommand}" Content="Salva array Arduino" />
                                 <Button Command="{Binding SendNmiCommand}"
                                         Content="Start"
                                         IsEnabled="{Binding IsSerialOpened}" />

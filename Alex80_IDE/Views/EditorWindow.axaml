@@ -80,7 +80,9 @@
                 <Button Command="{Binding NewTabCommand}" Content="Nuova" />
                 <Button Command="{Binding OpenFileCommand}" Content="Apri" />
                 <Button Command="{Binding SaveFileCommand}" Content="Salva" />
+                <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome" />
                 <Button Command="{Binding AssembleCommand}" Content="Assembla" />
+                <Button Command="{Binding SaveArduinoArrayCommand}" Content="Salva array Arduino" />
             </StackPanel>
 
             <TabControl Grid.Row="1"

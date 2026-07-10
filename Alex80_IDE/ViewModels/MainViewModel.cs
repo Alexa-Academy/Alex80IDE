@@ -7,6 +7,7 @@ using System.Windows.Input;
 using Alex80_IDE;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Platform.Storage;
 using Konamiman.Nestor80.Assembler;
 using System.Linq;
 using System.Text;
@@ -24,6 +25,7 @@ public partial class MainViewModel : ObservableObject
     private readonly object _fileWatcherLock = new();
     private readonly Dictionary<DocumentViewModel, FileSystemWatcher> _fileWatchers = new();
     private readonly Dictionary<DocumentViewModel, CancellationTokenSource> _reloadDebounceTokens = new();
+    private readonly Dictionary<DocumentViewModel, DocumentViewModel> _listingDocuments = new();
     
     private const int DefaultClockFreq = 50;
     private const int DefaultStartAdd = 0x0000;
@@ -33,6 +35,7 @@ public partial class MainViewModel : ObservableObject
     private DocumentViewModel _selectedDocument;
     public ICommand OpenFileCommand { get; }
     public ICommand SaveFileCommand { get; }
+    public ICommand SaveFileAsCommand { get; }
     public DocumentViewModel SelectedDocument
     {
         get => _selectedDocument;
@@ -41,12 +44,14 @@ public partial class MainViewModel : ObservableObject
             _selectedDocument = value;
             OnPropertyChanged();
             (SaveFileCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (SaveFileAsCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (AssembleCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
     }
 
     public ICommand NewTabCommand { get; }
     public ICommand AssembleCommand { get; }
+    public ICommand SaveArduinoArrayCommand { get; }
     
     [ObservableProperty]
     private string _cardName = string.Empty;
@@ -127,6 +132,8 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty] 
     private bool _isMemoryFromArduino;
+
+    private bool _isApplyingCardConfig;
     
     [ObservableProperty]
     private byte _aReg;
@@ -365,6 +372,15 @@ public partial class MainViewModel : ObservableObject
         {
             StopWatchingDocument(tabToClose);
             OpenDocuments.Remove(tabToClose);
+            _listingDocuments.Remove(tabToClose);
+
+            foreach (var sourceDocument in _listingDocuments
+                         .Where(pair => pair.Value == tabToClose)
+                         .Select(pair => pair.Key)
+                         .ToArray())
+            {
+                _listingDocuments.Remove(sourceDocument);
+            }
 
             if (SelectedDocument == tabToClose)
             {
@@ -413,13 +429,18 @@ public partial class MainViewModel : ObservableObject
         NewTabCommand = new RelayCommand(_ => AddNewTab());
         OpenFileCommand = new RelayCommand(async _ => await OpenFileAsync());
         SaveFileCommand = new RelayCommand(async _ => await SaveFileAsync(), _ => SelectedDocument != null);
+        SaveFileAsCommand = new RelayCommand(async _ => await SaveFileAsAsync(), _ => SelectedDocument != null);
         AssembleCommand = new RelayCommand(_ => RunAssembler(), _ => IsSelectedDocumentZ80Source());
+        SaveArduinoArrayCommand = new RelayCommand(async _ => await SaveArduinoArrayAsync(), _ => _fileBytesToWrite is { Length: > 0 });
         ToggleAssemblerOutputCommand = new RelayCommand(_ => IsAssemblerOutputVisible = !IsAssemblerOutputVisible);
         //AddNewTab(); // apri una scheda iniziale
     }
     
     partial void OnIsClockFromArduinoChanged(bool value)
     {
+        if (_isApplyingCardConfig)
+            return;
+
         if (value)
         {
             _serialManager.SetClockFromArduino();
@@ -432,6 +453,9 @@ public partial class MainViewModel : ObservableObject
     
     partial void OnIsMemoryFromArduinoChanged(bool value)
     {
+        if (_isApplyingCardConfig)
+            return;
+
         if (value)
         {
             _serialManager.SetMemoryFromArduino();
@@ -507,58 +531,69 @@ public partial class MainViewModel : ObservableObject
     
     private void OnMessageReceived(string msg)
     {
-        AppendSerialLine(msg);
+        Dispatcher.UIThread.Post(() => AppendSerialLine(msg));
     }
     
     private void OnConfigReceived(CardConfig cardConfig)
     {
-        CardName = cardConfig.CardName;
-        IsClockFromArduino = cardConfig.IsClockFromArduino;
-        IsMemoryFromArduino = cardConfig.IsMemFromArduino;
-        ClockFrequency = cardConfig.ClockFrequency.ToString();
-        IsClockActive = cardConfig.ClockActive;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _isApplyingCardConfig = true;
+            try
+            {
+                CardName = cardConfig.CardName;
+                IsClockFromArduino = cardConfig.IsClockFromArduino;
+                IsMemoryFromArduino = cardConfig.IsMemFromArduino;
+                ClockFrequency = cardConfig.ClockFrequency.ToString();
+                IsClockActive = cardConfig.ClockActive;
+                AppendSerialLine($"UI config: CARD={CardName}, IsSerialOpened={IsSerialOpened}");
+            }
+            finally
+            {
+                _isApplyingCardConfig = false;
+            }
+        });
     }
     
     private void StartSerialPortMonitoring() {
         _serialPortCheckTimer.Start();
     }
 
-    private async void CheckSerialPorts(object? sender, ElapsedEventArgs e) {
+    private void CheckSerialPorts(object? sender, ElapsedEventArgs e) {
         // Ottieni le porte seriali attualmente disponibili
         try
         {
             var availablePorts = SerialPortHelper.GetSerialPorts();
-            if (availablePorts.SequenceEqual(PortsList))
-                return;
-
-            if (SelectedIdx >= availablePorts.Length || (SelectedIdx >= 0 && SelectedIdx < availablePorts.Length &&
-                                                         _serialManager.SerialPort.PortName == PortsList[SelectedIdx]))
+            Dispatcher.UIThread.Post(() =>
             {
-                ToggleButtonContent = _serialManager.CloseSerialPort() ? "Chiudi" : "Apri";
-            }
+                if (availablePorts.SequenceEqual(PortsList))
+                    return;
 
+                var openPortName = _serialManager.SerialPort.IsOpen
+                    ? _serialManager.SerialPort.PortName
+                    : null;
+                var selectedPortName = SelectedIdx >= 0 && SelectedIdx < PortsList.Count
+                    ? PortsList[SelectedIdx]
+                    : null;
 
-            // Controlla se ci sono cambiamenti nella lista delle porte
-            //SelectedIdx = -1;
-            if (availablePorts.Any())
-            {
-                PortsList.Clear();
-                foreach (var port in availablePorts)
+                // Chiude la seriale solo se la porta realmente aperta è scomparsa.
+                if (openPortName != null && !availablePorts.Contains(openPortName))
                 {
-                    PortsList.Add(port);
+                    _serialManager.CloseSerialPort();
+                    ToggleButtonContent = "Apri";
                 }
 
-                // Forza l'aggiornamento visivo
-                await Task.Delay(10);
+                PortsList.Clear();
+                foreach (var port in availablePorts)
+                    PortsList.Add(port);
 
-                SelectedIdx = 0;
-
-                OnPropertyChanged(nameof(SelectedIdx));
-            }
-            else
-            {
-                SelectedIdx = -1;
-            }
+                if (openPortName != null && availablePorts.Contains(openPortName))
+                    SelectedIdx = Array.IndexOf(availablePorts, openPortName);
+                else if (selectedPortName != null && availablePorts.Contains(selectedPortName))
+                    SelectedIdx = Array.IndexOf(availablePorts, selectedPortName);
+                else
+                    SelectedIdx = availablePorts.Length > 0 ? 0 : -1;
+            });
         }
         catch (Exception ex)
         {
@@ -631,12 +666,59 @@ public partial class MainViewModel : ObservableObject
             return;
         }
 
+        await SaveFileAsAsync();
+    }
+
+    private async Task SaveFileAsAsync()
+    {
+        if (SelectedDocument == null) return;
+
+        var desktop = App.Current.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        if (desktop?.MainWindow is not { } window)
+            return;
+
+        var file = await window.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Salva codice assembler",
+            SuggestedFileName = SelectedDocument.FileName,
+            ShowOverwritePrompt = true
+        });
+
+        if (file is not null)
+        {
+            var path = EnsureAssemblyExtension(file.Path.LocalPath);
+            await File.WriteAllTextAsync(path, SelectedDocument.Text);
+            SelectedDocument.MarkSaved(path);
+            StartWatchingDocument(SelectedDocument);
+        }
+    }
+
+    private static string EnsureAssemblyExtension(string filePath)
+    {
+        if (!Path.HasExtension(filePath))
+            return filePath + ".asm";
+
+        foreach (var extension in new[] { ".asm", ".z80", ".txt" })
+        {
+            while (filePath.EndsWith(extension + extension, StringComparison.OrdinalIgnoreCase))
+                filePath = filePath[..^extension.Length];
+        }
+
+        return filePath;
+    }
+
+    private async Task SaveArduinoArrayAsync()
+    {
+        if (_fileBytesToWrite is not { Length: > 0 } bytes)
+            return;
+
         var dialog = new SaveFileDialog
         {
-            InitialFileName = SelectedDocument.FileName,
+            InitialFileName = "intROM.h",
             Filters = new List<FileDialogFilter>
             {
-                new FileDialogFilter { Name = "Assembly Z80", Extensions = { "asm", "z80", "txt" } }
+                new FileDialogFilter { Name = "Arduino header", Extensions = { "h" } },
+                new FileDialogFilter { Name = "Text file", Extensions = { "txt" } }
             }
         };
 
@@ -645,11 +727,28 @@ public partial class MainViewModel : ObservableObject
             : null);
 
         if (!string.IsNullOrWhiteSpace(path))
+            await File.WriteAllTextAsync(path, FormatArduinoArray(bytes));
+    }
+
+    private static string FormatArduinoArray(byte[] bytes)
+    {
+        const int bytesPerLine = 16;
+        var builder = new StringBuilder("const PROGMEM byte intROM[] = {\n");
+
+        for (var index = 0; index < bytes.Length; index += bytesPerLine)
         {
-            await File.WriteAllTextAsync(path, SelectedDocument.Text);
-            SelectedDocument.MarkSaved(path);
-            StartWatchingDocument(SelectedDocument);
+            var count = Math.Min(bytesPerLine, bytes.Length - index);
+            builder.Append("    ");
+            builder.Append(string.Join(", ", bytes.Skip(index).Take(count).Select(value => $"0x{value:X2}")));
+
+            if (index + count < bytes.Length)
+                builder.Append(',');
+
+            builder.AppendLine();
         }
+
+        builder.AppendLine("};");
+        return builder.ToString();
     }
 
     private DocumentViewModel? FindOpenDocument(string filePath)
@@ -820,7 +919,8 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            var sourceCode = SelectedDocument.Text;
+            var sourceDocument = SelectedDocument;
+            var sourceCode = sourceDocument.Text;
 
             var config = new AssemblyConfiguration
             {
@@ -852,6 +952,7 @@ public partial class MainViewModel : ObservableObject
             using var outputStream = new MemoryStream();
             var numBytes = OutputGenerator.GenerateAbsolute(result, outputStream);
             _fileBytesToWrite = outputStream.ToArray();
+            (SaveArduinoArrayCommand as RelayCommand)?.RaiseCanExecuteChanged();
             Dispatcher.UIThread.InvokeAsync(() =>
             {
                 AddressHex = result.FirstAddress.ToString("X4");
@@ -869,13 +970,20 @@ public partial class MainViewModel : ObservableObject
             using var reader = new StreamReader(listingStream);
             var listingText = reader.ReadToEnd();
 
-            var listingTab = new DocumentViewModel
+            var listingTab = GetOrCreateListingDocument(sourceDocument);
+            var listingPath = GetListingPath(sourceDocument);
+            if (listingPath is not null)
             {
-                FileName = "Listing assembler",
-                Text = listingText
-            };
+                File.WriteAllText(listingPath, listingText);
+                listingTab.MarkSaved(listingPath);
+                StartWatchingDocument(listingTab);
+            }
+            else
+            {
+                listingTab.FileName = GetListingFileName(sourceDocument);
+            }
 
-            OpenDocuments.Add(listingTab);
+            listingTab.ReloadFromDisk(listingText);
             SelectedDocument = listingTab;
         }
         catch (Exception ex)
@@ -889,12 +997,49 @@ public partial class MainViewModel : ObservableObject
             SelectedDocument = errorTab;
         }
     }
+
+    private DocumentViewModel GetOrCreateListingDocument(DocumentViewModel sourceDocument)
+    {
+        if (_listingDocuments.TryGetValue(sourceDocument, out var listingDocument) &&
+            OpenDocuments.Contains(listingDocument))
+        {
+            return listingDocument;
+        }
+
+        var listingPath = GetListingPath(sourceDocument);
+        listingDocument = listingPath is null ? null : FindOpenDocument(listingPath);
+
+        if (listingDocument is null)
+        {
+            listingDocument = new DocumentViewModel
+            {
+                FileName = GetListingFileName(sourceDocument)
+            };
+            OpenDocuments.Add(listingDocument);
+        }
+
+        _listingDocuments[sourceDocument] = listingDocument;
+        return listingDocument;
+    }
+
+    private static string GetListingFileName(DocumentViewModel sourceDocument)
+    {
+        return Path.ChangeExtension(sourceDocument.FileName, ".lst")!;
+    }
+
+    private static string? GetListingPath(DocumentViewModel sourceDocument)
+    {
+        return string.IsNullOrWhiteSpace(sourceDocument.FilePath)
+            ? null
+            : Path.ChangeExtension(sourceDocument.FilePath, ".lst");
+    }
     
     [RelayCommand]
     private async Task OpenCloseSerialPort()
     {
         try
         {
+            SerialMessageText = string.Empty;
             bool isOpen = await _serialManager.OpenCloseSerialPortAsync(PortsList[SelectedIdx]);
             ToggleButtonContent = isOpen ? "Chiudi" : "Apri";
 
@@ -902,8 +1047,6 @@ public partial class MainViewModel : ObservableObject
             {
                 LogEnabled = false;
                 DebugEnabled = false;
-                
-                SerialMessageText = string.Empty;
             }
     
         }
@@ -934,6 +1077,7 @@ public partial class MainViewModel : ObservableObject
     public void ProcessFile(string filePath)
     {
         _fileBytesToWrite = FileHelper.GetFile(filePath);
+        (SaveArduinoArrayCommand as RelayCommand)?.RaiseCanExecuteChanged();
 
         if (_fileBytesToWrite != null)
         {

@@ -57,6 +57,7 @@ public class SerialManager {
     public event Action<CardConfig>? ConfigReceived;
    
     private string _serialBuffer = "";
+    private readonly object _serialReadLock = new();
 
     private int totalLength;
     private int length;
@@ -71,11 +72,13 @@ public class SerialManager {
         mainViewModel.IsSerialOpened = false;
         
         _serialPort = new SerialPort {
-              BaudRate = 19200,           // Velocità di trasmissione
+              BaudRate = 115200,           // Velocità di trasmissione
               Parity = Parity.None,       // Parità
               DataBits = 8,               // Bit di dati
               StopBits = StopBits.One,    // Bit di stop
-              Handshake = Handshake.None  // Handshake
+              Handshake = Handshake.None, // Handshake
+              DtrEnable = true,
+              RtsEnable = true
          };
          _serialPort.Encoding = Encoding.UTF8;
         
@@ -101,12 +104,29 @@ public class SerialManager {
     }
     
     private void DataReceivedHandler(object sender, SerialDataReceivedEventArgs e)
-    {    
-        if (!_serialPort.IsOpen) return;
-        
-        try {
-            string incoming = _serialPort.ReadExisting();
-            _serialBuffer += incoming;
+    {
+        ReadAvailableSerialData();
+    }
+
+    private void ReadAvailableSerialData()
+    {
+        if (!_serialPort.IsOpen)
+            return;
+
+        lock (_serialReadLock)
+        {
+            try
+            {
+                if (_serialPort.BytesToRead == 0)
+                    return;
+
+                string incoming = _serialPort.ReadExisting();
+                if (incoming.Contains("!INFO"))
+                {
+                    MessageReceived?.Invoke($"RX raw: {FormatSerialText(incoming)}");
+                }
+
+                _serialBuffer += incoming;
 
             // Cerca tutti i messaggi completi del tipo !...;
             while (true) {
@@ -116,6 +136,7 @@ public class SerialManager {
                 if (start != -1 && end != -1 && end > start) {
                     var fullMessage = _serialBuffer.Substring(start, end - start + 1);
                     Console.WriteLine($"Messaggio completo: {fullMessage}");
+                    MessageReceived?.Invoke($"RX: {fullMessage}");
 
                     // Elabora qui il messaggio
                     HandleSerialMessage(fullMessage);
@@ -128,8 +149,30 @@ public class SerialManager {
                 }
             }
 
-        } catch (Exception ex) {
-            Console.WriteLine($"Errore nella ricezione: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore nella ricezione: {ex.Message}");
+                MessageReceived?.Invoke($"Errore RX: {ex.Message}");
+            }
+        }
+    }
+
+    private static string FormatSerialText(string text)
+    {
+        return text
+            .Replace("\r", "\\r")
+            .Replace("\n", "\\n");
+    }
+
+    private async Task PollSerialInputAsync(int durationMs, int intervalMs = 100)
+    {
+        int elapsedMs = 0;
+        while (_serialPort.IsOpen && elapsedMs < durationMs)
+        {
+            await Task.Delay(intervalMs);
+            ReadAvailableSerialData();
+            elapsedMs += intervalMs;
         }
     }
 
@@ -267,7 +310,11 @@ public class SerialManager {
         } else if (message.StartsWith("!INFO") && message.EndsWith(';'))
         {
             string payload = message.Substring(6, message.Length - 7);
-            ConfigReceived?.Invoke(CardConfig.Parse(payload));
+            var config = CardConfig.Parse(payload);
+            MessageReceived?.Invoke(
+                $"INFO parsed: CARD={config.CardName}, SCLK={config.IsClockFromArduino}, " +
+                $"FCLK={config.ClockFrequency}, ECLK={config.ClockActive}, SMEM={config.IsMemFromArduino}");
+            ConfigReceived?.Invoke(config);
             Console.WriteLine(payload);
         }
     }
@@ -286,6 +333,10 @@ public class SerialManager {
 
              await Task.Delay(400);  // Aspetta altri 0.4 secondi
              GetInfo();
+
+             // Su alcune porte USB native (ad esempio UNO R4) l'evento
+             // DataReceived può non essere notificato immediatamente.
+             await PollSerialInputAsync(2000);
           }
 
           return _serialPort.IsOpen;
@@ -300,6 +351,7 @@ public class SerialManager {
     
     public void SendSerialText(string text) {
         if (_serialPort.IsOpen) {
+            MessageReceived?.Invoke($"TX: {text.TrimEnd('\r', '\n')}");
             _serialPort.Write(text); // Scrive la stringa direttamente
         } else {
             Console.WriteLine("Porta seriale non aperta.");
