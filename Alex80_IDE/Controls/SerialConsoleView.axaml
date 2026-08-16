@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:global="clr-namespace:"
+             xmlns:adc="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             x:Class="Alex80_IDE.Controls.SerialConsoleView"
+             x:DataType="global:MainViewModel"
+             x:Name="Root">
+
+    <Grid RowDefinitions="Auto,*" RowSpacing="10">
+        <TextBlock Text="{Binding #Root.Title}"
+                   Classes="sectionTitle"
+                   IsVisible="{Binding #Root.Title, Converter={x:Static adc:StringConverters.IsNotNullOrEmpty}}" />
+        <TextBox Grid.Row="1"
+                 Text="{Binding SerialMessageText}"
+                 IsReadOnly="True"
+                 AcceptsReturn="True"
+                 Classes="mono"
+                 TextWrapping="NoWrap"
+                 TextChanged="OnTextChanged" />
+    </Grid>
+</UserControl>

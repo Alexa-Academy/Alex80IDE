@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:global="clr-namespace:"
+             x:Class="Alex80_IDE.Controls.RegistersView"
+             x:DataType="global:MainViewModel">
+
+    <StackPanel Spacing="12">
+        <TextBlock Text="Registri" Classes="sectionTitle" />
+        <UniformGrid Columns="3" Rows="5">
+            <Border Classes="registerChip" Margin="0,0,7,7"><StackPanel><TextBlock Text="A" Classes="registerLabel" /><TextBlock Text="{Binding ARegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,7,7"><StackPanel><TextBlock Text="B" Classes="registerLabel" /><TextBlock Text="{Binding BRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,0,7"><StackPanel><TextBlock Text="C" Classes="registerLabel" /><TextBlock Text="{Binding CRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,7,7"><StackPanel><TextBlock Text="D" Classes="registerLabel" /><TextBlock Text="{Binding DRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,7,7"><StackPanel><TextBlock Text="E" Classes="registerLabel" /><TextBlock Text="{Binding ERegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,0,7"><StackPanel><TextBlock Text="H" Classes="registerLabel" /><TextBlock Text="{Binding HRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,7,7"><StackPanel><TextBlock Text="L" Classes="registerLabel" /><TextBlock Text="{Binding LRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,7,7"><StackPanel><TextBlock Text="IX" Classes="registerLabel" /><TextBlock Text="{Binding IxRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,0,7"><StackPanel><TextBlock Text="IY" Classes="registerLabel" /><TextBlock Text="{Binding IyRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,7,0"><StackPanel><TextBlock Text="SP" Classes="registerLabel" /><TextBlock Text="{Binding SpRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip" Margin="0,0,7,0"><StackPanel><TextBlock Text="PC" Classes="registerLabel" /><TextBlock Text="{Binding PcRegHex}" Classes="registerValue" /></StackPanel></Border>
+            <Border Classes="registerChip"><StackPanel><TextBlock Text="FLAGS" Classes="registerLabel" /><TextBlock Text="{Binding FlagsString}" Classes="registerValue" /></StackPanel></Border>
+        </UniformGrid>
+    </StackPanel>
+</UserControl>

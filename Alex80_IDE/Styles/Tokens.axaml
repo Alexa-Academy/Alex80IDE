@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#111318" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#181B22" />
+            <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#20242D" />
+            <SolidColorBrush x:Key="SurfaceInputBrush" Color="#14171D" />
+            <SolidColorBrush x:Key="TabActiveBrush" Color="#2A303B" />
+            <SolidColorBrush x:Key="BorderSoftBrush" Color="#313744" />
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F4FA" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#98A2B3" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#4CC9A7" />
+            <SolidColorBrush x:Key="AccentStrongBrush" Color="#2FAE8E" />
+            <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="DangerBrush" Color="#E66767" />
+            <SolidColorBrush x:Key="WarningBrush" Color="#EAB85F" />
+            <SolidColorBrush x:Key="DangerSurfaceBrush" Color="#332024" />
+            <SolidColorBrush x:Key="DangerTextBrush" Color="#FFDCDC" />
+            <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#1C3A35" />
+            <SolidColorBrush x:Key="EditorSelectionBrush" Color="#805FB3F3" />
+            <SolidColorBrush x:Key="EditorSearchResultsBrush" Color="#66F2C94C" />
+        </ResourceDictionary>
+
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#EEF2F7" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#F3F6FA" />
+            <SolidColorBrush x:Key="SurfaceInputBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="TabActiveBrush" Color="#E6EBF2" />
+            <SolidColorBrush x:Key="BorderSoftBrush" Color="#C9D2DF" />
+            <SolidColorBrush x:Key="TextPrimaryBrush" Color="#18202B" />
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5E6978" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#087D6C" />
+            <SolidColorBrush x:Key="AccentStrongBrush" Color="#0D9488" />
+            <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="DangerBrush" Color="#C73535" />
+            <SolidColorBrush x:Key="WarningBrush" Color="#9A6400" />
+            <SolidColorBrush x:Key="DangerSurfaceBrush" Color="#FCE8E8" />
+            <SolidColorBrush x:Key="DangerTextBrush" Color="#8B1E1E" />
+            <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#DDF6F1" />
+            <SolidColorBrush x:Key="EditorSelectionBrush" Color="#6638BDF8" />
+            <SolidColorBrush x:Key="EditorSearchResultsBrush" Color="#66F59E0B" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <FontFamily x:Key="UiFontFamily">Inter, Segoe UI, Helvetica Neue, Arial</FontFamily>
+    <FontFamily x:Key="MonoFontFamily">Cascadia Mono, Menlo, Consolas, Courier New</FontFamily>
+
+    <StreamGeometry x:Key="MemoryIconData">M7,5 L7,3 L9,3 L9,5 L11,5 L11,3 L13,3 L13,5 L15,5 L15,3 L17,3 L17,5 L19,5 L19,7 L21,7 L21,9 L19,9 L19,11 L21,11 L21,13 L19,13 L19,15 L21,15 L21,17 L19,17 L19,19 L17,19 L17,21 L15,21 L15,19 L13,19 L13,21 L11,21 L11,19 L9,19 L9,21 L7,21 L7,19 L5,19 L5,17 L3,17 L3,15 L5,15 L5,13 L3,13 L3,11 L5,11 L5,9 L3,9 L3,7 L5,7 L5,5 Z M8,8 L8,16 L16,16 L16,8 Z M10,10 L14,10 L14,14 L10,14 Z</StreamGeometry>
+    <!-- Icone della toolbar, disegnate su una griglia 24x24 con riempimento even-odd. -->
+    <StreamGeometry x:Key="FileNewIconData">M5,2 H15 L19,6 V22 H5 Z M7,4 V20 H17 V8 H13 V4 Z M11,10 H13 V13 H16 V15 H13 V18 H11 V15 H8 V13 H11 Z</StreamGeometry>
+    <StreamGeometry x:Key="FolderOpenIconData">M3,4 H10 L12,6 H21 V20 H3 Z M5,8 V18 H19 V8 Z</StreamGeometry>
+    <StreamGeometry x:Key="SaveIconData">M4,3 H17 L21,7 V21 H4 Z M6,5 V19 H19 V8 L16,5 Z M8,5 H14 V9 H8 Z M9,13 H16 V19 H9 Z</StreamGeometry>
+    <StreamGeometry x:Key="LoadBinIconData">M11,3 H13 V11 H16 L12,16 L8,11 H11 Z M4,17 H6 V19 H18 V17 H20 V21 H4 Z</StreamGeometry>
+    <StreamGeometry x:Key="ResetIconData">M5,4 H7 V20 H5 Z M20,4 V20 L9,12 Z</StreamGeometry>
+    <StreamGeometry x:Key="StepIconData">M3,10 H13 V6 L19,12 L13,18 V14 H3 Z M20,4 H22 V20 H20 Z</StreamGeometry>
+    <StreamGeometry x:Key="BusLogIconData">M2,13 H8 V15 H2 Z M8,7 H10 V15 H8 Z M10,7 H14 V9 H10 Z M14,7 H16 V15 H14 Z M16,13 H20 V15 H16 Z M20,7 H22 V15 H20 Z</StreamGeometry>
+    <StreamGeometry x:Key="SerialIconData">M4,5 L20,5 C21.1,5 22,5.9 22,7 L22,17 C22,18.1 21.1,19 20,19 L4,19 C2.9,19 2,18.1 2,17 L2,7 C2,5.9 2.9,5 4,5 Z M5,7 L5,17 L19,17 L19,7 Z M7,9 L10.5,12 L7,15 L8.3,16 L13,12 L8.3,8 Z M13,14 L17,14 L17,15.7 L13,15.7 Z</StreamGeometry>
+
+</ResourceDictionary>

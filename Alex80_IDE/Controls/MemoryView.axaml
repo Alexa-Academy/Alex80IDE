@@ -1,0 +1,45 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:global="clr-namespace:"
+             xmlns:adc="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             x:Class="Alex80_IDE.Controls.MemoryView"
+             x:DataType="global:MainViewModel"
+             x:Name="Root">
+
+    <Grid RowDefinitions="Auto,*">
+        <DockPanel Margin="14,14,14,10">
+            <TextBlock Text="{Binding #Root.Title}"
+                       Classes="sectionTitle"
+                       DockPanel.Dock="Left"
+                       VerticalAlignment="Center"
+                       IsVisible="{Binding #Root.Title, Converter={x:Static adc:StringConverters.IsNotNullOrEmpty}}" />
+
+            <StackPanel Orientation="Horizontal"
+                        Spacing="8"
+                        DockPanel.Dock="Right"
+                        IsVisible="{Binding #Root.ShowToolbar}">
+                <TextBlock Text="Indirizzo" Classes="caption" VerticalAlignment="Center" />
+                <TextBox Text="{Binding AddressHex, Mode=TwoWay}" Width="82" Classes="mono" />
+                <TextBlock Text="Byte" Classes="caption" VerticalAlignment="Center" />
+                <TextBox Text="{Binding NumBytes}" Width="62" Classes="mono" />
+                <Button Content="Leggi" Command="{Binding ReadMemoryCommand}" Classes="primary" />
+                <Button Content="Scrivi" Command="{Binding WriteMemoryCommand}" />
+            </StackPanel>
+
+            <TextBlock Text="{Binding #Root.Caption}"
+                       Classes="caption"
+                       DockPanel.Dock="Right"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center" />
+        </DockPanel>
+
+        <DataGrid Grid.Row="1"
+                  Margin="14,0,14,0"
+                  Name="MemoryGrid"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  ItemsSource="{Binding DataTable}"
+                  RowHeight="30"
+                  HeadersVisibility="Column" />
+    </Grid>
+</UserControl>

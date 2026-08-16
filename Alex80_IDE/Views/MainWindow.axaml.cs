@@ -21,7 +21,6 @@ public partial class MainWindow : Window
         SizeChanged += OnWindowSizeChanged;
         Closing += OnWindowClosing;
         ConfigureSystemMenu();
-        AppThemeManager.ApplyTo(this);
         UpdateThemeMenuChecks(AppThemeManager.CurrentTheme);
         AppThemeManager.ThemeChanged += OnThemeChanged;
     }
@@ -81,14 +80,12 @@ public partial class MainWindow : Window
         {
             DataContext = DataContext
         };
-        AppThemeManager.ApplyTo(_editorWindow);
         _editorWindow.Closed += (_, _) => _editorWindow = null;
         _editorWindow.Show(this);
     }
 
     private void OnThemeChanged(AppTheme theme)
     {
-        AppThemeManager.ApplyTo(this);
         UpdateThemeMenuChecks(theme);
     }
 
@@ -157,15 +154,6 @@ public partial class MainWindow : Window
             {
                 Console.WriteLine("Nessun file selezionato.");
             }
-        }
-    }
-    
-    private void SerialBox_TextChanged(object? sender, TextChangedEventArgs e)
-    {
-        if (sender is TextBox tb)
-        {
-            tb.CaretIndex = tb.Text?.Length ?? 0;
-            tb.BringIntoView(); // forza lo scroll fino in fondo
         }
     }
 }

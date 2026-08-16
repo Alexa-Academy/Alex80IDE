@@ -1,0 +1,90 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:global="clr-namespace:"
+             xmlns:models="clr-namespace:Alex80_IDE.Models"
+             x:Class="Alex80_IDE.Controls.BusLogView"
+             x:DataType="global:MainViewModel">
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.busDot">
+            <Setter Property="FontSize" Value="22" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto,*">
+        <DockPanel Margin="14,14,14,10">
+            <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                <TextBlock Text="Log" Classes="caption" VerticalAlignment="Center" />
+                <Button Content="{Binding LogEnabled, Converter={StaticResource EnableDisableConverter}}"
+                        Classes="tool"
+                        Command="{Binding EnableDisableLogsCommand}"
+                        IsEnabled="{Binding IsSerialOpened}" />
+                <ToggleSwitch Content="Autoscroll"
+                              IsChecked="{Binding IsAutoScrollEnabled, Mode=TwoWay}" />
+                <Button Content="Cancella log" Classes="tool" Command="{Binding ClearLogsCommand}" />
+            </StackPanel>
+        </DockPanel>
+
+        <DataGrid Grid.Row="1"
+                  Margin="14,0,14,0"
+                  RowHeight="30"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  ItemsSource="{Binding LogTable}"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  HeadersVisibility="Column">
+            <Interaction.Behaviors>
+                <global:AutoScrollBehavior IsAutoScrollEnabled="{Binding IsAutoScrollEnabled}" />
+            </Interaction.Behaviors>
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="ADDR" Binding="{Binding AddressHex}" Width="90" />
+                <DataGridTextColumn Header="DATA" Binding="{Binding DataHex}" Width="76" />
+                <DataGridTemplateColumn Header="RD" Width="54">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="models:LogElement">
+                            <TextBlock Text="{Binding Z80_RD, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="WR" Width="54">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="models:LogElement">
+                            <TextBlock Text="{Binding Z80_WR, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource WarningBrush}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="IORQ" Width="62">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="models:LogElement">
+                            <TextBlock Text="{Binding Z80_IORQ, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="MREQ" Width="68">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="models:LogElement">
+                            <TextBlock Text="{Binding Z80_MREQ, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="RFSH" Width="64">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="models:LogElement">
+                            <TextBlock Text="{Binding Z80_RFSH, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="M1" Width="54">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="models:LogElement">
+                            <TextBlock Text="{Binding Z80_M1, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource DangerBrush}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="MNEMONICO" Binding="{Binding Mnemonic}" Width="*" />
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</UserControl>

@@ -2,17 +2,36 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Alex80_IDE.App"
              xmlns:local="using:Alex80_IDE"
+             xmlns:global="clr-namespace:"
+             xmlns:converters="clr-namespace:Alex80_IDE.Converters"
              RequestedThemeVariant="Dark">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             <!-- La variante effettiva viene impostata all'avvio da AppThemeManager, in base alle preferenze. -->
 
     <Application.DataTemplates>
         <local:ViewLocator/>
     </Application.DataTemplates>
-  
+
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceInclude Source="avares://Alex80_IDE/Styles/Tokens.axaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <global:HexadecimalConverter x:Key="HexadecimalConverter" />
+            <converters:ByteToHexConverter x:Key="ByteToHexConverter" />
+            <global:StartStopConverter x:Key="StartStopConverter" />
+            <converters:EnableDisableConverter x:Key="EnableDisableConverter" />
+            <converters:ClockStateConverter x:Key="ClockStateConverter" />
+            <converters:FileTypeBadgeConverter x:Key="FileTypeBadgeConverter" />
+            <global:BoolToDotConverter x:Key="BoolToDotConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"/>
+        <StyleInclude Source="avares://Alex80_IDE/Styles/Controls.axaml"/>
     </Application.Styles>
- 
+
 </Application>

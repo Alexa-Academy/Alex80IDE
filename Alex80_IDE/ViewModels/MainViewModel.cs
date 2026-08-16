@@ -69,6 +69,10 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isAssemblerOutputVisible = true;
+
+    /// <summary>Esito dell'ultima assemblata, mostrato nella status bar.</summary>
+    [ObservableProperty]
+    private string _assemblerStatus = "nessuna assemblata";
     
     public RelayCommand ToggleAssemblerOutputCommand { get; }
     
@@ -937,6 +941,9 @@ public partial class MainViewModel : ObservableObject
                 var errors = string.Join(Environment.NewLine,
                     result.Errors.Select(e => $"{e.LineNumber}: {(e.IsWarning ? "Warning" : "Error")} - {e.Message}"));
 
+                var errorCount = result.Errors.Count(e => !e.IsWarning);
+                AssemblerStatus = errorCount == 1 ? "1 errore" : $"{errorCount} errori";
+
                 var errorTab = new DocumentViewModel
                 {
                     FileName = "Errori assembler",
@@ -952,6 +959,7 @@ public partial class MainViewModel : ObservableObject
             using var outputStream = new MemoryStream();
             var numBytes = OutputGenerator.GenerateAbsolute(result, outputStream);
             _fileBytesToWrite = outputStream.ToArray();
+            AssemblerStatus = $"assemblato · {numBytes} byte da {result.FirstAddress:X4}";
             (SaveArduinoArrayCommand as RelayCommand)?.RaiseCanExecuteChanged();
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -988,6 +996,8 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            AssemblerStatus = "assemblata fallita";
+
             var errorTab = new DocumentViewModel
             {
                 FileName = "Errore",

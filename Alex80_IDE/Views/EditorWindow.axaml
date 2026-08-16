@@ -1,8 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-        xmlns:editing="clr-namespace:AvaloniaEdit.Editing;assembly=AvaloniaEdit"
-        xmlns:rendering="clr-namespace:AvaloniaEdit.Rendering;assembly=AvaloniaEdit"
         xmlns:global="clr-namespace:"
         xmlns:views="clr-namespace:Alex80_IDE"
         x:Class="Alex80_IDE.EditorWindow"
@@ -12,64 +10,22 @@
         Height="700"
         MinWidth="620"
         MinHeight="420"
-        Background="{StaticResource AppBackgroundBrush}"
-        FontFamily="Inter, Segoe UI, Helvetica Neue, Arial">
-
-    <Window.Resources>
-        <SolidColorBrush x:Key="AppBackgroundBrush" Color="#111318" />
-        <SolidColorBrush x:Key="SurfaceBrush" Color="#181B22" />
-        <SolidColorBrush x:Key="SurfaceInputBrush" Color="#14171D" />
-        <SolidColorBrush x:Key="BorderSoftBrush" Color="#313744" />
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#F0F4FA" />
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#98A2B3" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#4CC9A7" />
-        <SolidColorBrush x:Key="EditorSelectionBrush" Color="#805FB3F3" />
-        <SolidColorBrush x:Key="EditorSearchResultsBrush" Color="#66F2C94C" />
-    </Window.Resources>
+        Background="{DynamicResource AppBackgroundBrush}"
+        FontFamily="{DynamicResource UiFontFamily}">
 
     <Window.Styles>
-        <Style Selector="rendering|TextView">
-            <Setter Property="Margin" Value="8,0,0,0" />
-        </Style>
-
-        <Style Selector="editing|TextArea">
-            <Setter Property="SelectionBrush" Value="{StaticResource EditorSelectionBrush}" />
-        </Style>
-
         <Style Selector="TabControl">
-            <Setter Property="Background" Value="{StaticResource AppBackgroundBrush}" />
+            <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
         </Style>
 
         <Style Selector="TabItem">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
             <Setter Property="Padding" Value="10,7" />
-        </Style>
-
-        <Style Selector="Button.closeTab">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="BorderBrush" Value="{x:Null}" />
-            <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
-            <Setter Property="Padding" Value="0" />
-            <Setter Property="Width" Value="24" />
-            <Setter Property="Height" Value="24" />
-            <Setter Property="CornerRadius" Value="6" />
-        </Style>
-
-        <Style Selector="TextBox.codeEditor">
-            <Setter Property="Background" Value="{StaticResource SurfaceInputBrush}" />
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-            <Setter Property="BorderBrush" Value="{StaticResource BorderSoftBrush}" />
-            <Setter Property="CaretBrush" Value="{StaticResource AccentBrush}" />
-            <Setter Property="SelectionBrush" Value="{StaticResource EditorSelectionBrush}" />
-            <Setter Property="CornerRadius" Value="8" />
-            <Setter Property="Padding" Value="14" />
         </Style>
     </Window.Styles>
 
     <Border Margin="14"
-            Background="{StaticResource SurfaceBrush}"
-            BorderBrush="{StaticResource BorderSoftBrush}"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderSoftBrush}"
             BorderThickness="1"
             CornerRadius="8">
         <Grid RowDefinitions="Auto,*">
@@ -105,12 +61,12 @@
                     <DataTemplate x:DataType="global:DocumentViewModel">
                         <Grid RowDefinitions="*" Margin="12">
                             <edit:TextEditor Document="{Binding EditorDocument}"
-                                             FontFamily="Cascadia Mono, Menlo, Consolas, Courier New"
+                                             FontFamily="{DynamicResource MonoFontFamily}"
                                              FontSize="15"
-                                             Background="{StaticResource SurfaceInputBrush}"
-                                             Foreground="{StaticResource TextPrimaryBrush}"
-                                             LineNumbersForeground="{StaticResource TextSecondaryBrush}"
-                                             SearchResultsBrush="{StaticResource EditorSearchResultsBrush}"
+                                             Background="{DynamicResource SurfaceInputBrush}"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"
+                                             LineNumbersForeground="{DynamicResource TextSecondaryBrush}"
+                                             SearchResultsBrush="{DynamicResource EditorSearchResultsBrush}"
                                              SyntaxHighlighting="Z80"
                                              ShowLineNumbers="True"
                                              WordWrap="False"
