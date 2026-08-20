@@ -100,6 +100,40 @@ namespace Konamiman.Nestor80.Assembler
         public bool TreatUnknownSymbolsAsExternals { get; set; } = false;
 
         /// <summary>
+        /// True to accept the syntax variations used by the TASM assembler, in addition to
+        /// (not instead of) the regular Macro80-compatible syntax. Enabling this implies:
+        /// <list type="bullet">
+        /// <item>Instruction aliases with a dot prefix are accepted (same as <see cref="AcceptDottedInstructionAliases"/>),
+        /// e.g. ".EQU", ".ORG", ".END", ".INCLUDE".</item>
+        /// <item>Labels placed at the very beginning of a line (column 1) don't need to be
+        /// terminated with a colon.</item>
+        /// <item>The "$" prefix introduces a hexadecimal number when it's followed by at least one
+        /// hexadecimal digit, e.g. "$8000" (a lone "$" still means "current location pointer").</item>
+        /// <item>The C-style bitwise operators "&amp;" (AND), "|" (OR), "^" (XOR), "~" (NOT),
+        /// "&lt;&lt;" (SHL) and "&gt;&gt;" (SHR) are accepted.</item>
+        /// </list>
+        /// The TASM-specific pseudo-operators (.BYTE, .WORD, .TEXT, .BLOCK, .FILL) are always
+        /// available, regardless of the value of this property.
+        /// </summary>
+        public bool TasmCompatibility { get; set; } = false;
+
+        /// <summary>
+        /// The value of the location counter at the beginning of the assembly process,
+        /// used only when the build type is absolute (an ORG instruction in the source
+        /// still overrides it). Useful to assemble a source that has no ORG of its own
+        /// as a chunk that goes to a given memory address.
+        /// </summary>
+        public ushort StartAddress { get; set; } = 0;
+
+        /// <summary>
+        /// True to ignore the END instruction when it's found inside an INCLUDEd file,
+        /// so that it ends that file only and the assembly process continues with the
+        /// remaining files. Useful to assemble as a single unit a set of files that
+        /// were originally written as independent programs.
+        /// </summary>
+        public bool IgnoreEndInstructionInIncludedFiles { get; set; } = false;
+
+        /// <summary>
         /// Character sequence to use as end of line markers for text files.
         /// </summary>
         public string EndOfLine { get; set; } = Environment.NewLine;

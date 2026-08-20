@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Alex80_IDE;
+using Alex80_IDE.Helpers;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
@@ -25,7 +26,7 @@ public partial class MainViewModel : ObservableObject
     private readonly object _fileWatcherLock = new();
     private readonly Dictionary<DocumentViewModel, FileSystemWatcher> _fileWatchers = new();
     private readonly Dictionary<DocumentViewModel, CancellationTokenSource> _reloadDebounceTokens = new();
-    private readonly Dictionary<DocumentViewModel, DocumentViewModel> _listingDocuments = new();
+    private readonly Dictionary<string, DocumentViewModel> _listingDocuments = new();
     
     private const int DefaultClockFreq = 50;
     private const int DefaultStartAdd = 0x0000;
@@ -52,6 +53,9 @@ public partial class MainViewModel : ObservableObject
     public ICommand NewTabCommand { get; }
     public ICommand AssembleCommand { get; }
     public ICommand SaveArduinoArrayCommand { get; }
+
+    /// <summary>"Cmd" su macOS, "Ctrl" altrove: serve a scrivere le scorciatoie nei tooltip.</summary>
+    public string CommandModifierName => AppShortcuts.CommandModifierName;
     
     [ObservableProperty]
     private string _cardName = string.Empty;
@@ -376,14 +380,13 @@ public partial class MainViewModel : ObservableObject
         {
             StopWatchingDocument(tabToClose);
             OpenDocuments.Remove(tabToClose);
-            _listingDocuments.Remove(tabToClose);
 
-            foreach (var sourceDocument in _listingDocuments
+            foreach (var key in _listingDocuments
                          .Where(pair => pair.Value == tabToClose)
                          .Select(pair => pair.Key)
                          .ToArray())
             {
-                _listingDocuments.Remove(sourceDocument);
+                _listingDocuments.Remove(key);
             }
 
             if (SelectedDocument == tabToClose)
@@ -434,9 +437,12 @@ public partial class MainViewModel : ObservableObject
         OpenFileCommand = new RelayCommand(async _ => await OpenFileAsync());
         SaveFileCommand = new RelayCommand(async _ => await SaveFileAsync(), _ => SelectedDocument != null);
         SaveFileAsCommand = new RelayCommand(async _ => await SaveFileAsAsync(), _ => SelectedDocument != null);
-        AssembleCommand = new RelayCommand(_ => RunAssembler(), _ => IsSelectedDocumentZ80Source());
+        AssembleCommand = new RelayCommand(_ => RunAssembler(), _ => CanAssemble());
         SaveArduinoArrayCommand = new RelayCommand(async _ => await SaveArduinoArrayAsync(), _ => _fileBytesToWrite is { Length: > 0 });
         ToggleAssemblerOutputCommand = new RelayCommand(_ => IsAssemblerOutputVisible = !IsAssemblerOutputVisible);
+
+        InitializeProjectCommands();
+
         //AddNewTab(); // apri una scheda iniziale
     }
     
@@ -716,9 +722,10 @@ public partial class MainViewModel : ObservableObject
         if (_fileBytesToWrite is not { Length: > 0 } bytes)
             return;
 
+        var arrayName = GetOutputBaseName();
         var dialog = new SaveFileDialog
         {
-            InitialFileName = "intROM.h",
+            InitialFileName = arrayName + ".h",
             Filters = new List<FileDialogFilter>
             {
                 new FileDialogFilter { Name = "Arduino header", Extensions = { "h" } },
@@ -731,13 +738,29 @@ public partial class MainViewModel : ObservableObject
             : null);
 
         if (!string.IsNullOrWhiteSpace(path))
-            await File.WriteAllTextAsync(path, FormatArduinoArray(bytes));
+            await File.WriteAllTextAsync(path, FormatArduinoArray(bytes, arrayName));
     }
 
-    private static string FormatArduinoArray(byte[] bytes)
+    /// <summary>Nome base per i file prodotti: quello del progetto, o del sorgente selezionato.</summary>
+    private string GetOutputBaseName()
+    {
+        var name = CurrentProject?.DisplayName
+                   ?? (SelectedDocument is null ? null : Path.GetFileNameWithoutExtension(SelectedDocument.FileName));
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return "intROM";
+        }
+
+        // Deve essere un identificatore C valido, visto che finisce nel nome dell'array.
+        var sanitized = new string(name.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_').ToArray());
+        return char.IsDigit(sanitized[0]) ? "_" + sanitized : sanitized;
+    }
+
+    private static string FormatArduinoArray(byte[] bytes, string arrayName)
     {
         const int bytesPerLine = 16;
-        var builder = new StringBuilder("const PROGMEM byte intROM[] = {\n");
+        var builder = new StringBuilder($"const PROGMEM byte {arrayName}[] = {{\n");
 
         for (var index = 0; index < bytes.Length; index += bytesPerLine)
         {
@@ -901,149 +924,22 @@ public partial class MainViewModel : ObservableObject
         return await File.ReadAllTextAsync(filePath, cancellationToken);
     }
 
-    private bool IsSelectedDocumentZ80Source()
+    private static bool IsZ80Source(DocumentViewModel? document)
     {
-        if (SelectedDocument is null || string.IsNullOrWhiteSpace(SelectedDocument.FileName))
+        if (document is null || string.IsNullOrWhiteSpace(document.FileName))
         {
             return false;
         }
 
-        var extension = Path.GetExtension(SelectedDocument.FileName);
+        var extension = Path.GetExtension(document.FileName);
         return string.Equals(extension, ".asm", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(extension, ".z80", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(extension, ".inc", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(extension, ".txt", StringComparison.OrdinalIgnoreCase);
     }
-    
-    private void RunAssembler()
-    {
-        if (!IsSelectedDocumentZ80Source())
-        {
-            return;
-        }
 
-        try
-        {
-            var sourceDocument = SelectedDocument;
-            var sourceCode = sourceDocument.Text;
+    private bool CanAssemble() => CurrentProject is not null || IsZ80Source(SelectedDocument);
 
-            var config = new AssemblyConfiguration
-            {
-                CpuName = "Z80",
-                BuildType = BuildType.Absolute,
-                MaxErrors = 10
-            };
-
-            using var sourceStream = new MemoryStream(Encoding.UTF8.GetBytes(sourceCode));
-            var result = AssemblySourceProcessor.Assemble(sourceStream, Encoding.UTF8, config);
-
-            if (result.HasErrors)
-            {
-                var errors = string.Join(Environment.NewLine,
-                    result.Errors.Select(e => $"{e.LineNumber}: {(e.IsWarning ? "Warning" : "Error")} - {e.Message}"));
-
-                var errorCount = result.Errors.Count(e => !e.IsWarning);
-                AssemblerStatus = errorCount == 1 ? "1 errore" : $"{errorCount} errori";
-
-                var errorTab = new DocumentViewModel
-                {
-                    FileName = "Errori assembler",
-                    Text = errors
-                };
-
-                OpenDocuments.Add(errorTab);
-                SelectedDocument = errorTab;
-                return;
-            }
-            
-            // Generazione del binario
-            using var outputStream = new MemoryStream();
-            var numBytes = OutputGenerator.GenerateAbsolute(result, outputStream);
-            _fileBytesToWrite = outputStream.ToArray();
-            AssemblerStatus = $"assemblato · {numBytes} byte da {result.FirstAddress:X4}";
-            (SaveArduinoArrayCommand as RelayCommand)?.RaiseCanExecuteChanged();
-            Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                AddressHex = result.FirstAddress.ToString("X4");
-                NumBytes = numBytes.ToString();
-                CreateArray(_fileBytesToWrite, (ushort)result.FirstAddress);
-            });
-
-            using var listingStream = new MemoryStream();
-            using var writer = new StreamWriter(listingStream, Encoding.UTF8, leaveOpen: true);
-            var listingConfig = new ListingFileConfiguration();
-            ListingFileGenerator.GenerateListingFile(result, writer, listingConfig);
-            writer.Flush();
-
-            listingStream.Position = 0;
-            using var reader = new StreamReader(listingStream);
-            var listingText = reader.ReadToEnd();
-
-            var listingTab = GetOrCreateListingDocument(sourceDocument);
-            var listingPath = GetListingPath(sourceDocument);
-            if (listingPath is not null)
-            {
-                File.WriteAllText(listingPath, listingText);
-                listingTab.MarkSaved(listingPath);
-                StartWatchingDocument(listingTab);
-            }
-            else
-            {
-                listingTab.FileName = GetListingFileName(sourceDocument);
-            }
-
-            listingTab.ReloadFromDisk(listingText);
-            SelectedDocument = listingTab;
-        }
-        catch (Exception ex)
-        {
-            AssemblerStatus = "assemblata fallita";
-
-            var errorTab = new DocumentViewModel
-            {
-                FileName = "Errore",
-                Text = $"Errore: {ex.Message}"
-            };
-            OpenDocuments.Add(errorTab);
-            SelectedDocument = errorTab;
-        }
-    }
-
-    private DocumentViewModel GetOrCreateListingDocument(DocumentViewModel sourceDocument)
-    {
-        if (_listingDocuments.TryGetValue(sourceDocument, out var listingDocument) &&
-            OpenDocuments.Contains(listingDocument))
-        {
-            return listingDocument;
-        }
-
-        var listingPath = GetListingPath(sourceDocument);
-        listingDocument = listingPath is null ? null : FindOpenDocument(listingPath);
-
-        if (listingDocument is null)
-        {
-            listingDocument = new DocumentViewModel
-            {
-                FileName = GetListingFileName(sourceDocument)
-            };
-            OpenDocuments.Add(listingDocument);
-        }
-
-        _listingDocuments[sourceDocument] = listingDocument;
-        return listingDocument;
-    }
-
-    private static string GetListingFileName(DocumentViewModel sourceDocument)
-    {
-        return Path.ChangeExtension(sourceDocument.FileName, ".lst")!;
-    }
-
-    private static string? GetListingPath(DocumentViewModel sourceDocument)
-    {
-        return string.IsNullOrWhiteSpace(sourceDocument.FilePath)
-            ? null
-            : Path.ChangeExtension(sourceDocument.FilePath, ".lst");
-    }
-    
     [RelayCommand]
     private async Task OpenCloseSerialPort()
     {

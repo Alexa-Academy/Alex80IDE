@@ -107,6 +107,32 @@ namespace Konamiman.Nestor80.Assembler
         public static bool DiscardHashPrefix { get; set; } = false;
 
         /// <summary>
+        /// A flag indicating if a "$" followed by at least one hexadecimal digit introduces
+        /// a hexadecimal number (TASM syntax). A lone "$" is still the current location pointer.
+        /// </summary>
+        public static bool AllowDollarHexPrefix { get; set; } = false;
+
+        /// <summary>
+        /// A flag indicating if the C-style bitwise operators (&amp;, |, ^, ~, &lt;&lt;, &gt;&gt;)
+        /// are accepted as aliases of AND, OR, XOR, NOT, SHL and SHR (TASM syntax).
+        /// </summary>
+        public static bool AllowCStyleBitwiseOperators { get; set; } = false;
+
+        /// <summary>
+        /// A flag indicating if a name that matches one of the textual operators (AND, TYPE, HIGH...)
+        /// must be treated as a symbol reference when a symbol with that name has been defined already.
+        /// TASM has no textual operators at all, so sources written for it can freely use these names
+        /// for their own symbols.
+        /// </summary>
+        public static bool AllowWordOperatorsAsSymbols { get; set; } = false;
+
+        /// <summary>
+        /// The callback used to check if a symbol has been defined already, without registering it
+        /// as an unknown symbol if it hasn't. Used only when <see cref="AllowWordOperatorsAsSymbols"/> is true.
+        /// </summary>
+        public static Func<string, bool> SymbolIsDefined { get; set; } = _ => false;
+
+        /// <summary>
         /// The parts that compose the expression, will be in postfix format
         /// after <see cref="Postfixize"/> is executed.
         /// </summary>
@@ -284,6 +310,12 @@ namespace Konamiman.Nestor80.Assembler
             else if(currentChar is '*' or '/' or '(' or ')' or '=') {
                 ProcessOperator(OperatorsAsStrings[currentChar]);
             }
+            else if(AllowCStyleBitwiseOperators && currentChar is '&' or '|' or '^' or '~' or '<' or '>') {
+                ProcessCStyleBitwiseOperator(currentChar);
+            }
+            else if(AllowDollarHexPrefix && currentChar is '$' && parsedStringPointer < parsedStringLength - 1 && IsValidHexChar(parsedString[parsedStringPointer + 1])) {
+                ExtractDollarHexNumber();
+            }
             else if(currentChar is ':' || IsValidSymbolChar(currentChar)) {
                 ExtractSymbolOrOperator();
             }
@@ -385,7 +417,8 @@ namespace Konamiman.Nestor80.Assembler
             }
 
             IncreaseParsedStringPointer(increaseStringPointerBy);
-            if(!AtEndOfString && (parsedString[parsedStringPointer] is not ' ' and not '\t' and not '+' and not '-' and not '*' and not '/' and not ')' and not '=')) {
+            if(!AtEndOfString && (parsedString[parsedStringPointer] is not ' ' and not '\t' and not '+' and not '-' and not '*' and not '/' and not ')' and not '=') &&
+               !(AllowCStyleBitwiseOperators && parsedString[parsedStringPointer] is '&' or '|' or '^' or '~' or '<' or '>')) {
                 Throw($"Unexpected character found after number: {parsedString[parsedStringPointer]}");
             }
 
@@ -530,6 +563,70 @@ namespace Konamiman.Nestor80.Assembler
             IncreaseParsedStringPointer(theOperator is "u+" or "u-" ? 1 : theOperator.Length);
         }
 
+        /// <summary>
+        /// Extract a hexadecimal number in the TASM format $abcd.
+        /// </summary>
+        private static void ExtractDollarHexNumber()
+        {
+            var start = parsedStringPointer + 1;
+            var end = start;
+            while(end < parsedStringLength && IsValidHexChar(parsedString[end])) {
+                end++;
+            }
+
+            ParseAndRegisterNumber(
+                parsedString[start..end],
+                radix: 16,
+                increaseStringPointerBy: end - parsedStringPointer);
+        }
+
+        /// <summary>
+        /// Process one of the C-style bitwise operators accepted in TASM compatibility mode.
+        /// </summary>
+        private static void ProcessCStyleBitwiseOperator(char currentChar)
+        {
+            var nextChar = parsedStringPointer < parsedStringLength - 1 ? parsedString[parsedStringPointer + 1] : '\0';
+
+            switch(currentChar) {
+                case '&':
+                    AddCStyleOperator(AndOperator.Instance, nextChar is '&' ? 2 : 1);
+                    break;
+                case '|':
+                    AddCStyleOperator(OrOperator.Instance, nextChar is '|' ? 2 : 1);
+                    break;
+                case '^':
+                    AddCStyleOperator(XorOperator.Instance, 1);
+                    break;
+                case '~':
+                    AddCStyleOperator(NotOperator.Instance, 1);
+                    break;
+                case '<' when nextChar is '<':
+                    AddCStyleOperator(ShiftLeftOperator.Instance, 2);
+                    break;
+                case '>' when nextChar is '>':
+                    AddCStyleOperator(ShiftRightOperator.Instance, 2);
+                    break;
+                case '<' when nextChar is '=':
+                    AddCStyleOperator(LessThanOrEqualOperator.Instance, 2);
+                    break;
+                case '>' when nextChar is '=':
+                    AddCStyleOperator(GreaterThanOrEqualOperator.Instance, 2);
+                    break;
+                case '<':
+                    AddCStyleOperator(LessThanOperator.Instance, 1);
+                    break;
+                default:
+                    AddCStyleOperator(GreaterThanOperator.Instance, 1);
+                    break;
+            }
+        }
+
+        private static void AddCStyleOperator(ArithmeticOperator theOperator, int charsCount)
+        {
+            AddExpressionPart(theOperator);
+            IncreaseParsedStringPointer(charsCount);
+        }
+
         private static void ExtractSymbolOrOperator()
         {
             Match match = null;
@@ -569,6 +666,12 @@ namespace Konamiman.Nestor80.Assembler
             }
 
             var theOperator = operators.GetValueOrDefault(symbol);
+            if(theOperator is not null && AllowWordOperatorsAsSymbols && SymbolIsDefined(symbol)) {
+                //The name is one of the textual operators, but the source has defined
+                //a symbol with that name, so the symbol wins.
+                theOperator = null;
+            }
+
             if(theOperator is null) {
                 var part = new SymbolReference() { SymbolName = symbol, IsExternal = isExternalRef, IsRoot = isRoot };
                 AddExpressionPart(part);

@@ -36,6 +36,12 @@ namespace Konamiman.Nestor80.Assembler
             // .AREA: Alias for AREA
             { ".AREA", ProcessSdccAreaLine },
 
+            // .BLOCK <size>[,<value>]: TASM alias for DEFS
+            { ".BLOCK", ProcessDefsLine },
+
+            // .BYTE <byte or string>[,...]: TASM alias for DEFB
+            { ".BYTE", ProcessDefbLine },
+
             // .COMMENT <delimiter>: Start multiline comment
             { ".COMMENT", ProcessDelimitedCommentStartLine },
 
@@ -56,6 +62,9 @@ namespace Konamiman.Nestor80.Assembler
 
             // .FATAL <text>: Produce an assembly fatal error
             { ".FATAL", ProcessUserFatalLine },
+
+            // .FILL <size>[,<value>]: TASM alias for DEFS, but the default value is zero
+            { ".FILL", ProcessFillLine },
 
             // .LALL: List all lines in macro expansions in listing
             { ".LALL", ProcessListingControlLine },
@@ -102,12 +111,18 @@ namespace Konamiman.Nestor80.Assembler
             // .STRESC ON|OFF: Enable or disable escape sequences in strings
             { ".STRESC", ProcessChangeStringEscapingLine },
 
+            // .TEXT <string>: TASM alias for DEFB
+            { ".TEXT", ProcessDefbLine },
+
             // .TFCOND: Toggle the inclusion of false conditional blocks in listing
             //          (relative to the previous .TFCOND, unrelated to the state set by .LFCOND or .SFCOND)
             { ".TFCOND", ProcessListingControlLine },
 
             // .WARN <text>: Produce an assembly warning
             { ".WARN", ProcessUserWarningLine },
+
+            // .WORD <word>[,<word>[,...]]: TASM alias for DEFW
+            { ".WORD", ProcessDefwLine },
 
             // .XALL: Only list lines that produce output in macro expansions in listing
             { ".XALL", ProcessListingControlLine },
@@ -432,8 +447,14 @@ namespace Konamiman.Nestor80.Assembler
         }
 
         static ProcessedSourceLine ProcessDefsLine(string opcode, SourceLineWalker walker)
+            => ProcessDefsOrFillLine(opcode, walker, defaultValue: null);
+
+        static ProcessedSourceLine ProcessFillLine(string opcode, SourceLineWalker walker)
+            => ProcessDefsOrFillLine(opcode, walker, defaultValue: 0);
+
+        static ProcessedSourceLine ProcessDefsOrFillLine(string opcode, SourceLineWalker walker, byte? defaultValue)
         {
-            byte? value = null;
+            byte? value = defaultValue;
             ushort length = 0;
             var line = new DefineSpaceLine();
 
@@ -748,6 +769,13 @@ namespace Konamiman.Nestor80.Assembler
 
         static ProcessedSourceLine ProcessEndLine(string opcode, SourceLineWalker walker)
         {
+            //When a set of files that were written as independent programs is assembled as a
+            //single unit, the END at the bottom of each one must not stop the whole process.
+            if(state.Configuration.IgnoreEndInstructionInIncludedFiles && state.InsideIncludedFile) {
+                walker.DiscardRemaining();
+                return new CommentLine() { Line = walker.SourceLine, EffectiveLineLength = 0 };
+            }
+
             if(walker.AtEndOfLine) {
                 state.RegisterEndInstruction(Address.AbsoluteZero);
                 return new AssemblyEndLine() { Line = walker.SourceLine };

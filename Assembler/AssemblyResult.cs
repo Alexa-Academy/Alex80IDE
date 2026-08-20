@@ -58,6 +58,12 @@ namespace Konamiman.Nestor80.Assembler
 
         public SdccArea[] SdccAreas { get; set; }
         
+        /// <summary>
+        /// The value of the location counter at the beginning of the assembly process,
+        /// as requested via <see cref="AssemblyConfiguration.StartAddress"/>.
+        /// </summary>
+        public ushort StartAddress { get; set; }
+
         // Added by AlexaAcademy
         public int FirstAddress { get; set; }
         public int EndAddressPlusOne { get; set; }

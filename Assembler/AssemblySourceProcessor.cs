@@ -87,6 +87,7 @@ namespace Konamiman.Nestor80.Assembler
         private static Z280IndexMode z280IndexMode;
         private static bool acceptDottedInstructionAliases;
         private static bool treatUnknownSymbolsAsExternals;
+        private static bool allowLabelsWithoutColon;
 
         private static string[] currentCpuInstructionOpcodes;
         private static Dictionary<string, byte[]> currentCpuFixedInstructions;
@@ -194,8 +195,9 @@ namespace Konamiman.Nestor80.Assembler
                 ProcessPredefinedsymbols(configuration.PredefinedSymbols);
                 maxErrors = configuration.MaxErrors;
                 link80Compatibility = configuration.Link80Compatibility;
-                acceptDottedInstructionAliases = configuration.AcceptDottedInstructionAliases;
+                acceptDottedInstructionAliases = configuration.AcceptDottedInstructionAliases || configuration.TasmCompatibility;
                 treatUnknownSymbolsAsExternals = configuration.TreatUnknownSymbolsAsExternals;
+                allowLabelsWithoutColon = configuration.TasmCompatibility;
 
                 SetCurrentCpu(configuration.CpuName);
                 buildType = configuration.BuildType;
@@ -203,6 +205,9 @@ namespace Konamiman.Nestor80.Assembler
                     SetIsSdccBuildFlags();
                 }
                 state.SwitchToArea(buildType != BuildType.Absolute ? AddressType.CSEG : AddressType.ASEG);
+                if(buildType is BuildType.Absolute) {
+                    state.SwitchToLocation(configuration.StartAddress);
+                }
                 
                 var validInitialStringEncoding = SetStringEncoding(configuration.OutputStringEncoding, initial: true);
                 if(!validInitialStringEncoding)
@@ -216,6 +221,10 @@ namespace Konamiman.Nestor80.Assembler
                 Expression.AllowEscapesInStrings = configuration.AllowEscapesInStrings;
                 Expression.Link80Compatibility = link80Compatibility;
                 Expression.DiscardHashPrefix = configuration.DiscardHashPrefix;
+                Expression.AllowDollarHexPrefix = configuration.TasmCompatibility;
+                Expression.AllowCStyleBitwiseOperators = configuration.TasmCompatibility;
+                Expression.AllowWordOperatorsAsSymbols = configuration.TasmCompatibility;
+                Expression.SymbolIsDefined = SymbolIsDefinedForExpression;
                 SymbolInfo.Link80Compatibility = link80Compatibility;
                 LinkItem.Link80Compatibility = link80Compatibility;
 
@@ -319,6 +328,7 @@ namespace Konamiman.Nestor80.Assembler
                 EndAddressArea = state.EndAddress is null ? AddressType.ASEG : state.EndAddress.Type,
                 EndAddress = (ushort)(state.EndAddress is null ? 0 : state.EndAddress.Value),
                 BuildType = buildType,
+                StartAddress = buildType is BuildType.Absolute ? configuration.StartAddress : (ushort)0,
                 MaxRelocatableSymbolLength = configuration.Link80Compatibility ? MaxEffectiveExternalNameLength : int.MaxValue,
                 MacroNames = state.NamedMacros.Keys.ToArray(),
                 SdccAreas = state.SdccAreas?.Values.ToArray()
@@ -520,6 +530,14 @@ namespace Konamiman.Nestor80.Assembler
             string label = null;
             string opcode = null;
             var symbol = walker.ExtractSymbol(colonIsDelimiter: true);
+
+            //TASM (and many other assemblers) allow labels without a terminating colon,
+            //provided that they start at the very first column of the line.
+            //We just append the colon here so that the regular label processing code below
+            //handles these labels too.
+            if(allowLabelsWithoutColon && !definingMacro && !symbol.EndsWith(':') && !char.IsWhiteSpace(line[0]) && IsBareLabel(symbol, walker)) {
+                symbol += ":";
+            }
 
             if(definingMacro) {
                 opcode = MaybeResolveDottedAlias(symbol);
@@ -1079,6 +1097,63 @@ namespace Konamiman.Nestor80.Assembler
                     }
                 }
             };
+        }
+
+        /// <summary>
+        /// Check if a symbol exists already, without registering it as unknown if it doesn't.
+        /// </summary>
+        private static bool SymbolIsDefinedForExpression(string name)
+        {
+            var effectiveName = state.Modularize(name);
+            return state.GetSymbol(ref effectiveName) is not null;
+        }
+
+        /// <summary>
+        /// Check whether a symbol found at the very beginning of a source line and not terminated
+        /// with a colon is to be treated as a label (TASM-style labels, see
+        /// <see cref="AssemblyConfiguration.TasmCompatibility"/>).
+        /// </summary>
+        /// <param name="symbol">The symbol found at the beginning of the line, as written in the source.</param>
+        /// <param name="walker">The walker for the line, positioned right after the symbol.</param>
+        private static bool IsBareLabel(string symbol, SourceLineWalker walker)
+        {
+            if(!IsValidSymbolName(symbol) || IsKnownInstruction(symbol)) {
+                return false;
+            }
+
+            //"FOO EQU 1", "FOO MACRO" and the like define a constant/macro named FOO,
+            //FOO isn't a label in these cases (and it's handled elsewhere).
+            if(walker.AtEndOfLine) {
+                return true;
+            }
+
+            walker.BackupPointer();
+            var nextSymbol = MaybeResolveDottedAlias(walker.ExtractSymbol());
+            walker.RestorePointer();
+
+            return
+                !constantDefinitionOpcodes.Contains(nextSymbol, StringComparer.OrdinalIgnoreCase) &&
+                !nextSymbol.Equals("MACRO", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Check whether a symbol is a CPU instruction, a pseudo-operator or a defined macro,
+        /// in which case it can't be a label without a terminating colon.
+        /// </summary>
+        private static bool IsKnownInstruction(string symbol)
+        {
+            symbol = MaybeResolveDottedAlias(symbol);
+
+            return
+                PseudoOpProcessors.ContainsKey(symbol) ||
+                currentCpuInstructionOpcodes.Contains(symbol, StringComparer.OrdinalIgnoreCase) ||
+                (currentCpu is CpuType.R800 && R800SpecificOpcodes.Contains(symbol, StringComparer.OrdinalIgnoreCase)) ||
+                includeInstructions.Contains(symbol, StringComparer.OrdinalIgnoreCase) ||
+                constantDefinitionOpcodes.Contains(symbol, StringComparer.OrdinalIgnoreCase) ||
+                symbol.Equals("MACRO", StringComparison.OrdinalIgnoreCase) ||
+                symbol.StartsWith("NAME(", StringComparison.OrdinalIgnoreCase) ||
+                symbol.StartsWith("$TITLE(", StringComparison.OrdinalIgnoreCase) ||
+                state.NamedMacroExists(symbol);
         }
 
         private static bool IsValidSymbolName(string name) =>

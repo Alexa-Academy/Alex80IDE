@@ -148,6 +148,8 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
             ClearExpressionsCache();
             lastUsedSdccAreaIndex = -1;
 
+            var initialLocation = buildType is BuildType.Absolute ? Configuration.StartAddress : (ushort)0;
+
             if(isSdccBuild) {
                 SwitchToLocation(0);
                 SetIsSdccBuild();
@@ -155,12 +157,12 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
             }
             else {
                 SwitchToArea(buildType != BuildType.Absolute ? AddressType.CSEG : AddressType.ASEG);
-                SwitchToLocation(0);
+                SwitchToLocation(initialLocation);
             }
 
             LocationPointersByArea[AddressType.CSEG] = 0;
             LocationPointersByArea[AddressType.DSEG] = 0;
-            LocationPointersByArea[AddressType.ASEG] = 0;
+            LocationPointersByArea[AddressType.ASEG] = initialLocation;
 
             if(streamCanSeek) {
                 SourceStreamReader.BaseStream.Seek(0, SeekOrigin.Begin);

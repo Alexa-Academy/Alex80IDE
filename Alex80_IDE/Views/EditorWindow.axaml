@@ -33,11 +33,16 @@
                         Spacing="8"
                         Margin="12"
                         VerticalAlignment="Center">
-                <Button Command="{Binding NewTabCommand}" Content="Nuova" />
-                <Button Command="{Binding OpenFileCommand}" Content="Apri" />
-                <Button Command="{Binding SaveFileCommand}" Content="Salva" />
-                <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome" />
-                <Button Command="{Binding AssembleCommand}" Content="Assembla" />
+                <Button Command="{Binding NewTabCommand}" Content="Nuova"
+                        ToolTip.Tip="{Binding CommandModifierName, StringFormat='{}{0}+N'}" />
+                <Button Command="{Binding OpenFileCommand}" Content="Apri"
+                        ToolTip.Tip="{Binding CommandModifierName, StringFormat='{}{0}+O'}" />
+                <Button Command="{Binding SaveFileCommand}" Content="Salva"
+                        ToolTip.Tip="{Binding CommandModifierName, StringFormat='{}{0}+S'}" />
+                <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome"
+                        ToolTip.Tip="{Binding CommandModifierName, StringFormat='{}{0}+Shift+S'}" />
+                <Button Command="{Binding AssembleCommand}" Content="Assembla"
+                        ToolTip.Tip="{Binding CommandModifierName, StringFormat='{}{0}+B'}" />
                 <Button Command="{Binding SaveArduinoArrayCommand}" Content="Salva array Arduino" />
             </StackPanel>
 
@@ -47,7 +52,13 @@
                 <TabControl.ItemTemplate>
                     <DataTemplate x:DataType="global:DocumentViewModel">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="{Binding FileName}" />
+                            <TextBlock Text="{Binding FileName}"
+                                       VerticalAlignment="Center"
+                                       Classes="tabTitle"
+                                       Classes.dirty="{Binding IsDirty}" />
+                            <Ellipse Classes="dirtyDot"
+                                     ToolTip.Tip="Modifiche non salvate"
+                                     IsVisible="{Binding IsDirty}" />
                             <Button Content="x"
                                     Classes="closeTab"
                                     Command="{Binding $parent[views:EditorWindow].((global:MainViewModel)DataContext).CloseTabCommand}"

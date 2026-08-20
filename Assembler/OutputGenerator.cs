@@ -27,12 +27,19 @@ namespace Konamiman.Nestor80.Assembler
         /// <param name="directFileWrite">If true, treat ORG statements as equivalent to PHASE statements and don't limit the output size to 64KBytes.</param>
         /// <returns>How many bytes have been written to the stream.</returns>
         /// <exception cref="ArgumentException"></exception>
-        public static int GenerateAbsolute(AssemblyResult assemblyResult, Stream outputStream, bool directFileWrite = false)
+        /// <param name="fillByte">The value to use for the memory positions that the source code
+        /// doesn't fill explicitly (the gaps between ORGs, and the space reserved with DEFS
+        /// when no value is supplied).</param>
+        public static int GenerateAbsolute(AssemblyResult assemblyResult, Stream outputStream, bool directFileWrite = false, byte fillByte = 0)
         {
             var memory = new byte[65536];
-            var firstAddress = 0;
+            var firstAddress = (int)assemblyResult.StartAddress;
             var lastAddressPlusOne = 0;
-            var currentAddress = 0;
+            var currentAddress = firstAddress;
+
+            if(fillByte != 0) {
+                Array.Fill(memory, fillByte);
+            }
 
             if(assemblyResult.BuildType != BuildType.Absolute) {
                 throw new ArgumentException("Absolute output can be genereated only for assembly results with a built type of 'Absolute'");
@@ -45,6 +52,10 @@ namespace Konamiman.Nestor80.Assembler
                     firstAddress = first_chol.NewLocationCounter;
                     currentAddress = firstAddress;
                 }
+            }
+            else {
+                firstAddress = 0;
+                currentAddress = 0;
             }
 
             //We do a deferred location counter update to prevent an ORG at the end of the file
@@ -85,7 +96,7 @@ namespace Konamiman.Nestor80.Assembler
                     }
                 }
                 else if(line is DefineSpaceLine ds) { //Note that this includes AlignLine too
-                    var outputByte = ds.Value ?? 0;
+                    var outputByte = ds.Value ?? fillByte;
                     var length = ds.Size;
                     if(directFileWrite) {
                         var bytes = Enumerable.Repeat(outputByte, length).ToArray();

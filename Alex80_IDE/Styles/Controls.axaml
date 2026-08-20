@@ -91,6 +91,63 @@
         <Setter Property="CornerRadius" Value="6" />
     </Style>
 
+    <!-- Separatore orizzontale, per le sezioni del pannello laterale. -->
+    <Style Selector="Border.separatorH">
+        <Setter Property="Background" Value="{DynamicResource BorderSoftBrush}" />
+        <Setter Property="Height" Value="1" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+
+    <!-- Elenco dei file del progetto. -->
+    <Style Selector="ListBox.projectFiles">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.projectFiles ListBoxItem">
+        <Setter Property="Padding" Value="4,3" />
+        <Setter Property="MinHeight" Value="0" />
+    </Style>
+
+    <!-- Il nome del file nel pannello progetto: si comporta da collegamento. -->
+    <Style Selector="Button.fileLink">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="4,1" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+
+    <Style Selector="Button.fileLink:pointerover /template/ ContentPresenter">
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <!-- Pulsantini di riga (sposta, principale, rimuovi). -->
+    <Style Selector="Button.rowAction">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Height" Value="20" />
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.rowAction:pointerover">
+        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.rowAction.danger:pointerover">
+        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
+    </Style>
+
     <!-- Pulsante con la sola icona: quadrato, il colore lo eredita dal pulsante. -->
     <Style Selector="Button.iconOnly">
         <Setter Property="MinHeight" Value="28" />
@@ -251,10 +308,20 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
-    <Style Selector="TextBlock.dirtyDot">
-        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
-        <Setter Property="FontSize" Value="16" />
+    <!-- Pallino "modifiche non salvate" accanto al nome del file nelle schede.
+         Un cerchio pieno invece del carattere •: si vede a colpo d'occhio e ha
+         sempre la stessa dimensione, qualunque sia il font della scheda. -->
+    <Style Selector="Ellipse.dirtyDot">
+        <Setter Property="Width" Value="8" />
+        <Setter Property="Height" Value="8" />
+        <Setter Property="Fill" Value="{DynamicResource WarningBrush}" />
         <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- Il nome del file modificato va in corsivo, come negli editor più diffusi:
+         è il secondo segnale, quello che si nota anche con la coda dell'occhio. -->
+    <Style Selector="TextBlock.tabTitle.dirty">
+        <Setter Property="FontStyle" Value="Italic" />
     </Style>
 
     <Style Selector="TabItem">

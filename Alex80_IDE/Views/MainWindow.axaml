@@ -4,6 +4,7 @@
         xmlns:global="clr-namespace:"
         xmlns:views="clr-namespace:Alex80_IDE"
         xmlns:controls="clr-namespace:Alex80_IDE.Controls"
+        xmlns:vm="clr-namespace:Alex80_IDE.ViewModels"
         x:Class="Alex80_IDE.MainWindow"
         x:DataType="global:MainViewModel"
         Icon="/Assets/alex80.ico"
@@ -58,18 +59,23 @@
         <Border Grid.Row="1" Classes="toolBar">
             <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Button Command="{Binding NewTabCommand}" Classes="iconOnly" ToolTip.Tip="Nuova">
+                    <Button Command="{Binding NewTabCommand}" Classes="iconOnly"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Nuova ({0}+N)'}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource FileNewIconData}" />
                     </Button>
-                    <Button Command="{Binding OpenFileCommand}" Classes="iconOnly" ToolTip.Tip="Apri">
+                    <Button Command="{Binding OpenFileCommand}" Classes="iconOnly"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Apri ({0}+O)'}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource FolderOpenIconData}" />
                     </Button>
-                    <Button Command="{Binding SaveFileCommand}" Classes="iconOnly" ToolTip.Tip="Salva">
+                    <Button Command="{Binding SaveFileCommand}" Classes="iconOnly"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Salva ({0}+S)'}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource SaveIconData}" />
                     </Button>
-                    <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome" Classes="tool" />
+                    <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome" Classes="tool"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Salva con nome ({0}+Shift+S)'}" />
                     <Border Classes="separator" />
-                    <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool" />
+                    <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
                     <Button Command="{Binding SaveArduinoArrayCommand}" Content="Salva array Arduino" Classes="tool" />
                     <Button Click="LoadFileAsync" Classes="iconOnly" ToolTip.Tip="Carica bin">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource LoadBinIconData}" />
@@ -126,8 +132,115 @@
 
         <!-- Area di lavoro: editor + registri sopra, pannello strumenti sotto. -->
         <Grid Grid.Row="2" RowDefinitions="*,6,300" Margin="10">
-            <Grid ColumnDefinitions="*,6,330">
+            <Grid ColumnDefinitions="270,6,*,6,330">
+
+                <!-- Pannello progetto: i file che compongono il programma e come vanno assemblati. -->
                 <Border Classes="panel" Padding="0">
+                    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="12">
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="PROGETTO" Classes="caption" />
+                            <TextBlock Text="{Binding ProjectTitle}"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip.Tip="{Binding CurrentProject.ProjectPath}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,10,0,8">
+                            <Button Content="Nuovo" Classes="tool" Command="{Binding NewProjectCommand}"
+                                    ToolTip.Tip="Crea un progetto con i sorgenti già aperti" />
+                            <Button Content="Apri" Classes="tool" Command="{Binding OpenProjectCommand}" />
+                            <Button Content="+ File" Classes="tool" Command="{Binding AddFilesToProjectCommand}"
+                                    ToolTip.Tip="Aggiungi sorgenti al progetto" />
+                            <Button Content="✕" Classes="tool" Command="{Binding CloseProjectCommand}"
+                                    ToolTip.Tip="Chiudi il progetto" />
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="2"
+                                   Classes="caption"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top"
+                                   IsVisible="{Binding !HasProject}"
+                                   Text="Nessun progetto aperto: &quot;Assembla&quot; lavora sul sorgente selezionato. Crea un progetto per assemblare più file in un unico binario." />
+
+                        <ListBox Grid.Row="2"
+                                 Classes="projectFiles"
+                                 IsVisible="{Binding HasProject}"
+                                 ItemsSource="{Binding ProjectFiles}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ProjectFileViewModel">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                        <Button Classes="fileLink"
+                                                Content="{Binding FileName}"
+                                                Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).OpenProjectFileCommand}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip.Tip="{Binding AbsolutePath}" />
+
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                                            <Button Classes="rowAction" Content="▲"
+                                                    ToolTip.Tip="Sposta su"
+                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).MoveProjectFileUpCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Classes="rowAction" Content="▼"
+                                                    ToolTip.Tip="Sposta giù"
+                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).MoveProjectFileDownCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Classes="rowAction" Content="★"
+                                                    ToolTip.Tip="Rendi principale"
+                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).SetMainProjectFileCommand}"
+                                                    CommandParameter="{Binding}" />
+                                            <Button Classes="rowAction danger" Content="✕"
+                                                    ToolTip.Tip="Togli dal progetto"
+                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).RemoveProjectFileCommand}"
+                                                    CommandParameter="{Binding}" />
+                                        </StackPanel>
+
+                                        <StackPanel Grid.Row="1" Grid.ColumnSpan="2"
+                                                    Orientation="Horizontal" Spacing="6" Margin="8,0,0,2">
+                                            <TextBlock Text="principale" Classes="fileBadge" IsVisible="{Binding IsMain}" />
+                                            <TextBlock Text="{Binding SubFolder}" Classes="caption" IsVisible="{Binding HasSubFolder}" />
+                                            <TextBlock Text="{Binding Placement}" Classes="statusValue" />
+                                            <TextBlock Text="non trovato" Classes="caption"
+                                                       Foreground="{DynamicResource DangerBrush}"
+                                                       IsVisible="{Binding IsMissing}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Grid.Row="3" Spacing="7" Margin="0,12,0,0">
+                            <Border Classes="separatorH" />
+                            <TextBlock Text="ASSEMBLATORE" Classes="caption" />
+                            <TextBlock Text="{Binding SettingsScopeText}" Classes="caption" TextWrapping="Wrap" />
+
+                            <CheckBox Content="Sintassi TASM"
+                                      IsChecked="{Binding TasmCompatibility, Mode=TwoWay}"
+                                      ToolTip.Tip="Accetta anche .EQU, .BYTE, etichette senza due punti, $FF, &amp; | ^ ~ &lt;&lt; &gt;&gt;" />
+
+                            <CheckBox Content="Simboli condivisi fra i file"
+                                      IsEnabled="{Binding HasProject}"
+                                      IsChecked="{Binding IsSingleUnitMode, Mode=TwoWay}"
+                                      ToolTip.Tip="Spento: ogni file è un blocco a sé (label omonime non danno conflitto). Acceso: i file sono un unico sorgente e si vedono i simboli a vicenda." />
+
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="Riempimento" Classes="caption" VerticalAlignment="Center" />
+                                <TextBox Text="{Binding FillByteText, Mode=TwoWay}"
+                                         Width="56"
+                                         Classes="mono"
+                                         ToolTip.Tip="Byte usato per le posizioni di memoria che nessun file occupa (esadecimale)" />
+                                <TextBlock Text="h" Classes="caption" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <GridSplitter Grid.Column="1"
+                              Width="6"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              ResizeDirection="Columns" />
+
+                <Border Grid.Column="2" Classes="panel" Padding="0">
                     <Grid RowDefinitions="*">
                         <TabControl Classes="workspaceTabs"
                                     Margin="8,8,8,0"
@@ -138,14 +251,17 @@
                                     <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding FileName, Converter={StaticResource FileTypeBadgeConverter}}"
                                                    Classes="fileBadge" />
-                                        <TextBlock Text="{Binding FileName}" VerticalAlignment="Center" />
-                                        <TextBlock Text="•"
-                                                   Classes="dirtyDot"
-                                                   ToolTip.Tip="Modifiche non salvate"
-                                                   IsVisible="{Binding IsDirty}" />
+                                        <TextBlock Text="{Binding FileName}"
+                                                   VerticalAlignment="Center"
+                                                   Classes="tabTitle"
+                                                   Classes.dirty="{Binding IsDirty}" />
+                                        <Ellipse Classes="dirtyDot"
+                                                 ToolTip.Tip="Modifiche non salvate"
+                                                 IsVisible="{Binding IsDirty}" />
                                         <Button Content="✕"
                                                 Classes="closeTab"
                                                 FontSize="10"
+                                                ToolTip.Tip="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).CommandModifierName, StringFormat='Chiudi ({0}+W)'}"
                                                 Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).CloseTabCommand}"
                                                 CommandParameter="{Binding}"
                                                 IsVisible="{Binding $parent[TabItem].IsSelected}" />
@@ -175,13 +291,13 @@
                     </Grid>
                 </Border>
 
-                <GridSplitter Grid.Column="1"
+                <GridSplitter Grid.Column="3"
                               Width="6"
                               HorizontalAlignment="Stretch"
                               VerticalAlignment="Stretch"
                               ResizeDirection="Columns" />
 
-                <Border Grid.Column="2" Classes="panel">
+                <Border Grid.Column="4" Classes="panel">
                     <controls:RegistersView />
                 </Border>
             </Grid>
@@ -246,6 +362,7 @@
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SelectedDocument.FileName, FallbackValue=''}" Classes="statusItem" />
+                    <TextBlock Text="{Binding ProjectTitle, StringFormat='progetto: {0}'}" Classes="statusItem" />
                     <TextBlock Text="{Binding AssemblerStatus}" Classes="statusItem" />
                 </StackPanel>
             </Grid>

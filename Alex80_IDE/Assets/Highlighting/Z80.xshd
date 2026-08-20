@@ -35,6 +35,7 @@
     <Keywords color="Directive">
       <Word>$EJECT</Word><Word>$TITLE</Word>
       <Word>.8080</Word><Word>.ALIGN</Word><Word>.AREA</Word><Word>.COMMENT</Word><Word>.CPU</Word><Word>.CREF</Word><Word>.DEPHASE</Word><Word>.ERROR</Word><Word>.EXTROOT</Word><Word>.FATAL</Word><Word>.GLOBL</Word><Word>.LALL</Word><Word>.LFCOND</Word><Word>.LIST</Word><Word>.PHASE</Word><Word>.PRINT</Word><Word>.PRINT1</Word><Word>.PRINT2</Word><Word>.PRINTX</Word><Word>.RADIX</Word><Word>.RELAB</Word><Word>.REQUEST</Word><Word>.SALL</Word><Word>.SFCOND</Word><Word>.STRENC</Word><Word>.STRESC</Word><Word>.TFCOND</Word><Word>.WARN</Word><Word>.XALL</Word><Word>.XCREF</Word><Word>.XEXTROOT</Word><Word>.XLIST</Word><Word>.XRELAB</Word><Word>.Z80</Word>
+      <Word>.BLOCK</Word><Word>.BYTE</Word><Word>.DB</Word><Word>.DEFB</Word><Word>.DEFM</Word><Word>.DEFS</Word><Word>.DEFW</Word><Word>.DS</Word><Word>.DW</Word><Word>.ELSE</Word><Word>.END</Word><Word>.ENDIF</Word><Word>.EQU</Word><Word>.FILL</Word><Word>.IF</Word><Word>.IFDEF</Word><Word>.IFNDEF</Word><Word>.INCBIN</Word><Word>.INCLUDE</Word><Word>.MODULE</Word><Word>.ORG</Word><Word>.PAGE</Word><Word>.TEXT</Word><Word>.TITLE</Word><Word>.WORD</Word>
       <Word>AREA</Word><Word>ASEG</Word><Word>COMMON</Word><Word>COND</Word><Word>CONTM</Word><Word>CSEG</Word><Word>DB</Word><Word>DC</Word><Word>DEFB</Word><Word>DEFM</Word><Word>DEFS</Word><Word>DEFW</Word><Word>DEFZ</Word><Word>DS</Word><Word>DSEG</Word><Word>DW</Word><Word>DZ</Word><Word>ELSE</Word><Word>END</Word><Word>ENDC</Word><Word>ENDIF</Word><Word>ENDM</Word><Word>ENDMOD</Word><Word>ENDOUT</Word><Word>ENTRY</Word><Word>EXITM</Word><Word>EXT</Word><Word>EXTERNAL</Word><Word>EXTRN</Word><Word>GLOBAL</Word><Word>IF</Word><Word>IF1</Word><Word>IF2</Word><Word>IFABS</Word><Word>IFB</Word><Word>IFCPU</Word><Word>IFDEF</Word><Word>IFDIF</Word><Word>IFDIFI</Word><Word>IFE</Word><Word>IFF</Word><Word>IFIDN</Word><Word>IFIDNI</Word><Word>IFNB</Word><Word>IFNCPU</Word><Word>IFNDEF</Word><Word>IFREL</Word><Word>IFT</Word><Word>INCBIN</Word><Word>IRP</Word><Word>IRPC</Word><Word>IRPS</Word><Word>LOCAL</Word><Word>MAINPAGE</Word><Word>MODULE</Word><Word>NAME</Word><Word>ORG</Word><Word>PAGE</Word><Word>PUBLIC</Word><Word>REPT</Word><Word>ROOT</Word><Word>SUBPAGE</Word><Word>SUBTTL</Word><Word>TITLE</Word>
     </Keywords>
 
@@ -45,5 +46,10 @@
     <Keywords color="Flag">
       <Word>NZ</Word><Word>Z</Word><Word>NC</Word><Word>PO</Word><Word>PE</Word><Word>P</Word><Word>M</Word>
     </Keywords>
+
+    <!-- Etichette in stile TASM: senza due punti, ma sempre nella prima colonna.
+         Sta in fondo di proposito, così istruzioni e direttive scritte a inizio riga
+         mantengono il loro colore. -->
+    <Rule color="Label">^[A-Za-z_$?@][A-Za-z0-9_.$?@]*(?=[ \t])</Rule>
   </RuleSet>
 </SyntaxDefinition>

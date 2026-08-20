@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Alex80_IDE.Helpers;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -21,6 +22,7 @@ public partial class MainWindow : Window
         SizeChanged += OnWindowSizeChanged;
         Closing += OnWindowClosing;
         ConfigureSystemMenu();
+        AppShortcuts.Install(this);
         UpdateThemeMenuChecks(AppThemeManager.CurrentTheme);
         AppThemeManager.ThemeChanged += OnThemeChanged;
     }
