@@ -415,6 +415,12 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SelectedDocument.FileName, FallbackValue=''}" Classes="statusItem" />
                     <TextBlock Text="{Binding ProjectTitle, StringFormat='progetto: {0}'}" Classes="statusItem" />
+                    <!-- La CPU di destinazione si legge qui invece che aprendo il pannello
+                         dell'assemblatore: decide cosa esce dall'assemblata, ed e' la prima
+                         cosa da guardare quando il risultato non e' quello atteso. -->
+                    <TextBlock Text="{Binding CpuName, StringFormat='CPU: {0}'}"
+                               Classes="statusItem"
+                               ToolTip.Tip="CPU di destinazione dell'assemblata. Si cambia nel pannello Assemblatore." />
                     <TextBlock Text="{Binding AssemblerStatus}" Classes="statusItem" />
                 </StackPanel>
             </Grid>
