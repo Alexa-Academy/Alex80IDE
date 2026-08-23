@@ -15,6 +15,7 @@ using System.Text;
 using System.Threading;
 using System.Timers;
 using Alex80_IDE.Models;
+using Alex80_IDE.ViewModels;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -426,12 +427,38 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty]
     private byte _fReg;
-    
+
+    /// <summary>
+    /// I flag del registro F, uno per elemento: la vista li mette su una riga
+    /// dedicata, dove ognuno ha spazio per la sigla, lo stato e il suggerimento
+    /// che ne spiega il significato. L'ordine e' quello dei bit, dal 7 allo 0.
+    /// </summary>
+    public IReadOnlyList<CpuFlagViewModel> Flags { get; } =
+    [
+        new("S", 0x80,
+            "Segno: acceso quando il bit 7 del risultato vale 1, cioe' risultato negativo in complemento a due"),
+        new("Z", 0x40,
+            "Zero: acceso quando il risultato e' zero"),
+        new("H", 0x10,
+            "Riporto intermedio, dal bit 3 al bit 4. Lo usa DAA per correggere le operazioni in BCD"),
+        new("P/V", 0x04,
+            "Parita' o traboccamento: parita' pari nelle operazioni logiche, traboccamento in quelle aritmetiche con segno"),
+        new("N", 0x02,
+            "Acceso dopo una sottrazione, spento dopo un'addizione. Lo usa DAA per sapere in che verso correggere"),
+        new("C", 0x01,
+            "Riporto oltre il bit 7, o prestito in una sottrazione. Lo leggono anche rotazioni e scorrimenti")
+    ];
+
     public string FlagsString => GetZ80FlagsString(FReg);
     
     partial void OnFRegChanged(byte value)
     {
         OnPropertyChanged(nameof(FlagsString));
+
+        foreach (var flag in Flags)
+        {
+            flag.Update(value);
+        }
     }
     
     [ObservableProperty]

@@ -203,6 +203,49 @@
         <Setter Property="CornerRadius" Value="7" />
         <Setter Property="Padding" Value="10,7" />
         <Setter Property="MinWidth" Value="72" />
+        <!-- La spaziatura sta qui e non sui singoli riquadri: UniformGrid non ha una
+             proprieta' di spazio, e i margini a mano andavano rifatti a ogni registro
+             aggiunto o tolto. -->
+        <Setter Property="Margin" Value="0,0,7,7" />
+    </Style>
+
+    <!-- Un flag del registro F: sigla e stato, con il significato nel suggerimento.
+         Acceso e spento si distinguono dal colore, non solo dalla cifra. -->
+    <Style Selector="Border.flagChip">
+        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="8,4" />
+        <Setter Property="Margin" Value="0,0,6,6" />
+    </Style>
+
+    <Style Selector="Border.flagChip.set">
+        <Setter Property="Background" Value="{DynamicResource BadgeBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentStrongBrush}" />
+    </Style>
+
+    <Style Selector="Border.flagChip TextBlock.flagName">
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Border.flagChip TextBlock.flagState">
+        <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Border.flagChip.set TextBlock.flagName">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Border.flagChip.set TextBlock.flagState">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <Style Selector="Border.cardBadge">
