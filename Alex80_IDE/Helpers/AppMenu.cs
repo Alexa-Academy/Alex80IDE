@@ -54,20 +54,29 @@ public static class AppMenu
         return menu;
     }
 
-    /// <summary>Tema dell'interfaccia. I due elementi restano allineati al tema in uso.</summary>
+    /// <summary>Tema dell'interfaccia. Le voci restano allineate al tema in uso.</summary>
     private static NativeMenu BuildSettingsMenu()
     {
-        var dark = ThemeItem("Scuro", AppTheme.Dark);
-        var light = ThemeItem("Chiaro", AppTheme.Light);
+        var items = new[]
+        {
+            ThemeItem("Scuro", AppTheme.Dark),
+            ThemeItem("Chiaro", AppTheme.Light),
+            ThemeItem("Come il sistema", AppTheme.System)
+        };
 
         var themeMenu = new NativeMenu();
-        themeMenu.Items.Add(dark);
-        themeMenu.Items.Add(light);
+
+        foreach (var item in items)
+        {
+            themeMenu.Items.Add(item.Item);
+        }
 
         void Sync(AppTheme theme)
         {
-            dark.IsChecked = theme == AppTheme.Dark;
-            light.IsChecked = theme == AppTheme.Light;
+            foreach (var item in items)
+            {
+                item.Item.IsChecked = item.Theme == theme;
+            }
         }
 
         Sync(AppThemeManager.CurrentTheme);
@@ -79,7 +88,7 @@ public static class AppMenu
         return menu;
     }
 
-    private static NativeMenuItem ThemeItem(string header, AppTheme theme)
+    private static (NativeMenuItem Item, AppTheme Theme) ThemeItem(string header, AppTheme theme)
     {
         var item = new NativeMenuItem(header)
         {
@@ -88,7 +97,7 @@ public static class AppMenu
 
         item.Click += (_, _) => AppThemeManager.SetTheme(theme);
 
-        return item;
+        return (item, theme);
     }
 
     /// <summary>
