@@ -129,9 +129,6 @@
                     <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool"
                             ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
                     <Button Command="{Binding SaveArduinoArrayCommand}" Content="Salva array Arduino" Classes="tool" />
-                    <Button Click="LoadFileAsync" Classes="iconOnly" ToolTip.Tip="Carica bin">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource LoadBinIconData}" />
-                    </Button>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">

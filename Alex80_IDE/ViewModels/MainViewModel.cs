@@ -485,6 +485,42 @@ public partial class MainViewModel : ObservableObject
     {
         return IsSerialOpened;
     }
+
+    /// <summary>
+    /// Carica un binario nel dump di memoria. Sta fra i comandi della memoria e non
+    /// fra quelli del sorgente perche' e' li' che i byte finiscono: sono gli stessi
+    /// che "Scrivi" manda poi alla scheda.
+    /// </summary>
+    [RelayCommand]
+    private async Task LoadBinary()
+    {
+        if (MainWindow is not { } window)
+        {
+            return;
+        }
+
+        var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Carica un binario in memoria",
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Binari") { Patterns = ["*.bin"] },
+                new FilePickerFileType("Tutti i file") { Patterns = ["*"] }
+            ]
+        });
+
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        if (files[0].TryGetLocalPath() is { } path)
+        {
+            ProcessFile(path);
+        }
+    }
+
     
     [RelayCommand]
     private void Reset()

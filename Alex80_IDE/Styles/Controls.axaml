@@ -166,6 +166,21 @@
     <Style Selector="PathIcon.btnIcon">
         <Setter Property="Width" Value="15" />
         <Setter Property="Height" Value="15" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <!-- PathIcon non eredita il Foreground del pulsante che lo contiene: senza queste
+         regole le icone restano scure anche sui pulsanti a fondo pieno. -->
+    <Style Selector="Button.primary PathIcon.btnIcon">
+        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.danger PathIcon.btnIcon">
+        <Setter Property="Foreground" Value="{DynamicResource DangerTextBrush}" />
+    </Style>
+
+    <Style Selector="Button:disabled PathIcon.btnIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
     </Style>
 
     <Style Selector="TextBlock.statusItem">

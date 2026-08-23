@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Alex80_IDE.Helpers;
 using Alex80_IDE.ViewModels;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Platform.Storage;
 
 namespace Alex80_IDE;
 
@@ -191,33 +189,6 @@ public partial class MainWindow : Window
         if (_lightThemeMenuItem is not null)
         {
             _lightThemeMenuItem.IsChecked = theme == AppTheme.Light;
-        }
-    }
-    
-    private async void LoadFileAsync(object? sender, RoutedEventArgs e)
-    {
-        var options = new FilePickerOpenOptions
-        {
-            Title = "Apri un file",
-            FileTypeFilter = [
-                new FilePickerFileType("Text Files") { Patterns = ["*.bin"] },
-                new FilePickerFileType("All Files") { Patterns = ["*"] }
-            ],
-            AllowMultiple = false
-        };
-
-        var result = await StorageProvider.OpenFilePickerAsync(options);
-
-        if (result.Count > 0)
-        {
-            if (DataContext is MainViewModel viewModel)
-            {
-                string decodedPath = Uri.UnescapeDataString(result.First().Path.AbsolutePath);
-                viewModel.ProcessFile(decodedPath);
-            } else
-            {
-                Console.WriteLine("Nessun file selezionato.");
-            }
         }
     }
 }
