@@ -1,0 +1,79 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Strip di bordo: la barretta con le icone delle tool window, sempre visibile,
+         nello stile di Rider e Android Studio. -->
+    <Style Selector="Border.toolStrip">
+        <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+    </Style>
+
+    <Style Selector="Border.toolStrip.left, Border.toolStrip.right">
+        <Setter Property="Padding" Value="4,8" />
+    </Style>
+
+    <Style Selector="Border.toolStrip.bottom">
+        <Setter Property="Padding" Value="8,4" />
+    </Style>
+
+    <!-- Pulsante della strip: solo icona, quadrato, spento finche' il pannello e' chiuso. -->
+    <Style Selector="Button.toolStripButton">
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Margin" Value="1" />
+        <Setter Property="CornerRadius" Value="7" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- Lo sfondo va messo sul presentatore: il tema Fluent lo sovrascrive li' a ogni stato. -->
+    <Style Selector="Button.toolStripButton /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="CornerRadius" Value="7" />
+    </Style>
+
+    <Style Selector="Button.toolStripButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    </Style>
+
+    <Style Selector="Button.toolStripButton.active /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentStrongBrush}" />
+    </Style>
+
+    <Style Selector="Button.toolStripButton.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.toolStripButton PathIcon.stripIcon">
+        <Setter Property="Width" Value="17" />
+        <Setter Property="Height" Value="17" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.toolStripButton:pointerover PathIcon.stripIcon">
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.toolStripButton.active PathIcon.stripIcon">
+        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+    </Style>
+
+    <!-- Intestazione del pannello: titolo della tool window mostrata e pulsante di chiusura. -->
+    <Style Selector="TextBlock.toolPanelTitle">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="Border.toolPanelHeader">
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderHairlineBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="Padding" Value="12,6" />
+    </Style>
+
+</Styles>

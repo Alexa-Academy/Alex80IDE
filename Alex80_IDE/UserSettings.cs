@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
@@ -22,6 +23,9 @@ public sealed class UserSettings
 
     /// <summary>Ultimo progetto aperto, viene riaperto all'avvio.</summary>
     public string? LastProjectPath { get; set; }
+
+    /// <summary>Stato dei dock delle tool window, per identificativo del dock.</summary>
+    public Dictionary<string, ToolDockSettings> Docks { get; set; } = new();
 
     public static string SettingsPath =>
         Path.Combine(
@@ -58,4 +62,15 @@ public sealed class UserSettings
         var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(SettingsPath, json);
     }
+}
+
+/// <summary>Stato salvato di un dock: pannello aperto o chiuso, strumento mostrato, misura.</summary>
+public sealed class ToolDockSettings
+{
+    public bool IsOpen { get; set; } = true;
+
+    public string? SelectedTool { get; set; }
+
+    /// <summary>Misura del pannello per ogni strumento del dock, per identificativo.</summary>
+    public Dictionary<string, double> ToolSizes { get; set; } = new();
 }

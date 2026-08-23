@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Alex80_IDE.Helpers;
+using Alex80_IDE.ViewModels;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -9,6 +11,7 @@ namespace Alex80_IDE;
 
 public partial class MainWindow : Window
 {
+    private readonly List<ToolDockLayout> _dockLayouts = new();
     private EditorWindow? _editorWindow;
     private NativeMenuItem? _darkThemeMenuItem;
     private NativeMenuItem? _lightThemeMenuItem;
@@ -19,6 +22,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         RestoreWindowSize();
+        DataContextChanged += OnDataContextChanged;
         SizeChanged += OnWindowSizeChanged;
         Closing += OnWindowClosing;
         ConfigureSystemMenu();
@@ -67,7 +71,65 @@ public partial class MainWindow : Window
         settings.MainWindowWidth = _normalWindowWidth;
         settings.MainWindowHeight = _normalWindowHeight;
         settings.MainWindowMaximized = WindowState == WindowState.Maximized;
+        SaveDockState(settings);
         settings.Save();
+    }
+
+    /// <summary>
+    /// Aggancia i dock alle righe e colonne che li ospitano. Il collegamento non puo' essere
+    /// un binding: le definizioni della griglia non fanno parte dell'albero logico e non
+    /// ereditano quindi il DataContext.
+    /// </summary>
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        foreach (var layout in _dockLayouts)
+        {
+            layout.Dispose();
+        }
+
+        _dockLayouts.Clear();
+
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        RestoreDockState(viewModel, UserSettings.Load());
+
+        // Le definizioni di griglia non sono controlli e non ricevono un campo da x:Name:
+        // vanno prese per posizione. Gli indici sono annotati anche in MainWindow.axaml.
+        _dockLayouts.Add(ToolDockLayout.ForColumn(viewModel.LeftDock, CenterGrid.ColumnDefinitions[0]));
+        _dockLayouts.Add(ToolDockLayout.ForColumn(viewModel.RightDock, CenterGrid.ColumnDefinitions[4]));
+        _dockLayouts.Add(ToolDockLayout.ForRow(viewModel.BottomDock, WorkAreaGrid.RowDefinitions[2]));
+    }
+
+    private static void RestoreDockState(MainViewModel viewModel, UserSettings settings)
+    {
+        foreach (var dock in viewModel.Docks)
+        {
+            if (settings.Docks.TryGetValue(dock.Placement.ToString(), out var saved))
+            {
+                dock.Restore(saved.IsOpen, saved.SelectedTool, saved.ToolSizes);
+            }
+        }
+    }
+
+    private void SaveDockState(UserSettings settings)
+    {
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        foreach (var dock in viewModel.Docks)
+        {
+            settings.Docks[dock.Placement.ToString()] = new ToolDockSettings
+            {
+                IsOpen = dock.IsOpen,
+                SelectedTool = dock.SelectedTool?.Id,
+                ToolSizes = dock.ToolSizes()
+            };
+        }
     }
 
     private void OpenEditorWindow(object? sender, RoutedEventArgs e)

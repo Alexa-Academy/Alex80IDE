@@ -16,17 +16,32 @@
         Background="{DynamicResource AppBackgroundBrush}"
         FontFamily="{DynamicResource UiFontFamily}">
 
+    <Window.Resources>
+        <!-- Pulsante di una tool window nella strip di bordo: icona sola, acceso quando il
+             suo pannello e' quello aperto. -->
+        <DataTemplate x:Key="ToolStripButtonTemplate" x:DataType="vm:ToolWindowViewModel">
+            <Button Classes="toolStripButton"
+                    Classes.active="{Binding IsActive}"
+                    Command="{Binding ToggleCommand}"
+                    ToolTip.Tip="{Binding Title}">
+                <PathIcon Classes="stripIcon"
+                          Data="{Binding IconKey, Converter={StaticResource ResourceKeyConverter}}" />
+            </Button>
+        </DataTemplate>
+    </Window.Resources>
+
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-        <!-- Barra globale: identità, porta seriale, stato scheda. -->
+        <!-- Barra globale. A sinistra la scheda: identità e connessione, dove negli IDE
+             JetBrains sta il selettore di progetto. A destra i comandi di esecuzione,
+             dove negli stessi IDE stanno run, debug e stop. -->
         <Border Grid.Row="0" Classes="appBar">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="12">
-                <TextBlock Text="Alex80 IDE"
-                           FontSize="15"
-                           FontWeight="SemiBold"
-                           VerticalAlignment="Center" />
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="Alex80 IDE"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
                     <Border Classes="separator" />
                     <TextBlock Text="Porta" Classes="caption" VerticalAlignment="Center" />
                     <ComboBox x:Name="PortsDropdown"
@@ -36,63 +51,15 @@
                     <Button Content="{Binding ToggleButtonContent}"
                             Classes="primary tool"
                             Command="{Binding OpenCloseSerialPortCommand}" />
-                </StackPanel>
-
-                <!-- Bolla a sinistra, centrata verticalmente sull'altezza del
-                     gruppo etichetta + interruttori. -->
-                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Border Classes="cardBadge" VerticalAlignment="Center">
                         <TextBlock Text="{Binding CardBadgeText}"
                                    Classes="caption"
                                    Foreground="{DynamicResource AccentBrush}"
                                    HorizontalAlignment="Center" />
                     </Border>
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <ToggleSwitch Content="Clock Arduino"
-                                      IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
-                                      IsEnabled="{Binding IsSerialOpened}" />
-                        <ToggleSwitch Content="Mem Arduino"
-                                      IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
-                                      IsEnabled="{Binding IsSerialOpened}" />
-                        <ToggleSwitch Content="Modo Z80"
-                                      IsChecked="{Binding Z80CompatibilityMode, Mode=TwoWay}"
-                                      IsVisible="{Binding IsEz80Context}"
-                                      IsEnabled="{Binding IsSerialOpened}"
-                                      ToolTip.Tip="Spento: indirizzi a 24 bit (ADL). Acceso: modo Z80, solo 64 KB tramite MBASE." />
-                    </StackPanel>
-                </StackPanel>
-            </Grid>
-        </Border>
-
-        <!-- Toolbar contestuale: file a sinistra, esecuzione al centro, clock a destra. -->
-        <Border Grid.Row="1" Classes="toolBar">
-            <Grid ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="10">
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Button Command="{Binding NewTabCommand}" Classes="iconOnly"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Nuova ({0}+N)'}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource FileNewIconData}" />
-                    </Button>
-                    <Button Command="{Binding OpenFileCommand}" Classes="iconOnly"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Apri ({0}+O)'}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource FolderOpenIconData}" />
-                    </Button>
-                    <Button Command="{Binding SaveFileCommand}" Classes="iconOnly"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Salva ({0}+S)'}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource SaveIconData}" />
-                    </Button>
-                    <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome" Classes="tool"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Salva con nome ({0}+Shift+S)'}" />
-                    <Border Classes="separator" />
-                    <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
-                    <Button Command="{Binding SaveArduinoArrayCommand}" Content="Salva array Arduino" Classes="tool" />
-                    <Button Click="LoadFileAsync" Classes="iconOnly" ToolTip.Tip="Carica bin">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource LoadBinIconData}" />
-                    </Button>
                 </StackPanel>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Border Classes="separator" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <Button Content="{Binding IsClockActive, Converter={StaticResource StartStopConverter}}"
                             Classes="primary tool"
                             Command="{Binding StartStopBoardCommand}"
@@ -136,8 +103,38 @@
                             Command="{Binding DumpCommand}"
                             IsEnabled="{Binding IsSerialOpened}" />
                 </StackPanel>
+            </Grid>
+        </Border>
 
-                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <!-- Toolbar contestuale: sorgenti e assemblaggio a sinistra, configurazione della
+             scheda a destra. -->
+        <Border Grid.Row="1" Classes="toolBar">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <Button Command="{Binding NewTabCommand}" Classes="iconOnly"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Nuova ({0}+N)'}">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource FileNewIconData}" />
+                    </Button>
+                    <Button Command="{Binding OpenFileCommand}" Classes="iconOnly"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Apri ({0}+O)'}">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource FolderOpenIconData}" />
+                    </Button>
+                    <Button Command="{Binding SaveFileCommand}" Classes="iconOnly"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Salva ({0}+S)'}">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource SaveIconData}" />
+                    </Button>
+                    <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome" Classes="tool"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Salva con nome ({0}+Shift+S)'}" />
+                    <Border Classes="separator" />
+                    <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
+                    <Button Command="{Binding SaveArduinoArrayCommand}" Content="Salva array Arduino" Classes="tool" />
+                    <Button Click="LoadFileAsync" Classes="iconOnly" ToolTip.Tip="Carica bin">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource LoadBinIconData}" />
+                    </Button>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <ProgressBar Minimum="0"
                                  Maximum="100"
                                  Width="160"
@@ -146,6 +143,18 @@
                                  Value="{Binding ProgressValue}"
                                  IsVisible="{Binding ProgressVisible}" />
                     <Border Classes="separator" />
+                    <ToggleSwitch Content="Clock Arduino"
+                                  IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
+                                  IsEnabled="{Binding IsSerialOpened}" />
+                    <ToggleSwitch Content="Mem Arduino"
+                                  IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
+                                  IsEnabled="{Binding IsSerialOpened}" />
+                    <ToggleSwitch Content="Modo Z80"
+                                  IsChecked="{Binding Z80CompatibilityMode, Mode=TwoWay}"
+                                  IsVisible="{Binding IsEz80Context}"
+                                  IsEnabled="{Binding IsSerialOpened}"
+                                  ToolTip.Tip="Spento: indirizzi a 24 bit (ADL). Acceso: modo Z80, solo 64 KB tramite MBASE." />
+                    <Border Classes="separator" />
                     <TextBlock Text="Clock" Classes="caption" VerticalAlignment="Center" />
                     <TextBox Text="{Binding ClockFrequency}" Width="76" Classes="mono" />
                     <TextBlock Text="Hz" Classes="caption" VerticalAlignment="Center" />
@@ -153,128 +162,177 @@
             </Grid>
         </Border>
 
-        <!-- Area di lavoro: editor + registri sopra, pannello strumenti sotto. -->
-        <Grid Grid.Row="2" RowDefinitions="*,6,300" Margin="10">
-            <Grid ColumnDefinitions="270,6,*,6,330">
+        <!-- Area di lavoro. Le strip di bordo sono sempre visibili: ogni pannello si apre
+             e si chiude dalla propria icona, come in Rider e Android Studio. La misura dei
+             pannelli e' gestita da ToolDockLayout, nel code-behind. -->
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
 
-                <!-- Pannello progetto: i file che compongono il programma e come vanno assemblati. -->
-                <Border Classes="panel" Padding="0">
-                    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="12">
-                        <StackPanel Spacing="2">
-                            <TextBlock Text="PROGETTO" Classes="caption" />
-                            <TextBlock Text="{Binding ProjectTitle}"
-                                       FontWeight="SemiBold"
-                                       TextTrimming="CharacterEllipsis"
-                                       ToolTip.Tip="{Binding CurrentProject.ProjectPath}" />
-                        </StackPanel>
+            <!-- Strip di sinistra, due gruppi come negli IDE JetBrains: in alto gli
+                 strumenti che si aprono di fianco, in basso quelli che si aprono sotto. -->
+            <Border Grid.Column="0"
+                    Classes="toolStrip left"
+                    IsVisible="{Binding HasLeftStripTools}">
+                <DockPanel LastChildFill="False">
+                    <ItemsControl DockPanel.Dock="Top"
+                                  ItemsSource="{Binding LeftDock.Tools}"
+                                  ItemTemplate="{StaticResource ToolStripButtonTemplate}" />
+                    <ItemsControl DockPanel.Dock="Bottom"
+                                  ItemsSource="{Binding BottomDock.Tools}"
+                                  ItemTemplate="{StaticResource ToolStripButtonTemplate}" />
+                </DockPanel>
+            </Border>
 
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,10,0,8">
-                            <Button Content="Nuovo" Classes="tool" Command="{Binding NewProjectCommand}"
-                                    ToolTip.Tip="Crea un progetto con i sorgenti già aperti" />
-                            <Button Content="Apri" Classes="tool" Command="{Binding OpenProjectCommand}" />
-                            <Button Content="+ File" Classes="tool" Command="{Binding AddFilesToProjectCommand}"
-                                    ToolTip.Tip="Aggiungi sorgenti al progetto" />
-                            <Button Content="✕" Classes="tool" Command="{Binding CloseProjectCommand}"
-                                    ToolTip.Tip="Chiudi il progetto" />
-                        </StackPanel>
+            <!-- Le misure delle righe e colonne che ospitano i pannelli sono gestite dal
+                 code-behind: vedi gli indici in MainWindow.axaml.cs. -->
+            <Grid x:Name="WorkAreaGrid" Grid.Column="1" Margin="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" MinHeight="200" />
+                    <RowDefinition Height="Auto" />
+                    <!-- 2: pannello del dock inferiore -->
+                    <RowDefinition Height="300" />
+                </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="2"
-                                   Classes="caption"
-                                   TextWrapping="Wrap"
-                                   VerticalAlignment="Top"
-                                   IsVisible="{Binding !HasProject}"
-                                   Text="Nessun progetto aperto: &quot;Assembla&quot; lavora sul sorgente selezionato. Crea un progetto per assemblare più file in un unico binario." />
+                <Grid x:Name="CenterGrid" Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <!-- 0: pannello del dock sinistro -->
+                        <ColumnDefinition Width="270" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" MinWidth="260" />
+                        <ColumnDefinition Width="Auto" />
+                        <!-- 4: pannello del dock destro -->
+                        <ColumnDefinition Width="330" />
+                    </Grid.ColumnDefinitions>
 
-                        <ListBox Grid.Row="2"
-                                 Classes="projectFiles"
-                                 IsVisible="{Binding HasProject}"
-                                 ItemsSource="{Binding ProjectFiles}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ProjectFileViewModel">
-                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
-                                        <Button Classes="fileLink"
-                                                Content="{Binding FileName}"
-                                                Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).OpenProjectFileCommand}"
-                                                CommandParameter="{Binding}"
-                                                ToolTip.Tip="{Binding AbsolutePath}" />
+                    <!-- Dock sinistro: i file che compongono il programma e come vanno assemblati. -->
+                    <Border Grid.Column="0" Classes="panel" IsVisible="{Binding LeftDock.IsPanelVisible}">
+                        <Grid RowDefinitions="Auto,*">
+                            <Border Classes="toolPanelHeader">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding LeftDock.HeaderTitle}" Classes="toolPanelTitle" />
+                                    <Button Grid.Column="1" Content="✕" Classes="closeTab"
+                                            Command="{Binding LeftDock.CloseCommand}"
+                                            ToolTip.Tip="Chiudi il pannello" />
+                                </Grid>
+                            </Border>
 
-                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
-                                            <Button Classes="rowAction" Content="▲"
-                                                    ToolTip.Tip="Sposta su"
-                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).MoveProjectFileUpCommand}"
-                                                    CommandParameter="{Binding}" />
-                                            <Button Classes="rowAction" Content="▼"
-                                                    ToolTip.Tip="Sposta giù"
-                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).MoveProjectFileDownCommand}"
-                                                    CommandParameter="{Binding}" />
-                                            <Button Classes="rowAction" Content="★"
-                                                    ToolTip.Tip="Rendi principale"
-                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).SetMainProjectFileCommand}"
-                                                    CommandParameter="{Binding}" />
-                                            <Button Classes="rowAction danger" Content="✕"
-                                                    ToolTip.Tip="Togli dal progetto"
-                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).RemoveProjectFileCommand}"
-                                                    CommandParameter="{Binding}" />
-                                        </StackPanel>
+                            <Grid Grid.Row="1"
+                                  IsVisible="{Binding ProjectTool.IsActive}"
+                                  RowDefinitions="Auto,Auto,*,Auto"
+                                  Margin="12">
+                                <TextBlock Text="{Binding ProjectTitle}"
+                                           FontWeight="SemiBold"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip.Tip="{Binding CurrentProject.ProjectPath}" />
 
-                                        <StackPanel Grid.Row="1" Grid.ColumnSpan="2"
-                                                    Orientation="Horizontal" Spacing="6" Margin="8,0,0,2">
-                                            <TextBlock Text="principale" Classes="fileBadge" IsVisible="{Binding IsMain}" />
-                                            <TextBlock Text="{Binding SubFolder}" Classes="caption" IsVisible="{Binding HasSubFolder}" />
-                                            <TextBlock Text="{Binding Placement}" Classes="statusValue" />
-                                            <TextBlock Text="non trovato" Classes="caption"
-                                                       Foreground="{DynamicResource DangerBrush}"
-                                                       IsVisible="{Binding IsMissing}" />
-                                        </StackPanel>
-                                    </Grid>
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,10,0,8">
+                                    <Button Content="Nuovo" Classes="tool" Command="{Binding NewProjectCommand}"
+                                            ToolTip.Tip="Crea un progetto con i sorgenti già aperti" />
+                                    <Button Content="Apri" Classes="tool" Command="{Binding OpenProjectCommand}" />
+                                    <Button Content="+ File" Classes="tool" Command="{Binding AddFilesToProjectCommand}"
+                                            ToolTip.Tip="Aggiungi sorgenti al progetto" />
+                                    <Button Content="✕" Classes="tool" Command="{Binding CloseProjectCommand}"
+                                            ToolTip.Tip="Chiudi il progetto" />
+                                </StackPanel>
 
-                        <StackPanel Grid.Row="3" Spacing="7" Margin="0,12,0,0">
-                            <Border Classes="separatorH" />
-                            <TextBlock Text="ASSEMBLATORE" Classes="caption" />
-                            <TextBlock Text="{Binding SettingsScopeText}" Classes="caption" TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="2"
+                                           Classes="caption"
+                                           TextWrapping="Wrap"
+                                           VerticalAlignment="Top"
+                                           IsVisible="{Binding !HasProject}"
+                                           Text="Nessun progetto aperto: &quot;Assembla&quot; lavora sul sorgente selezionato. Crea un progetto per assemblare più file in un unico binario." />
 
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <TextBlock Text="CPU" Classes="caption" VerticalAlignment="Center" />
-                                <ComboBox ItemsSource="{Binding AvailableCpus}"
-                                          SelectedItem="{Binding CpuName, Mode=TwoWay}"
-                                          MinWidth="110"
-                                          ToolTip.Tip="CPU di destinazione. Una direttiva .CPU nel sorgente ha comunque la precedenza." />
-                            </StackPanel>
+                                <ListBox Grid.Row="2"
+                                         Classes="projectFiles"
+                                         IsVisible="{Binding HasProject}"
+                                         ItemsSource="{Binding ProjectFiles}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:ProjectFileViewModel">
+                                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                                <Button Classes="fileLink"
+                                                        Content="{Binding FileName}"
+                                                        Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).OpenProjectFileCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        ToolTip.Tip="{Binding AbsolutePath}" />
 
-                            <CheckBox Content="Sintassi TASM"
-                                      IsChecked="{Binding TasmCompatibility, Mode=TwoWay}"
-                                      ToolTip.Tip="Accetta anche .EQU, .BYTE, etichette senza due punti, $FF, &amp; | ^ ~ &lt;&lt; &gt;&gt;" />
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
+                                                    <Button Classes="rowAction" Content="▲"
+                                                            ToolTip.Tip="Sposta su"
+                                                            Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).MoveProjectFileUpCommand}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Classes="rowAction" Content="▼"
+                                                            ToolTip.Tip="Sposta giù"
+                                                            Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).MoveProjectFileDownCommand}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Classes="rowAction" Content="★"
+                                                            ToolTip.Tip="Rendi principale"
+                                                            Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).SetMainProjectFileCommand}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Classes="rowAction danger" Content="✕"
+                                                            ToolTip.Tip="Togli dal progetto"
+                                                            Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).RemoveProjectFileCommand}"
+                                                            CommandParameter="{Binding}" />
+                                                </StackPanel>
 
-                            <CheckBox Content="Simboli condivisi fra i file"
-                                      IsEnabled="{Binding HasProject}"
-                                      IsChecked="{Binding IsSingleUnitMode, Mode=TwoWay}"
-                                      ToolTip.Tip="Spento: ogni file è un blocco a sé (label omonime non danno conflitto). Acceso: i file sono un unico sorgente e si vedono i simboli a vicenda." />
+                                                <StackPanel Grid.Row="1" Grid.ColumnSpan="2"
+                                                            Orientation="Horizontal" Spacing="6" Margin="8,0,0,2">
+                                                    <TextBlock Text="principale" Classes="fileBadge" IsVisible="{Binding IsMain}" />
+                                                    <TextBlock Text="{Binding SubFolder}" Classes="caption" IsVisible="{Binding HasSubFolder}" />
+                                                    <TextBlock Text="{Binding Placement}" Classes="statusValue" />
+                                                    <TextBlock Text="non trovato" Classes="caption"
+                                                               Foreground="{DynamicResource DangerBrush}"
+                                                               IsVisible="{Binding IsMissing}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
 
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <TextBlock Text="Riempimento" Classes="caption" VerticalAlignment="Center" />
-                                <TextBox Text="{Binding FillByteText, Mode=TwoWay}"
-                                         Width="56"
-                                         Classes="mono"
-                                         ToolTip.Tip="Byte usato per le posizioni di memoria che nessun file occupa (esadecimale)" />
-                                <TextBlock Text="h" Classes="caption" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Grid>
-                </Border>
+                                <StackPanel Grid.Row="3" Spacing="7" Margin="0,12,0,0">
+                                    <Border Classes="separatorH" />
+                                    <TextBlock Text="ASSEMBLATORE" Classes="caption" />
+                                    <TextBlock Text="{Binding SettingsScopeText}" Classes="caption" TextWrapping="Wrap" />
 
-                <GridSplitter Grid.Column="1"
-                              Width="6"
-                              HorizontalAlignment="Stretch"
-                              VerticalAlignment="Stretch"
-                              ResizeDirection="Columns" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="CPU" Classes="caption" VerticalAlignment="Center" />
+                                        <ComboBox ItemsSource="{Binding AvailableCpus}"
+                                                  SelectedItem="{Binding CpuName, Mode=TwoWay}"
+                                                  MinWidth="110"
+                                                  ToolTip.Tip="CPU di destinazione. Una direttiva .CPU nel sorgente ha comunque la precedenza." />
+                                    </StackPanel>
 
-                <Border Grid.Column="2" Classes="panel" Padding="0">
-                    <Grid RowDefinitions="*">
+                                    <CheckBox Content="Sintassi TASM"
+                                              IsChecked="{Binding TasmCompatibility, Mode=TwoWay}"
+                                              ToolTip.Tip="Accetta anche .EQU, .BYTE, etichette senza due punti, $FF, &amp; | ^ ~ &lt;&lt; &gt;&gt;" />
+
+                                    <CheckBox Content="Simboli condivisi fra i file"
+                                              IsEnabled="{Binding HasProject}"
+                                              IsChecked="{Binding IsSingleUnitMode, Mode=TwoWay}"
+                                              ToolTip.Tip="Spento: ogni file è un blocco a sé (label omonime non danno conflitto). Acceso: i file sono un unico sorgente e si vedono i simboli a vicenda." />
+
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <TextBlock Text="Riempimento" Classes="caption" VerticalAlignment="Center" />
+                                        <TextBox Text="{Binding FillByteText, Mode=TwoWay}"
+                                                 Width="56"
+                                                 Classes="mono"
+                                                 ToolTip.Tip="Byte usato per le posizioni di memoria che nessun file occupa (esadecimale)" />
+                                        <TextBlock Text="h" Classes="caption" VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <GridSplitter Grid.Column="1"
+                                  Width="6"
+                                  Cursor="SizeWestEast"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  ResizeDirection="Columns"
+                                  IsVisible="{Binding LeftDock.IsPanelVisible}" />
+
+                    <Border Grid.Column="2" Classes="panel">
                         <TabControl Classes="workspaceTabs"
-                                    Margin="8,8,8,0"
+                                    Margin="6,4,6,0"
                                     ItemsSource="{Binding OpenDocuments}"
                                     SelectedItem="{Binding SelectedDocument}">
                             <TabControl.ItemTemplate>
@@ -319,76 +377,85 @@
                                 </DataTemplate>
                             </TabControl.ContentTemplate>
                         </TabControl>
-                    </Grid>
-                </Border>
+                    </Border>
 
-                <GridSplitter Grid.Column="3"
-                              Width="6"
+                    <GridSplitter Grid.Column="3"
+                                  Width="6"
+                                  Cursor="SizeWestEast"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  ResizeDirection="Columns"
+                                  IsVisible="{Binding RightDock.IsPanelVisible}" />
+
+                    <!-- Dock destro: lo stato della CPU e gli strumenti di osservazione. -->
+                    <Border Grid.Column="4" Classes="panel" IsVisible="{Binding RightDock.IsPanelVisible}">
+                        <Grid RowDefinitions="Auto,*">
+                            <Border Classes="toolPanelHeader">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding RightDock.HeaderTitle}" Classes="toolPanelTitle" />
+                                    <Button Grid.Column="1" Content="✕" Classes="closeTab"
+                                            Command="{Binding RightDock.CloseCommand}"
+                                            ToolTip.Tip="Chiudi il pannello" />
+                                </Grid>
+                            </Border>
+
+                            <ScrollViewer Grid.Row="1"
+                                          IsVisible="{Binding RegistersTool.IsActive}"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <controls:RegistersView Margin="14" />
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <GridSplitter Grid.Row="1"
+                              Height="6"
+                              Cursor="SizeNorthSouth"
                               HorizontalAlignment="Stretch"
                               VerticalAlignment="Stretch"
-                              ResizeDirection="Columns" />
+                              ResizeDirection="Rows"
+                              IsVisible="{Binding BottomDock.IsPanelVisible}" />
 
-                <Border Grid.Column="4" Classes="panel">
-                    <controls:RegistersView />
+                <!-- Dock inferiore: gli strumenti di osservazione della scheda. Le loro
+                     icone stanno in fondo alla strip di sinistra. -->
+                <Border Grid.Row="2" Classes="panel" IsVisible="{Binding BottomDock.IsPanelVisible}">
+                    <Grid RowDefinitions="Auto,*">
+                        <Border Classes="toolPanelHeader">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="{Binding BottomDock.HeaderTitle}" Classes="toolPanelTitle" />
+                                <Button Grid.Column="1" Content="✕" Classes="closeTab"
+                                        Command="{Binding BottomDock.CloseCommand}"
+                                        ToolTip.Tip="Chiudi il pannello" />
+                            </Grid>
+                        </Border>
+
+                        <Panel Grid.Row="1">
+                            <controls:MemoryView Title="" ShowToolbar="True"
+                                                 IsVisible="{Binding MemoryTool.IsActive}" />
+                            <controls:BusLogView IsVisible="{Binding BusLogTool.IsActive}" />
+                            <controls:SerialConsoleView Title="" Margin="14"
+                                                        IsVisible="{Binding SerialTool.IsActive}" />
+                        </Panel>
+                    </Grid>
                 </Border>
             </Grid>
 
-            <GridSplitter Grid.Row="1"
-                          Height="6"
-                          HorizontalAlignment="Stretch"
-                          VerticalAlignment="Stretch"
-                          ResizeDirection="Rows" />
-
-            <Border Grid.Row="2" Classes="panel" Padding="0">
-                <TabControl Classes="bottomPanelTabs">
-                    <TabItem>
-                        <TabItem.Header>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <PathIcon Classes="toolIcon" Data="{DynamicResource MemoryIconData}" />
-                                <TextBlock Text="Memoria" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </TabItem.Header>
-                        <controls:MemoryView Title="" ShowToolbar="True" />
-                    </TabItem>
-
-                    <TabItem>
-                        <TabItem.Header>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <PathIcon Classes="toolIcon" Data="{DynamicResource BusLogIconData}" />
-                                <TextBlock Text="Bus log" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </TabItem.Header>
-                        <controls:BusLogView />
-                    </TabItem>
-
-                    <TabItem>
-                        <TabItem.Header>
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <PathIcon Classes="toolIcon" Data="{DynamicResource SerialIconData}" />
-                                <TextBlock Text="Seriale" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </TabItem.Header>
-                        <controls:SerialConsoleView Title="" Margin="14" />
-                    </TabItem>
-                </TabControl>
+            <Border Grid.Column="2"
+                    Classes="toolStrip right"
+                    IsVisible="{Binding RightDock.HasTools}">
+                <ItemsControl ItemsSource="{Binding RightDock.Tools}"
+                              ItemTemplate="{StaticResource ToolStripButtonTemplate}" />
             </Border>
         </Grid>
 
-        <!-- Status bar: stato scheda, PC/SP correnti, esito dell'ultima assemblata. -->
+        <!-- Status bar: stato della scheda ed esito dell'ultima assemblata. PC e SP stanno
+             nella tool window dei registri. -->
         <Border Grid.Row="3" Classes="statusBar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                     <TextBlock Text="{Binding CardBadgeText}" Classes="statusItem" />
                     <TextBlock Text="{Binding IsClockActive, Converter={StaticResource ClockStateConverter}}"
                                Classes="statusItem" />
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <TextBlock Text="PC" Classes="statusItem" />
-                        <TextBlock Text="{Binding PcRegHex}" Classes="statusValue" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <TextBlock Text="SP" Classes="statusItem" />
-                        <TextBlock Text="{Binding SpRegHex}" Classes="statusValue" />
-                    </StackPanel>
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">

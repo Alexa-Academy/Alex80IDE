@@ -628,6 +628,7 @@ public partial class MainViewModel : ObservableObject
         ToggleAssemblerOutputCommand = new RelayCommand(_ => IsAssemblerOutputVisible = !IsAssemblerOutputVisible);
 
         InitializeProjectCommands();
+        InitializeDocks();
 
         //AddNewTab(); // apri una scheda iniziale
     }

@@ -4,9 +4,8 @@
              x:Class="Alex80_IDE.Controls.RegistersView"
              x:DataType="global:MainViewModel">
 
+    <!-- Il titolo lo mette l'intestazione della tool window che ospita la vista. -->
     <StackPanel Spacing="12">
-        <TextBlock Text="Registri" Classes="sectionTitle" />
-
         <!-- Vista Z80: registri a 8 e 16 bit. -->
         <UniformGrid Columns="3" Rows="5" IsVisible="{Binding !IsEz80}">
             <Border Classes="registerChip" Margin="0,0,7,7"><StackPanel><TextBlock Text="A" Classes="registerLabel" /><TextBlock Text="{Binding ARegHex}" Classes="registerValue" /></StackPanel></Border>

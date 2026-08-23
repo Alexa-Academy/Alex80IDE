@@ -24,6 +24,7 @@
             <converters:ClockStateConverter x:Key="ClockStateConverter" />
             <converters:FileTypeBadgeConverter x:Key="FileTypeBadgeConverter" />
             <global:BoolToDotConverter x:Key="BoolToDotConverter" />
+            <converters:ResourceKeyConverter x:Key="ResourceKeyConverter" />
         </ResourceDictionary>
     </Application.Resources>
 
@@ -32,6 +33,7 @@
         <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml"/>
         <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml"/>
         <StyleInclude Source="avares://Alex80_IDE/Styles/Controls.axaml"/>
+        <StyleInclude Source="avares://Alex80_IDE/Styles/ToolWindows.axaml"/>
     </Application.Styles>
 
 </Application>

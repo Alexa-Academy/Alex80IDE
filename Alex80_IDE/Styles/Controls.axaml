@@ -46,32 +46,36 @@
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 
+    <!-- Riquadri dell'area di lavoro: tessere appena arrotondate posate sulla cornice.
+         A separarli non serve una riga, basta il filo di sfondo che resta fra l'uno e
+         l'altro; il clip tiene il contenuto dentro gli angoli. -->
     <Style Selector="Border.panel">
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="CornerRadius" Value="8" />
-        <Setter Property="Padding" Value="14" />
+        <Setter Property="ClipToBounds" Value="True" />
+        <Setter Property="Padding" Value="0" />
     </Style>
 
-    <!-- Barre della shell: a tutta larghezza, spigoli vivi, densità ridotta. -->
+    <!-- Cornice della shell: barre, strip e status bar condividono lo sfondo dell'app,
+         cosi' l'area di lavoro si stacca senza bisogno di linee marcate. -->
     <Style Selector="Border.appBar">
-        <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderHairlineBrush}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
         <Setter Property="Padding" Value="12,8" />
     </Style>
 
     <Style Selector="Border.toolBar">
-        <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderHairlineBrush}" />
         <Setter Property="BorderThickness" Value="0,0,0,1" />
         <Setter Property="Padding" Value="12,6" />
     </Style>
 
     <Style Selector="Border.statusBar">
-        <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderHairlineBrush}" />
         <Setter Property="BorderThickness" Value="0,1,0,0" />
         <Setter Property="Padding" Value="12,5" />
     </Style>
@@ -236,8 +240,10 @@
         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
     </Style>
 
+    <!-- Il separatore non si disegna: e' un pezzo di cornice fra due riquadri, e si nota
+         solo perche' il puntatore cambia forma quando ci passa sopra. -->
     <Style Selector="GridSplitter">
-        <Setter Property="Background" Value="{DynamicResource BorderSoftBrush}" />
+        <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
     </Style>
 
     <Style Selector="ComboBox, TextBox">
