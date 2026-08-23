@@ -10,17 +10,17 @@
          mette l'intestazione della tool window che ospita la vista. -->
     <StackPanel Spacing="16">
 
-        <StackPanel Spacing="10">
+        <!-- Segnali che esistono solo sulle ALEX80: sull'eZ80 si passa da ZDI e questi
+             comandi non hanno un corrispettivo, quindi restano spenti. -->
+        <StackPanel Spacing="10" IsEnabled="{Binding CanConfigureArduinoSignals}">
             <TextBlock Text="SORGENTI" Classes="caption" />
 
             <ToggleSwitch Content="Clock da Arduino"
                           IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
-                          IsEnabled="{Binding IsSerialOpened}"
                           ToolTip.Tip="Acceso: il clock dello Z80 lo genera l'Arduino, alla frequenza indicata qui sotto. Spento: arriva dall'oscillatore della scheda." />
 
             <ToggleSwitch Content="Memoria da Arduino"
                           IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
-                          IsEnabled="{Binding IsSerialOpened}"
                           ToolTip.Tip="Acceso: i cicli di memoria li serve l'Arduino. Spento: rispondono le memorie della scheda." />
 
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -30,15 +30,32 @@
             </StackPanel>
         </StackPanel>
 
+        <!-- Il motivo sta fuori dal gruppo spento, altrimenti sarebbe l'unica spiegazione
+             disponibile e verrebbe mostrata smorzata insieme ai comandi che spiega. -->
+        <TextBlock Classes="caption"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding IsEz80}"
+                   Text="La scheda eZ80 si comanda via ZDI: clock e cicli di memoria non passano dall'Arduino." />
+
         <Border Classes="separatorH" />
 
+        <!-- Il modo della CPU riguarda solo l'eZ80: su una ALEX80 c'e' uno Z80 e non
+             c'e' niente da scegliere. -->
         <StackPanel Spacing="10">
             <TextBlock Text="MODO DELLA CPU" Classes="caption" />
 
             <ToggleSwitch Content="Modo Z80"
                           IsChecked="{Binding Z80CompatibilityMode, Mode=TwoWay}"
-                          IsEnabled="{Binding IsSerialOpened}"
+                          IsEnabled="{Binding CanChooseCpuMode}"
                           ToolTip.Tip="Spento: indirizzi a 24 bit (ADL). Acceso: modo Z80, solo 64 KB tramite MBASE." />
+
         </StackPanel>
+
+        <!-- Solo con una scheda non eZ80 collegata: a porta chiusa non si sa ancora
+             quale scheda ci sia, e dare la spiegazione sarebbe dire una cosa non vera. -->
+        <TextBlock Classes="caption"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding CanConfigureArduinoSignals}"
+                   Text="La scelta vale solo sulla scheda eZ80: sulle ALEX80 la CPU è uno Z80." />
     </StackPanel>
 </UserControl>

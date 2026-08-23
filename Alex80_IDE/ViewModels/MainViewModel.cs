@@ -114,6 +114,9 @@ public partial class MainViewModel : ObservableObject
         }
 
         WriteMemoryCommand.NotifyCanExecuteChanged();
+
+        OnPropertyChanged(nameof(CanConfigureArduinoSignals));
+        OnPropertyChanged(nameof(CanChooseCpuMode));
     }
     
     [ObservableProperty] 
@@ -333,6 +336,21 @@ public partial class MainViewModel : ObservableObject
     public bool IsEz80Context => IsEz80 || IsEz80Cpu;
 
     /// <summary>
+    /// Clock e cicli di memoria serviti dall'Arduino esistono solo sulle schede
+    /// ALEX80: sull'eZ80 il collegamento e' ZDI e questi segnali non ci sono, cosi'
+    /// come non ha senso imporre una frequenza di clock. Il giudizio guarda alla
+    /// scheda collegata e non alla CPU di progetto: e' l'hardware davanti a noi a
+    /// dire quali segnali esistono.
+    /// </summary>
+    public bool CanConfigureArduinoSignals => IsSerialOpened && !IsEz80;
+
+    /// <summary>
+    /// Scegliere fra modo ADL e modo Z80 ha senso solo sull'eZ80. Su una ALEX80 la
+    /// CPU e' uno Z80 e non c'e' niente da scegliere: la levetta resta spenta.
+    /// </summary>
+    public bool CanChooseCpuMode => IsSerialOpened && IsEz80;
+
+    /// <summary>
     /// Interpreta il campo indirizzo come esadecimale, che e' il formato in cui
     /// l'IDE lo scrive (vedi AddressHex = ToString("X4")). Ritorna il valore di
     /// ripiego se il testo non e' valido o eccede l'ampiezza corrente: senza il
@@ -385,6 +403,8 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsEz80Context));
         OnPropertyChanged(nameof(RunToolTip));
         OnPropertyChanged(nameof(CanRun));
+        OnPropertyChanged(nameof(CanConfigureArduinoSignals));
+        OnPropertyChanged(nameof(CanChooseCpuMode));
         OnPropertyChanged(nameof(IxRegHex));
         OnPropertyChanged(nameof(IyRegHex));
         OnPropertyChanged(nameof(SpRegHex));
