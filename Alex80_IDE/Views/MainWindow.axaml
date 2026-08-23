@@ -189,16 +189,16 @@
                                 </Grid>
                             </Border>
 
-                            <Grid Grid.Row="1"
-                                  IsVisible="{Binding ProjectTool.IsActive}"
-                                  RowDefinitions="Auto,Auto,*,Auto"
+                            <Panel Grid.Row="1">
+                                <Grid IsVisible="{Binding ProjectTool.IsActive}"
+                                  RowDefinitions="Auto,*"
                                   Margin="12">
                                 <TextBlock Text="{Binding ProjectTitle}"
                                            FontWeight="SemiBold"
                                            TextTrimming="CharacterEllipsis"
                                            ToolTip.Tip="{Binding CurrentProject.ProjectPath}" />
 
-                                <TextBlock Grid.Row="2"
+                                <TextBlock Grid.Row="1"
                                            Classes="caption"
                                            TextWrapping="Wrap"
                                            VerticalAlignment="Top"
@@ -209,7 +209,7 @@
                                 <!-- Le azioni sui file stanno nel menu contestuale, come negli
                                      IDE: le righe restano leggibili anche strette, e i sorgenti
                                      si aggiungono anche trascinandoli qui sopra. -->
-                                <ListBox Grid.Row="2"
+                                <ListBox Grid.Row="1"
                                          x:Name="ProjectFilesList"
                                          Classes="projectFiles"
                                          Margin="0,10,0,0"
@@ -260,39 +260,13 @@
                                         </DataTemplate>
                                     </ListBox.ItemTemplate>
                                 </ListBox>
-
-                                <StackPanel Grid.Row="3" Spacing="7" Margin="0,12,0,0">
-                                    <Border Classes="separatorH" />
-                                    <TextBlock Text="ASSEMBLATORE" Classes="caption" />
-                                    <TextBlock Text="{Binding SettingsScopeText}" Classes="caption" TextWrapping="Wrap" />
-
-                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <TextBlock Text="CPU" Classes="caption" VerticalAlignment="Center" />
-                                        <ComboBox ItemsSource="{Binding AvailableCpus}"
-                                                  SelectedItem="{Binding CpuName, Mode=TwoWay}"
-                                                  MinWidth="110"
-                                                  ToolTip.Tip="CPU di destinazione. Una direttiva .CPU nel sorgente ha comunque la precedenza." />
-                                    </StackPanel>
-
-                                    <CheckBox Content="Sintassi TASM"
-                                              IsChecked="{Binding TasmCompatibility, Mode=TwoWay}"
-                                              ToolTip.Tip="Accetta anche .EQU, .BYTE, etichette senza due punti, $FF, &amp; | ^ ~ &lt;&lt; &gt;&gt;" />
-
-                                    <CheckBox Content="Simboli condivisi fra i file"
-                                              IsEnabled="{Binding HasProject}"
-                                              IsChecked="{Binding IsSingleUnitMode, Mode=TwoWay}"
-                                              ToolTip.Tip="Spento: ogni file è un blocco a sé (label omonime non danno conflitto). Acceso: i file sono un unico sorgente e si vedono i simboli a vicenda." />
-
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <TextBlock Text="Riempimento" Classes="caption" VerticalAlignment="Center" />
-                                        <TextBox Text="{Binding FillByteText, Mode=TwoWay}"
-                                                 Width="56"
-                                                 Classes="mono"
-                                                 ToolTip.Tip="Byte usato per le posizioni di memoria che nessun file occupa (esadecimale)" />
-                                        <TextBlock Text="h" Classes="caption" VerticalAlignment="Center" />
-                                    </StackPanel>
-                                </StackPanel>
                             </Grid>
+
+                                <ScrollViewer IsVisible="{Binding AssemblerTool.IsActive}"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <controls:AssemblerSettingsView Margin="12" />
+                                </ScrollViewer>
+                            </Panel>
                         </Grid>
                     </Border>
 

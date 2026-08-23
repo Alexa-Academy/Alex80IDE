@@ -12,6 +12,8 @@ public partial class MainViewModel
 {
     public ToolWindowViewModel ProjectTool { get; } = new("project", "Progetto", "ProjectIconData", 270);
 
+    public ToolWindowViewModel AssemblerTool { get; } = new("assembler", "Assemblatore", "AssemblerIconData", 270);
+
     public ToolWindowViewModel RegistersTool { get; } = new("registers", "Registri", "RegistersIconData", 330);
 
     public ToolWindowViewModel BoardTool { get; } = new("board", "Scheda", "BoardIconData", 330);
@@ -23,7 +25,7 @@ public partial class MainViewModel
 
     public ToolWindowViewModel SerialTool { get; } = new("serial", "Seriale", "SerialIconData", 260);
 
-    /// <summary>Dock sinistro: i file che compongono il programma e come vanno assemblati.</summary>
+    /// <summary>Dock sinistro: i file che compongono il programma e come va assemblato.</summary>
     public ToolDockViewModel LeftDock { get; private set; } = null!;
 
     /// <summary>Dock destro: lo stato della CPU e la configurazione della scheda.</summary>
@@ -43,7 +45,7 @@ public partial class MainViewModel
 
     private void InitializeDocks()
     {
-        LeftDock = new ToolDockViewModel(ToolDockPlacement.Left, ProjectTool);
+        LeftDock = new ToolDockViewModel(ToolDockPlacement.Left, ProjectTool, AssemblerTool);
         RightDock = new ToolDockViewModel(ToolDockPlacement.Right, RegistersTool, BoardTool);
         BottomDock = new ToolDockViewModel(ToolDockPlacement.Bottom, MemoryTool, BusLogTool, SerialTool);
 
