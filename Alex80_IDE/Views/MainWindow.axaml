@@ -121,6 +121,9 @@
                             ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
                 </StackPanel>
 
+                <!-- La configurazione della scheda e' passata alla tool window "Scheda",
+                     nel pannello di destra: sono impostazioni che si toccano all'inizio
+                     della sessione, non a ogni assemblata. -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <ProgressBar Minimum="0"
                                  Maximum="100"
@@ -129,22 +132,6 @@
                                  VerticalAlignment="Center"
                                  Value="{Binding ProgressValue}"
                                  IsVisible="{Binding ProgressVisible}" />
-                    <Border Classes="separator" />
-                    <ToggleSwitch Content="Clock Arduino"
-                                  IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
-                                  IsEnabled="{Binding IsSerialOpened}" />
-                    <ToggleSwitch Content="Mem Arduino"
-                                  IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
-                                  IsEnabled="{Binding IsSerialOpened}" />
-                    <ToggleSwitch Content="Modo Z80"
-                                  IsChecked="{Binding Z80CompatibilityMode, Mode=TwoWay}"
-                                  IsVisible="{Binding IsEz80Context}"
-                                  IsEnabled="{Binding IsSerialOpened}"
-                                  ToolTip.Tip="Spento: indirizzi a 24 bit (ADL). Acceso: modo Z80, solo 64 KB tramite MBASE." />
-                    <Border Classes="separator" />
-                    <TextBlock Text="Clock" Classes="caption" VerticalAlignment="Center" />
-                    <TextBox Text="{Binding ClockFrequency}" Width="76" Classes="mono" />
-                    <TextBlock Text="Hz" Classes="caption" VerticalAlignment="Center" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -386,11 +373,17 @@
                                 </Grid>
                             </Border>
 
-                            <ScrollViewer Grid.Row="1"
-                                          IsVisible="{Binding RegistersTool.IsActive}"
-                                          HorizontalScrollBarVisibility="Disabled">
-                                <controls:RegistersView Margin="14" />
-                            </ScrollViewer>
+                            <Panel Grid.Row="1">
+                                <ScrollViewer IsVisible="{Binding RegistersTool.IsActive}"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <controls:RegistersView Margin="14" />
+                                </ScrollViewer>
+
+                                <ScrollViewer IsVisible="{Binding BoardTool.IsActive}"
+                                              HorizontalScrollBarVisibility="Disabled">
+                                    <controls:BoardSettingsView Margin="14" />
+                                </ScrollViewer>
+                            </Panel>
                         </Grid>
                     </Border>
                 </Grid>

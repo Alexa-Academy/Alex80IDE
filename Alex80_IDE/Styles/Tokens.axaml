@@ -68,6 +68,7 @@
     <StreamGeometry x:Key="StepIconData">M3,10 H13 V6 L19,12 L13,18 V14 H3 Z M20,4 H22 V20 H20 Z</StreamGeometry>
     <StreamGeometry x:Key="BusLogIconData">M2,13 H8 V15 H2 Z M8,7 H10 V15 H8 Z M10,7 H14 V9 H10 Z M14,7 H16 V15 H14 Z M16,13 H20 V15 H16 Z M20,7 H22 V15 H20 Z</StreamGeometry>
     <!-- Icone delle tool window nelle strip di bordo. -->
+    <StreamGeometry x:Key="BoardIconData">M3,6 H21 V7.5 H3 Z M7,4 H9.5 V9.5 H7 Z M3,11.25 H21 V12.75 H3 Z M14,9.25 H16.5 V14.75 H14 Z M3,16.5 H21 V18 H3 Z M9,14.5 H11.5 V20 H9 Z</StreamGeometry>
     <StreamGeometry x:Key="ProjectIconData">M3,4 H10 L12,6 H21 V20 H3 Z M5,8 V18 H19 V8 Z M7,10 H17 V11.5 H7 Z M7,13 H14 V14.5 H7 Z</StreamGeometry>
     <StreamGeometry x:Key="RegistersIconData">M3,4 H21 V20 H3 Z M5,6 V18 H19 V6 Z M5,10 H19 V11.5 H5 Z M5,14 H19 V15.5 H5 Z M10,6 H11.5 V18 H10 Z</StreamGeometry>
     <StreamGeometry x:Key="SerialIconData">M4,5 L20,5 C21.1,5 22,5.9 22,7 L22,17 C22,18.1 21.1,19 20,19 L4,19 C2.9,19 2,18.1 2,17 L2,7 C2,5.9 2.9,5 4,5 Z M5,7 L5,17 L19,17 L19,7 Z M7,9 L10.5,12 L7,15 L8.3,16 L13,12 L8.3,8 Z M13,14 L17,14 L17,15.7 L13,15.7 Z</StreamGeometry>

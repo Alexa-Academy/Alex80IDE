@@ -14,6 +14,8 @@ public partial class MainViewModel
 
     public ToolWindowViewModel RegistersTool { get; } = new("registers", "Registri", "RegistersIconData", 330);
 
+    public ToolWindowViewModel BoardTool { get; } = new("board", "Scheda", "BoardIconData", 330);
+
     // Strumenti del dock inferiore: la misura e' un'altezza, non una larghezza.
     public ToolWindowViewModel MemoryTool { get; } = new("memory", "Memoria", "MemoryIconData", 300);
 
@@ -24,7 +26,7 @@ public partial class MainViewModel
     /// <summary>Dock sinistro: i file che compongono il programma e come vanno assemblati.</summary>
     public ToolDockViewModel LeftDock { get; private set; } = null!;
 
-    /// <summary>Dock destro: lo stato della CPU.</summary>
+    /// <summary>Dock destro: lo stato della CPU e la configurazione della scheda.</summary>
     public ToolDockViewModel RightDock { get; private set; } = null!;
 
     /// <summary>Dock inferiore: gli strumenti di osservazione della scheda.</summary>
@@ -42,7 +44,7 @@ public partial class MainViewModel
     private void InitializeDocks()
     {
         LeftDock = new ToolDockViewModel(ToolDockPlacement.Left, ProjectTool);
-        RightDock = new ToolDockViewModel(ToolDockPlacement.Right, RegistersTool);
+        RightDock = new ToolDockViewModel(ToolDockPlacement.Right, RegistersTool, BoardTool);
         BottomDock = new ToolDockViewModel(ToolDockPlacement.Bottom, MemoryTool, BusLogTool, SerialTool);
 
         Docks = [LeftDock, RightDock, BottomDock];

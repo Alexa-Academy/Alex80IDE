@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:global="clr-namespace:"
+             x:Class="Alex80_IDE.Controls.BoardSettingsView"
+             x:DataType="global:MainViewModel">
+
+    <!-- Configurazione della scheda collegata. Stava nella barra in alto, dove le tre
+         levette e il campo della frequenza occupavano spazio di continuo pur essendo
+         impostazioni che si toccano all'inizio della sessione e poi piu'. Il titolo lo
+         mette l'intestazione della tool window che ospita la vista. -->
+    <StackPanel Spacing="16">
+
+        <StackPanel Spacing="10">
+            <TextBlock Text="SORGENTI" Classes="caption" />
+
+            <ToggleSwitch Content="Clock da Arduino"
+                          IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
+                          IsEnabled="{Binding IsSerialOpened}"
+                          ToolTip.Tip="Acceso: il clock dello Z80 lo genera l'Arduino, alla frequenza indicata qui sotto. Spento: arriva dall'oscillatore della scheda." />
+
+            <ToggleSwitch Content="Memoria da Arduino"
+                          IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
+                          IsEnabled="{Binding IsSerialOpened}"
+                          ToolTip.Tip="Acceso: i cicli di memoria li serve l'Arduino. Spento: rispondono le memorie della scheda." />
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="Frequenza" Classes="caption" VerticalAlignment="Center" />
+                <TextBox Text="{Binding ClockFrequency}" Width="86" Classes="mono" />
+                <TextBlock Text="Hz" Classes="caption" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+
+        <Border Classes="separatorH" />
+
+        <StackPanel Spacing="10">
+            <TextBlock Text="MODO DELLA CPU" Classes="caption" />
+
+            <ToggleSwitch Content="Modo Z80"
+                          IsChecked="{Binding Z80CompatibilityMode, Mode=TwoWay}"
+                          IsEnabled="{Binding IsSerialOpened}"
+                          ToolTip.Tip="Spento: indirizzi a 24 bit (ADL). Acceso: modo Z80, solo 64 KB tramite MBASE." />
+        </StackPanel>
+    </StackPanel>
+</UserControl>
