@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Alex80_IDE.Helpers;
 using Alex80_IDE.ViewModels;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 
 namespace Alex80_IDE;
 
@@ -11,8 +14,6 @@ public partial class MainWindow : Window
 {
     private readonly List<ToolDockLayout> _dockLayouts = new();
     private EditorWindow? _editorWindow;
-    private NativeMenuItem? _darkThemeMenuItem;
-    private NativeMenuItem? _lightThemeMenuItem;
     private double _normalWindowWidth;
     private double _normalWindowHeight;
 
@@ -23,11 +24,54 @@ public partial class MainWindow : Window
         DataContextChanged += OnDataContextChanged;
         SizeChanged += OnWindowSizeChanged;
         Closing += OnWindowClosing;
-        ConfigureSystemMenu();
+        AppMenu.Install(this);
         AppShortcuts.Install(this);
-        UpdateThemeMenuChecks(AppThemeManager.CurrentTheme);
-        AppThemeManager.ThemeChanged += OnThemeChanged;
+        InstallProjectFilesDrop();
     }
+
+    /// <summary>
+    /// Trascinare dei sorgenti sull'elenco li aggiunge al progetto: e' la stessa cosa che
+    /// fa "Aggiungi file" nel menu contestuale, per chi arriva dal gestore di file.
+    /// </summary>
+    private void InstallProjectFilesDrop()
+    {
+        ProjectFilesList.AddHandler(DragDrop.DragOverEvent, OnProjectFilesDragOver);
+        ProjectFilesList.AddHandler(DragDrop.DropEvent, OnProjectFilesDrop);
+    }
+
+    private void OnProjectFilesDragOver(object? sender, DragEventArgs e)
+    {
+        // Senza un progetto aperto non c'e' dove mettere i file: il cursore lo dice subito.
+        var accepted = DataContext is MainViewModel { HasProject: true } && DroppedPaths(e).Count > 0;
+
+        e.DragEffects = accepted ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnProjectFilesDrop(object? sender, DragEventArgs e)
+    {
+        e.Handled = true;
+
+        if (DataContext is not MainViewModel viewModel)
+        {
+            return;
+        }
+
+        var paths = DroppedPaths(e);
+
+        if (paths.Count > 0)
+        {
+            viewModel.AddFilesToProject(paths);
+        }
+    }
+
+    /// <summary>Percorsi locali dei file trascinati. Quel che non e' un file locale viene ignorato.</summary>
+    private static List<string> DroppedPaths(DragEventArgs e) =>
+        e.Data.GetFiles()?
+            .Select(item => item.TryGetLocalPath())
+            .Where(path => !string.IsNullOrEmpty(path))
+            .Select(path => path!)
+            .ToList() ?? [];
 
     private void RestoreWindowSize()
     {
@@ -144,51 +188,5 @@ public partial class MainWindow : Window
         };
         _editorWindow.Closed += (_, _) => _editorWindow = null;
         _editorWindow.Show(this);
-    }
-
-    private void OnThemeChanged(AppTheme theme)
-    {
-        UpdateThemeMenuChecks(theme);
-    }
-
-    private void ConfigureSystemMenu()
-    {
-        _darkThemeMenuItem = new NativeMenuItem("Scuro")
-        {
-            ToggleType = NativeMenuItemToggleType.Radio
-        };
-        _darkThemeMenuItem.Click += (_, _) => AppThemeManager.SetTheme(AppTheme.Dark);
-
-        _lightThemeMenuItem = new NativeMenuItem("Chiaro")
-        {
-            ToggleType = NativeMenuItemToggleType.Radio
-        };
-        _lightThemeMenuItem.Click += (_, _) => AppThemeManager.SetTheme(AppTheme.Light);
-
-        var themeMenu = new NativeMenu();
-        themeMenu.Items.Add(_darkThemeMenuItem);
-        themeMenu.Items.Add(_lightThemeMenuItem);
-
-        var settingsMenuItem = new NativeMenuItem("Impostazioni")
-        {
-            Menu = themeMenu
-        };
-
-        var menu = new NativeMenu();
-        menu.Items.Add(settingsMenuItem);
-        NativeMenu.SetMenu(this, menu);
-    }
-
-    private void UpdateThemeMenuChecks(AppTheme theme)
-    {
-        if (_darkThemeMenuItem is not null)
-        {
-            _darkThemeMenuItem.IsChecked = theme == AppTheme.Dark;
-        }
-
-        if (_lightThemeMenuItem is not null)
-        {
-            _lightThemeMenuItem.IsChecked = theme == AppTheme.Light;
-        }
     }
 }

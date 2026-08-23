@@ -30,12 +30,16 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+
+        <!-- Barra dei menu. Su macOS il menu e' esportato nella barra di sistema e questo
+             controllo non occupa spazio; su Windows e Linux e' qui che compare. -->
+        <NativeMenuBar Grid.Row="0" HorizontalAlignment="Left" />
 
         <!-- Barra globale. A sinistra la scheda: identità e connessione, dove negli IDE
              JetBrains sta il selettore di progetto. A destra i comandi di esecuzione,
              dove negli stessi IDE stanno run, debug e stop. -->
-        <Border Grid.Row="0" Classes="appBar">
+        <Border Grid.Row="1" Classes="appBar">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="Alex80 IDE"
@@ -108,27 +112,13 @@
 
         <!-- Toolbar contestuale: sorgenti e assemblaggio a sinistra, configurazione della
              scheda a destra. -->
-        <Border Grid.Row="1" Classes="toolBar">
+        <Border Grid.Row="2" Classes="toolBar">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <!-- Apertura e salvataggio sono passati al menu File: qui resta solo
+                     l'assemblaggio, che e' il comando che si usa di continuo. -->
                 <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Button Command="{Binding NewTabCommand}" Classes="iconOnly"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Nuova ({0}+N)'}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource FileNewIconData}" />
-                    </Button>
-                    <Button Command="{Binding OpenFileCommand}" Classes="iconOnly"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Apri ({0}+O)'}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource FolderOpenIconData}" />
-                    </Button>
-                    <Button Command="{Binding SaveFileCommand}" Classes="iconOnly"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Salva ({0}+S)'}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource SaveIconData}" />
-                    </Button>
-                    <Button Command="{Binding SaveFileAsCommand}" Content="Salva con nome" Classes="tool"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Salva con nome ({0}+Shift+S)'}" />
-                    <Border Classes="separator" />
                     <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool"
                             ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
-                    <Button Command="{Binding SaveArduinoArrayCommand}" Content="Salva array Arduino" Classes="tool" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -162,7 +152,7 @@
         <!-- Area di lavoro. Le strip di bordo sono sempre visibili: ogni pannello si apre
              e si chiude dalla propria icona, come in Rider e Android Studio. La misura dei
              pannelli e' gestita da ToolDockLayout, nel code-behind. -->
-        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto">
 
             <!-- Strip di sinistra, due gruppi come negli IDE JetBrains: in alto gli
                  strumenti che si aprono di fianco, in basso quelli che si aprono sotto. -->
@@ -221,56 +211,56 @@
                                            TextTrimming="CharacterEllipsis"
                                            ToolTip.Tip="{Binding CurrentProject.ProjectPath}" />
 
-                                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="4" Margin="0,10,0,8">
-                                    <Button Content="Nuovo" Classes="tool" Command="{Binding NewProjectCommand}"
-                                            ToolTip.Tip="Crea un progetto con i sorgenti già aperti" />
-                                    <Button Content="Apri" Classes="tool" Command="{Binding OpenProjectCommand}" />
-                                    <Button Content="+ File" Classes="tool" Command="{Binding AddFilesToProjectCommand}"
-                                            ToolTip.Tip="Aggiungi sorgenti al progetto" />
-                                    <Button Content="✕" Classes="tool" Command="{Binding CloseProjectCommand}"
-                                            ToolTip.Tip="Chiudi il progetto" />
-                                </StackPanel>
-
                                 <TextBlock Grid.Row="2"
                                            Classes="caption"
                                            TextWrapping="Wrap"
                                            VerticalAlignment="Top"
+                                           Margin="0,10,0,0"
                                            IsVisible="{Binding !HasProject}"
-                                           Text="Nessun progetto aperto: &quot;Assembla&quot; lavora sul sorgente selezionato. Crea un progetto per assemblare più file in un unico binario." />
+                                           Text="Nessun progetto aperto: &quot;Assembla&quot; lavora sul sorgente selezionato. Crea un progetto dal menu File per assemblare più file in un unico binario." />
 
+                                <!-- Le azioni sui file stanno nel menu contestuale, come negli
+                                     IDE: le righe restano leggibili anche strette, e i sorgenti
+                                     si aggiungono anche trascinandoli qui sopra. -->
                                 <ListBox Grid.Row="2"
+                                         x:Name="ProjectFilesList"
                                          Classes="projectFiles"
+                                         Margin="0,10,0,0"
+                                         DragDrop.AllowDrop="True"
                                          IsVisible="{Binding HasProject}"
                                          ItemsSource="{Binding ProjectFiles}">
+                                    <ListBox.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Aggiungi file al progetto..."
+                                                      Command="{Binding AddFilesToProjectCommand}" />
+                                        </ContextMenu>
+                                    </ListBox.ContextMenu>
+
                                     <ListBox.ItemTemplate>
                                         <DataTemplate x:DataType="vm:ProjectFileViewModel">
-                                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                                            <Grid RowDefinitions="Auto,Auto">
+                                                <!-- Il menu sta sulla riga e non sulla ListBox: cosi'
+                                                     eredita il file come DataContext, che dentro un
+                                                     popup e' l'unico modo per sapere su cosa agire. -->
+                                                <Grid.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="Apri" Command="{Binding OpenCommand}" />
+                                                        <MenuItem Header="Rendi principale" Command="{Binding MakeMainCommand}" />
+                                                        <Separator />
+                                                        <MenuItem Header="Sposta su" Command="{Binding MoveUpCommand}" />
+                                                        <MenuItem Header="Sposta giù" Command="{Binding MoveDownCommand}" />
+                                                        <Separator />
+                                                        <MenuItem Header="Aggiungi file al progetto..." Command="{Binding AddFilesCommand}" />
+                                                        <MenuItem Header="Togli dal progetto" Command="{Binding RemoveCommand}" />
+                                                    </ContextMenu>
+                                                </Grid.ContextMenu>
+
                                                 <Button Classes="fileLink"
                                                         Content="{Binding FileName}"
-                                                        Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).OpenProjectFileCommand}"
-                                                        CommandParameter="{Binding}"
+                                                        Command="{Binding OpenCommand}"
                                                         ToolTip.Tip="{Binding AbsolutePath}" />
 
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2">
-                                                    <Button Classes="rowAction" Content="▲"
-                                                            ToolTip.Tip="Sposta su"
-                                                            Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).MoveProjectFileUpCommand}"
-                                                            CommandParameter="{Binding}" />
-                                                    <Button Classes="rowAction" Content="▼"
-                                                            ToolTip.Tip="Sposta giù"
-                                                            Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).MoveProjectFileDownCommand}"
-                                                            CommandParameter="{Binding}" />
-                                                    <Button Classes="rowAction" Content="★"
-                                                            ToolTip.Tip="Rendi principale"
-                                                            Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).SetMainProjectFileCommand}"
-                                                            CommandParameter="{Binding}" />
-                                                    <Button Classes="rowAction danger" Content="✕"
-                                                            ToolTip.Tip="Togli dal progetto"
-                                                            Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).RemoveProjectFileCommand}"
-                                                            CommandParameter="{Binding}" />
-                                                </StackPanel>
-
-                                                <StackPanel Grid.Row="1" Grid.ColumnSpan="2"
+                                                <StackPanel Grid.Row="1"
                                                             Orientation="Horizontal" Spacing="6" Margin="8,0,0,2">
                                                     <TextBlock Text="principale" Classes="fileBadge" IsVisible="{Binding IsMain}" />
                                                     <TextBlock Text="{Binding SubFolder}" Classes="caption" IsVisible="{Binding HasSubFolder}" />
@@ -447,7 +437,7 @@
 
         <!-- Status bar: stato della scheda ed esito dell'ultima assemblata. PC e SP stanno
              nella tool window dei registri. -->
-        <Border Grid.Row="3" Classes="statusBar">
+        <Border Grid.Row="4" Classes="statusBar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                     <TextBlock Text="{Binding CardBadgeText}" Classes="statusItem" />

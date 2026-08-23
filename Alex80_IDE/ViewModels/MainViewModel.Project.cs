@@ -336,6 +336,7 @@ public partial class MainViewModel
         foreach (var relativePath in CurrentProject.Files)
         {
             ProjectFiles.Add(new ProjectFileViewModel(
+                this,
                 relativePath,
                 CurrentProject.ToAbsolutePath(relativePath),
                 string.Equals(relativePath, CurrentProject.MainFile, StringComparison.OrdinalIgnoreCase)));
@@ -367,9 +368,38 @@ public partial class MainViewModel
             return;
         }
 
+        AddFilesToProject(paths);
+    }
+
+    /// <summary>
+    /// Aggiunge dei sorgenti al progetto aperto. E' pubblico perche' lo usa anche il
+    /// trascinamento di file sull'elenco, che non passa da una finestra di dialogo.
+    /// </summary>
+    public void AddFilesToProject(IEnumerable<string> paths)
+    {
+        if (CurrentProject is null)
+        {
+            return;
+        }
+
+        var added = false;
+
         foreach (var path in paths)
         {
+            // Una cartella trascinata per sbaglio, o un percorso che nel frattempo e'
+            // sparito, non deve finire nel progetto come voce inesistente.
+            if (!File.Exists(path))
+            {
+                continue;
+            }
+
             CurrentProject.AddFile(Path.GetFullPath(path));
+            added = true;
+        }
+
+        if (!added)
+        {
+            return;
         }
 
         SaveProject();
