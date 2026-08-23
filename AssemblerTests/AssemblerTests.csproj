@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Alex80_IDE.AssemblerTests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Assembler\Assembler.csproj" />
+    <!-- Serve per provare ProjectBuilder, cioe' il percorso che l'IDE usa
+         davvero: assemblare correttamente non basta se poi il blocco non
+         entra nell'immagine di memoria dell'IDE. -->
+    <ProjectReference Include="..\Alex80_IDE\Alex80_IDE.csproj" />
+  </ItemGroup>
+
+</Project>

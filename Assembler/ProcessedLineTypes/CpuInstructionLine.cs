@@ -13,7 +13,7 @@ namespace Konamiman.Nestor80.Assembler.Output
 
         public AddressType NewLocationArea { get; set; }
 
-        public ushort NewLocationCounter { get; set; }
+        public uint NewLocationCounter { get; set; }
 
         public string FirstArgumentTemplate { get; set; }
 

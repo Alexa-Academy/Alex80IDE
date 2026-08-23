@@ -13,9 +13,9 @@ namespace Konamiman.Nestor80.Assembler
 
         public bool ImplicitProgramName { get; set; }
 
-        public int ProgramAreaSize { get; set; }
+        public uint ProgramAreaSize { get; set; }
 
-        public int DataAreaSize { get; set; }
+        public uint DataAreaSize { get; set; }
 
         public Dictionary<string, int> CommonAreaSizes { get; set; }
 
@@ -33,7 +33,7 @@ namespace Konamiman.Nestor80.Assembler
         /// <summary>
         /// The end address if specified in an END instruction, otherwise zero.
         /// </summary>
-        public ushort EndAddress { get; set; }
+        public uint EndAddress { get; set; }
 
         public BuildType BuildType { get; set; }
 
@@ -62,7 +62,7 @@ namespace Konamiman.Nestor80.Assembler
         /// The value of the location counter at the beginning of the assembly process,
         /// as requested via <see cref="AssemblyConfiguration.StartAddress"/>.
         /// </summary>
-        public ushort StartAddress { get; set; }
+        public uint StartAddress { get; set; }
 
         // Added by AlexaAcademy
         public int FirstAddress { get; set; }

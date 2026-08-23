@@ -42,6 +42,7 @@ public partial class MainViewModel
             OnPropertyChanged(nameof(ProjectTitle));
             OnPropertyChanged(nameof(SettingsScopeText));
             OnPropertyChanged(nameof(TasmCompatibility));
+            OnPropertyChanged(nameof(CpuName));
             OnPropertyChanged(nameof(FillByteText));
             OnPropertyChanged(nameof(IsSingleUnitMode));
             (AssembleCommand as RelayCommand)?.RaiseCanExecuteChanged();
@@ -93,6 +94,39 @@ public partial class MainViewModel
             }
 
             OnPropertyChanged();
+        }
+    }
+
+    /// <summary>CPU accettate dall'assembler.</summary>
+    public string[] AvailableCpus { get; } = { "Z80", "R800", "Z280", "EZ80" };
+
+    /// <summary>
+    /// CPU di destinazione del progetto aperto, o default se non ce n'e' uno.
+    /// Una direttiva .CPU nel sorgente resta valida e ha la precedenza da quel
+    /// punto in poi: questa impostazione decide solo da cosa si parte.
+    /// </summary>
+    public string CpuName
+    {
+        get => CurrentProject?.CpuName ?? UserSettings.Load().CpuName;
+        set
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            if (CurrentProject is not null)
+            {
+                CurrentProject.CpuName = value;
+                SaveProject();
+            }
+            else
+            {
+                UpdateSettings(settings => settings.CpuName = value);
+            }
+
+            OnPropertyChanged();
+            NotifyAddressWidthChanged();
         }
     }
 
@@ -190,6 +224,7 @@ public partial class MainViewModel
         {
             Name = Path.GetFileNameWithoutExtension(path),
             TasmCompatibility = settings.TasmCompatibility,
+            CpuName = settings.CpuName,
             FillByte = settings.FillByte
         };
 
@@ -462,9 +497,11 @@ public partial class MainViewModel
 
         Dispatcher.UIThread.InvokeAsync(() =>
         {
-            AddressHex = result.FirstAddress.ToString("X4");
+            AddressHex = result.FirstAddress.ToString(UseWideAddresses ? "X6" : "X4");
             NumBytes = result.Bytes.Length.ToString();
-            CreateArray(result.Bytes, (ushort)result.FirstAddress);
+            // Niente cast a ushort: con l'eZ80 l'indirizzo e' a 24 bit e
+            // FFF000h diventerebbe F000h.
+            CreateArray(result.Bytes, (uint)result.FirstAddress);
         });
 
         ShowListing(result.Listing);
@@ -528,6 +565,7 @@ public partial class MainViewModel
             LinkMode = project.LinkMode,
             FillByte = project.FillByte,
             TasmCompatibility = project.TasmCompatibility,
+            CpuName = project.CpuName,
             IncludeDirectories = includeDirectories
         };
     }
@@ -548,6 +586,7 @@ public partial class MainViewModel
             LinkMode = ProjectLinkMode.SeparateUnits,
             FillByte = settings.FillByte,
             TasmCompatibility = settings.TasmCompatibility,
+            CpuName = settings.CpuName,
             IncludeDirectories = OpenDocuments
                 .Select(d => d.FilePath)
                 .Where(p => !string.IsNullOrWhiteSpace(p))

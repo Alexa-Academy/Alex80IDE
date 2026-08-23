@@ -423,7 +423,9 @@ namespace Konamiman.Nestor80.Assembler
             }
 
             //TODO: Warning if truncated value
-            var address = Address.Absolute((ushort)(value & 0xFFFF));
+            // La mascheratura all'ampiezza della CPU la fa il costruttore di
+            // Address: a 16 bit per Z80/R800/Z280, a 24 per eZ80.
+            var address = Address.Absolute((uint)value);
             AddExpressionPart(address);
         }
 

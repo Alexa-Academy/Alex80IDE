@@ -25,6 +25,23 @@ public enum State {
     STATE_WAIT_DATA
 }
 
+/// <summary>
+/// Registri eZ80 come arrivano nel messaggio !DUMP24: valori a 24 bit interi,
+/// piu' cio' che il formato Z80 a 16 bit non puo' rappresentare (MBASE, STAT,
+/// stack pointer corto, I, R, IFF2).
+/// </summary>
+public readonly record struct Ez80Registers(
+    byte A, byte F, byte Mbase, byte Stat,
+    uint Bc, uint De, uint Hl, uint Ix, uint Iy, uint Spl,
+    ushort Sps, uint Pc,
+    byte I, byte R, bool Iff2)
+{
+    /// <summary>Bit 4 di STAT: la CPU sta girando in modalita' ADL.</summary>
+    public bool IsAdl => (Stat & 0x10) != 0;
+    /// <summary>Bit 7 di STAT: la CPU e' ferma in break ZDI.</summary>
+    public bool IsHalted => (Stat & 0x80) != 0;
+}
+
 public class SerialManager {
     private readonly SerialPort _serialPort;
     public SerialPort SerialPort => _serialPort;
@@ -53,6 +70,7 @@ public class SerialManager {
     public event Action<int>? LogProgress;
     public event Action<int, string>? LogMnemonicReceived; 
     public event Action<byte, byte, byte, byte, byte, byte, byte, ushort, ushort, ushort, ushort, byte>? DumpReceived; 
+    public event Action<Ez80Registers>? Dump24Received; 
     public event Action<string>? MessageReceived;
     public event Action<CardConfig>? ConfigReceived;
    
@@ -274,6 +292,41 @@ public class SerialManager {
                 }
             }
         }
+        // Attenzione all'ordine: "!DUMP24" soddisfa anche StartsWith("!DUMP"),
+        // quindi il caso esteso va riconosciuto per primo.
+        else if (message.StartsWith("!DUMP24") && message.EndsWith(';'))
+        {
+            string payload = message.Substring(7, message.Length - 8);
+            if (!string.IsNullOrEmpty(payload))
+            {
+                try
+                {
+                    byte[] b = Convert.FromBase64String(payload);
+                    if (b.Length < 30)
+                    {
+                        MessageReceived?.Invoke($"!DUMP24 troppo corto: {b.Length} byte");
+                        return;
+                    }
+
+                    static uint U24(byte[] src, int at) =>
+                        (uint)((src[at] << 16) | (src[at + 1] << 8) | src[at + 2]);
+
+                    var registers = new Ez80Registers(
+                        A: b[0], F: b[1], Mbase: b[2], Stat: b[3],
+                        Bc: U24(b, 4), De: U24(b, 7), Hl: U24(b, 10),
+                        Ix: U24(b, 13), Iy: U24(b, 16), Spl: U24(b, 19),
+                        Sps: (ushort)((b[22] << 8) | b[23]),
+                        Pc: U24(b, 24),
+                        I: b[27], R: b[28], Iff2: b[29] != 0);
+
+                    Dump24Received?.Invoke(registers);
+                }
+                catch (FormatException ex)
+                {
+                    Console.WriteLine("Errore nella decodifica Base64: " + ex.Message);
+                }
+            }
+        }
         else if (message.StartsWith("!DUMP") && message.EndsWith(';'))
         {
             string payload = message.Substring(5, message.Length - 6);
@@ -358,13 +411,17 @@ public class SerialManager {
         }
     }
     
-    public void ReadData(ushort start, ushort size) {
-        totalLength = size;
+    /// <summary>
+    /// start e size viaggiano in decimale. Sono uint e non ushort perche' la
+    /// RAM dell'eZ80 sta a 0xFFF000, fuori dai 64 KB indirizzabili da uno Z80.
+    /// </summary>
+    public void ReadData(uint start, uint size) {
+        totalLength = (int)size;   // il contatore di avanzamento resta int
         
         SendSerialText($"rb {start} {size}\r");
     }
         
-    public async void WriteData(byte[] data, ushort startAddress)
+    public async void WriteData(byte[] data, uint startAddress)
     {
         var startHex = startAddress.ToString();
         
@@ -520,6 +577,24 @@ public class SerialManager {
     { 
         SendSerialText("cc\r");
     }
+
+    /// <summary>Ferma la CPU in break ZDI. Solo scheda eZ80.</summary>
+    public void BreakCpu() => SendSerialText("break\r");
+
+    /// <summary>
+    /// Carica il PC dell'eZ80 e fa ripartire la CPU da li'. L'indirizzo viaggia
+    /// in decimale, come per rb e wb.
+    /// </summary>
+    public void RunFrom(uint address) => SendSerialText($"go {address}\r");
+
+    /// <summary>Fa ripartire la CPU dopo un break. Solo scheda eZ80.</summary>
+    public void ContinueCpu() => SendSerialText("cont\r");
+
+    /// <summary>
+    /// Sceglie la modalita' con cui il firmware accede alla memoria: ADL
+    /// (indirizzi a 24 bit) oppure Z80 (MBASE:PC, 64 KB). Solo scheda eZ80.
+    /// </summary>
+    public void SetAdlMode(bool adl) => SendSerialText($"adl {(adl ? 1 : 0)}\r");
     
     private void GetInfo()
     { 

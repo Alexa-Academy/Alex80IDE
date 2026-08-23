@@ -10,6 +10,11 @@ public class HexadecimalConverter : IValueConverter
         {
             return $"{ushortValue:X4}"; // Formatta correttamente
         }
+        if (value is uint uintValue)
+        {
+            // Indirizzi eZ80: 6 cifre appena escono dai 16 bit.
+            return uintValue > 0xFFFF ? $"{uintValue:X6}" : $"{uintValue:X4}";
+        }
         return value?.ToString() ?? string.Empty;
     }
 

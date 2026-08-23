@@ -35,11 +35,11 @@ namespace Konamiman.Nestor80.Assembler
         private static StreamWriter writer;
         static AddressType currentLocationArea;
         static string currentSdccArea;
-        static Dictionary<AddressType, ushort> locationCounters;
+        static Dictionary<AddressType, uint> locationCounters;
         static bool isAbsoluteBuild;
         static bool isSdccBuild;
         static AddressType currentPhasedLocationArea;
-        static ushort currentPhasedLocationCounter;
+        static uint currentPhasedLocationCounter;
         static bool isPhased = false;
 
         static IProducesOutput currentOutputProducerLine;
@@ -69,7 +69,7 @@ namespace Konamiman.Nestor80.Assembler
         static bool instructionBytesTruncated;
         static ushort truncatedBytesLength;
         static Dictionary<string, SdccArea> sdccAreas;
-        static Dictionary<string, ushort> sdccAreaLocationCounters;
+        static Dictionary<string, uint> sdccAreaLocationCounters;
 
         /// <summary>
         /// Generate a MACRO-80-style listing file.
@@ -92,12 +92,12 @@ namespace Konamiman.Nestor80.Assembler
             if(isSdccBuild) {
                 var areaKvps = assemblyResult.SdccAreas.Select(a => new KeyValuePair<string, SdccArea>(a.Name, a));
                 sdccAreas = new Dictionary<string, SdccArea>(areaKvps, StringComparer.OrdinalIgnoreCase);
-                var areaLocationCounters = assemblyResult.SdccAreas.Select(a => new KeyValuePair<string, ushort>(a.Name, 0));
-                sdccAreaLocationCounters = new Dictionary<string, ushort>(areaLocationCounters, StringComparer.OrdinalIgnoreCase);
+                var areaLocationCounters = assemblyResult.SdccAreas.Select(a => new KeyValuePair<string, uint>(a.Name, 0u));
+                sdccAreaLocationCounters = new Dictionary<string, uint>(areaLocationCounters, StringComparer.OrdinalIgnoreCase);
                 currentSdccArea = "_CODE";
             }
             currentLocationArea = isAbsoluteBuild ? AddressType.ASEG : AddressType.CSEG;
-            locationCounters = new Dictionary<AddressType, ushort>() {
+            locationCounters = new Dictionary<AddressType, uint>() {
                 { AddressType.CSEG, 0 },
                 { AddressType.DSEG, 0 },
                 { AddressType.ASEG, 0 },
@@ -173,7 +173,7 @@ namespace Konamiman.Nestor80.Assembler
             }
 
             var mustPrintAddress = processedLine.Label is not null;
-            ushort increaseLocationCounterBy = 0;
+            uint increaseLocationCounterBy = 0;
             AddressType? changeAreaTo = null;
             string changeSdccAreaTo = null;
             var incrementSubpage = false;
@@ -431,7 +431,7 @@ namespace Konamiman.Nestor80.Assembler
             }
         }
 
-        private static void IncreaseLocationCounter(ushort value)
+        private static void IncreaseLocationCounter(uint value)
         {
             if(isSdccBuild) {
                 sdccAreaLocationCounters[currentSdccArea] += value;

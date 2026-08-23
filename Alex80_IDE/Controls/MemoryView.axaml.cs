@@ -79,10 +79,11 @@ public partial class MemoryView : UserControl
         {
             Header = "ADDR",
             Width = new DataGridLength(90),
-            Binding = new Binding(nameof(Models.RowElement.Address))
+            // AddressText porta gia' la larghezza giusta (4 o 6 cifre) decisa
+            // dalla modalita' della scheda, quindi niente converter qui.
+            Binding = new Binding(nameof(Models.RowElement.AddressText))
             {
-                Mode = BindingMode.OneWay,
-                Converter = new HexadecimalConverter()
+                Mode = BindingMode.OneWay
             }
         });
 

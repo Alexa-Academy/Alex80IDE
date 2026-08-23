@@ -45,6 +45,9 @@ namespace Konamiman.Nestor80.Assembler
             // .COMMENT <delimiter>: Start multiline comment
             { ".COMMENT", ProcessDelimitedCommentStartLine },
 
+            // ASSUME ADL = <0|1>: modalita' indirizzi dell'eZ80
+            { "ASSUME", ProcessAssumeLine },
+
             // .CPU <cpu>: Change current CPU
             { ".CPU", ProcessChangeCpuLine },
 
@@ -455,7 +458,7 @@ namespace Konamiman.Nestor80.Assembler
         static ProcessedSourceLine ProcessDefsOrFillLine(string opcode, SourceLineWalker walker, byte? defaultValue)
         {
             byte? value = defaultValue;
-            ushort length = 0;
+            uint length = 0;
             var line = new DefineSpaceLine();
 
             if(walker.AtEndOfLine) {
@@ -493,7 +496,7 @@ namespace Konamiman.Nestor80.Assembler
                     walker.DiscardRemaining();
                 }
 
-            IncreaseLocationPointer(length);
+            IncreaseLocationPointer((int)length);
             line.NewLocationArea = state.CurrentLocationArea;
             line.NewLocationCounter = state.CurrentLocationPointer;
             line.Size = length;
@@ -626,7 +629,7 @@ namespace Konamiman.Nestor80.Assembler
                     return line;
                 }
                 else if(buildType is BuildType.Sdcc) {
-                    return ProcessSdccOrgLine(value.Value);
+                    return ProcessSdccOrgLine((ushort)value.Value);
                 }
                 else {
                     state.SwitchToLocation(value.Value);
@@ -961,8 +964,8 @@ namespace Konamiman.Nestor80.Assembler
                 // db 12  ;Still cached as 12 but it's now 18
                 state.ClearExpressionsCache();
 
-                Expression.DefaultRadix = value.Value;
-                return new ChangeRadixLine() { NewRadix = value.Value };
+                Expression.DefaultRadix = (int)value.Value;
+                return new ChangeRadixLine() { NewRadix = (int)value.Value };
             }
             catch(InvalidExpressionException ex) {
                 Expression.DefaultRadix = backupRadix;
@@ -982,6 +985,52 @@ namespace Konamiman.Nestor80.Assembler
         {
             currentCpu = CpuType.Z80;
             return new ChangeCpuLine() { Cpu = CpuType.Z80 };
+        }
+
+        /// <summary>
+        /// ASSUME ADL = 0|1, la direttiva con cui l'assembler Zilog dichiara la
+        /// modalita' indirizzi dell'eZ80. Per ora il valore viene solo
+        /// registrato: cambia le codifiche di CALL, JP, LD rr,nn e simili, e
+        /// quelle arrivano insieme agli indirizzi a 24 bit.
+        /// </summary>
+        static ProcessedSourceLine ProcessAssumeLine(string opcode, SourceLineWalker walker)
+        {
+            if(walker.AtEndOfLine) {
+                AddError(AssemblyErrorCode.MissingValue, "ASSUME requires an argument, e.g. ASSUME ADL = 1");
+                return new AssumeAdlLine() { AdlMode = ez80AdlMode };
+            }
+
+            var arguments = walker.GetRemaining().Trim();
+            var match = System.Text.RegularExpressions.Regex.Match(
+                arguments, @"^ADL\s*=\s*([01])$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if(!match.Success) {
+                AddError(AssemblyErrorCode.InvalidArgument, $"Invalid ASSUME argument: {arguments} (only ADL = 0 and ADL = 1 are supported)");
+                return new AssumeAdlLine() { AdlMode = ez80AdlMode };
+            }
+
+            if(!isEz80) {
+                AddError(AssemblyErrorCode.InvalidArgument, "ASSUME ADL is only meaningful for the eZ80 CPU, use .CPU EZ80 first");
+            }
+
+            var newAdlMode = match.Groups[1].Value == "1";
+            if(ez80AdlModeWasSet && newAdlMode != ez80AdlMode) {
+                ez80AdlModeChangedDuringAssembly = true;
+            }
+            ez80AdlModeWasSet = true;
+            ez80AdlMode = newAdlMode;
+
+            // Gli indirizzi a 24 bit e gli operandi estesi (CALL, JP, LD rr,nn,
+            // LD (nn),rr) sono supportati e verificati contro un binario Zilog
+            // ZDS II. Restano fuori i suffissi .SIS/.LIS/.SIL/.LIL e il modo
+            // misto: ez80AdlMode e' un unico stato globale, quindi un file che
+            // alterna ASSUME ADL non viene reso correttamente.
+            if(ez80AdlMode && ez80AdlModeChangedDuringAssembly) {
+                AddError(AssemblyErrorCode.UserWarning,
+                    "Mixed ADL/Z80 mode in a single file is not supported yet: the ADL state in effect at the end of the assembly is applied to expressions resolved late");
+            }
+
+            return new AssumeAdlLine() { AdlMode = ez80AdlMode };
         }
 
         static ProcessedSourceLine ProcessChangeCpuLine(string opcode, SourceLineWalker walker)
@@ -1020,6 +1069,17 @@ namespace Konamiman.Nestor80.Assembler
                 currentCpuInstructionsWithSelectorValue["IM"] = currentCpuInstructionsWithSelectorValue["IM"].Concat(im3instructionData).ToArray();
                 currentCpuInstructionsWithOneVariableArgumentCount = Z80InstructionsWithOneVariableArgument.Length + ExclusiveZ280InstructionsWithOneVariableArgument.Length;
                 currentCpuMemPointedByRegisterRegex = z280MemPointedByRegisterRegex;
+            }
+            else if(isEz80) {
+                // L'eZ80 e' un sovrainsieme dello Z80: stesse tabelle piu' le
+                // istruzioni esclusive. Il regex degli operandi resta quello
+                // dello Z80, perche' le forme aggiunte qui non introducono
+                // nuovi modi di indirizzamento.
+                currentCpuInstructionOpcodes = Z80InstructionOpcodes.Concat(ExclusiveEZ80InstructionOpcodes).ToArray();
+                currentCpuFixedInstructions = new Dictionary<string, byte[]>(FixedZ80Instructions.Concat(ZeroIndexZ80Instructions).Concat(FixedExclusiveEZ80Instructions), StringComparer.OrdinalIgnoreCase);
+                currentCpuInstructionsWithSelectorValue = Z80InstructionsWithSelectorValue;
+                currentCpuInstructionsWithOneVariableArgumentCount = Z80InstructionsWithOneVariableArgument.Length + ExclusiveEZ80InstructionsWithOneVariableArgument.Length;
+                currentCpuMemPointedByRegisterRegex = z80MemPointedByRegisterRegex;
             }
             else {
                 currentCpuInstructionOpcodes = Z80InstructionOpcodes;
@@ -1136,7 +1196,7 @@ namespace Konamiman.Nestor80.Assembler
                 if(pageSize.Value < 10) {
                     AddError(AssemblyErrorCode.InvalidListingPageSize, $"{opcode.ToUpper()}: the minimum listing page size is 10");
                 }
-                return new ChangeListingPageLine() { NewPageSize = pageSize.Value };
+                return new ChangeListingPageLine() { NewPageSize = (int)pageSize.Value };
             }
             catch(InvalidExpressionException ex) {
                 AddError(ex.ErrorCode, $"Invalid expression for {opcode.ToUpper()}: {ex.Message}");
@@ -1826,7 +1886,7 @@ namespace Konamiman.Nestor80.Assembler
                 return new MacroExpansionLine();
             }
 
-            var line = new MacroExpansionLine() { MacroType = MacroType.ReptWithCount, Name = opcode.ToUpper(), RepetitionsCount = repetitionsCount.Value };
+            var line = new MacroExpansionLine() { MacroType = MacroType.ReptWithCount, Name = opcode.ToUpper(), RepetitionsCount = (int)repetitionsCount.Value };
             state.RegisterMacroExpansionStart(line);
             return line;
         }
@@ -1916,7 +1976,7 @@ namespace Konamiman.Nestor80.Assembler
                         AddError(AssemblyErrorCode.InvalidForRelocatable, $"Expressions used as parameters for {opcode.ToUpper()} must be absolute, '{arg}' evaluates to {argValue}");
                         return false;
                     }
-                    macroExpansionParameters[i] = Expression.NumberToStringInCurrentRadix(argValue.Value);
+                    macroExpansionParameters[i] = Expression.NumberToStringInCurrentRadix((int)argValue.Value);
                 }
                 catch(InvalidExpressionException ex) {
                     AddError(ex.ErrorCode, $"Invalid expression '{arg}' for {opcode.ToUpper()}: {ex.Message}");
@@ -2160,19 +2220,19 @@ namespace Konamiman.Nestor80.Assembler
                     return line;
                 }
 
-            int newLocationPointer = state.CurrentLocationPointer + alignValue.Value - 1;
-            newLocationPointer = newLocationPointer - (newLocationPointer % alignValue.Value);
+            long newLocationPointer = state.CurrentLocationPointer + alignValue.Value - 1;
+            newLocationPointer -= newLocationPointer % alignValue.Value;
             if(newLocationPointer > ushort.MaxValue) {
                 AddError(AssemblyErrorCode.InvalidExpression, $"{opcode.ToUpper()}: the alignment value {alignValue.Value} is too large, it would cause the location pointer to exceed 65535");
                 return new AlignLine();
             }
 
             var increment = (ushort)(newLocationPointer - state.CurrentLocationPointer);
-            state.SwitchToLocation((ushort)newLocationPointer);
+            state.SwitchToLocation((uint)newLocationPointer);
 
             line.NewLocationArea = state.CurrentLocationArea;
             line.NewLocationCounter = state.CurrentLocationPointer;
-            line.DeclaredAlignmentValue = alignValue.Value;
+            line.DeclaredAlignmentValue = (ushort)alignValue.Value;
             line.Size = increment;
             if(fillValue is not null) {
                 line.Value = fillValue.ValueAsByte;

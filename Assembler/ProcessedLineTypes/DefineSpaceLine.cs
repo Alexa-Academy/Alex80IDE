@@ -4,9 +4,9 @@
     {
         public AddressType NewLocationArea { get; set; }
 
-        public ushort NewLocationCounter { get; set; }
+        public uint NewLocationCounter { get; set; }
 
-        public ushort Size { get; set; }
+        public uint Size { get; set; }
 
         public byte? Value { get; set; }
 

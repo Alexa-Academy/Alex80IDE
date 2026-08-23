@@ -427,8 +427,15 @@ namespace Konamiman.Nestor80.Assembler
                     longIndexInstructionBytes = z280candidateInstructionInfo.Item6;
                     longIndexInstructionBytePositionOfVariableArgument = z280candidateInstructionInfo.Item7;
                 }
+                else if(isEz80 && i<ExclusiveEZ80InstructionsWithOneVariableArgument.Length) {
+                    candidateInstructionInfo = ExclusiveEZ80InstructionsWithOneVariableArgument[i];
+                    longIndexInstructionBytes = null;
+                }
                 else {
-                    candidateInstructionInfo = Z80InstructionsWithOneVariableArgument[isZ280 ? i-ExclusiveZ280InstructionsWithOneVariableArgument.Length : i];
+                    candidateInstructionInfo = Z80InstructionsWithOneVariableArgument[
+                        isZ280 ? i-ExclusiveZ280InstructionsWithOneVariableArgument.Length :
+                        isEz80 ? i-ExclusiveEZ80InstructionsWithOneVariableArgument.Length :
+                        i];
                     longIndexInstructionBytes = null;
                 }
 
@@ -501,6 +508,22 @@ namespace Konamiman.Nestor80.Assembler
                 variableArgBytePosition = longIndexInstructionBytePositionOfVariableArgument;
                 if(variableArgType is CpuInstrArgType.IxOffset) variableArgType = CpuInstrArgType.IxOffsetLong;
                 if(variableArgType is CpuInstrArgType.IyOffset) variableArgType = CpuInstrArgType.IyOffsetLong;
+            }
+
+            // In modalita' ADL l'eZ80 prende un operando a 24 bit dove lo Z80 ne
+            // prende uno a 16, quindi l'istruzione cresce di un byte. Riscontro
+            // esterno: nel binario prodotto da Zilog ZDS II per il programma di
+            // prova, CALL $FFF020 e' CD 20 F0 FF, quattro byte e non tre.
+            // L'array e' gia' una copia (ToArray() sulla tabella), quindi si
+            // puo' allargare senza toccare le tabelle di opcode.
+            if(isEz80 && ez80AdlMode &&
+               variableArgType is CpuInstrArgType.Word or CpuInstrArgType.WordInParenthesis) {
+                var widened = new byte[instructionBytes.Length + 1];
+                Array.Copy(instructionBytes, 0, widened, 0, variableArgBytePosition + 2);
+                Array.Copy(instructionBytes, variableArgBytePosition + 2,
+                           widened, variableArgBytePosition + 3,
+                           instructionBytes.Length - variableArgBytePosition - 2);
+                instructionBytes = widened;
             }
 
             instructionLine = new CpuInstructionLine() { Opcode = opcode, FirstArgumentTemplate = firstArgument, SecondArgumentTemplate = secondArgument, Cpu = currentCpu, OutputBytes = instructionBytes };
@@ -691,6 +714,12 @@ namespace Konamiman.Nestor80.Assembler
             else if(argumentType is CpuInstrArgType.Word or CpuInstrArgType.WordInParenthesis && value.IsAbsolute) {
                 instructionBytes[position] = value.ValueAsByte;
                 instructionBytes[position + 1] = (byte)((value.Value & 0xFF00) >> 8);
+                // Il terzo byte esiste solo se l'istruzione e' stata allargata
+                // per ADL; il controllo sulla lunghezza tiene conto anche del
+                // caso in cui l'espressione venga risolta in un secondo momento.
+                if(isEz80 && ez80AdlMode && instructionBytes.Length > position + 2) {
+                    instructionBytes[position + 2] = (byte)((value.Value & 0xFF0000) >> 16);
+                }
                 return true;
             }
 

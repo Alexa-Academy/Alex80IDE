@@ -2,7 +2,7 @@
 {
     public class AssemblyEndLine : ProcessedSourceLine
     {
-        public ushort EndAddress { get; set; }
+        public uint EndAddress { get; set; }
 
         public AddressType EndAddressArea { get; set; }
 

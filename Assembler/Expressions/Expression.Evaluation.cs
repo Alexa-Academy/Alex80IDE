@@ -522,7 +522,7 @@ namespace Konamiman.Nestor80.Assembler
 
             parts.Add(referencedSymbol);
             if(calculatedValue != 0) {
-                parts.Add(Address.Absolute((ushort)calculatedValue));
+                parts.Add(Address.Absolute((uint)calculatedValue));
                 parts.Add(PlusOperator.Instance);
             }
             if(highOrLow is not null) {

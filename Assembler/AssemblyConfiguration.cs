@@ -123,7 +123,10 @@ namespace Konamiman.Nestor80.Assembler
         /// still overrides it). Useful to assemble a source that has no ORG of its own
         /// as a chunk that goes to a given memory address.
         /// </summary>
-        public ushort StartAddress { get; set; } = 0;
+        /// <summary>
+        /// uint e non ushort: con l'eZ80 lo spazio indirizzi e' a 24 bit.
+        /// </summary>
+        public uint StartAddress { get; set; } = 0;
 
         /// <summary>
         /// True to ignore the END instruction when it's found inside an INCLUDEd file,

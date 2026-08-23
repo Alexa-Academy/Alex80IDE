@@ -7,6 +7,6 @@
     {
         AddressType NewLocationArea { get; set; }
 
-        ushort NewLocationCounter { get; set; }
+        uint NewLocationCounter { get; set; }
     }
 }

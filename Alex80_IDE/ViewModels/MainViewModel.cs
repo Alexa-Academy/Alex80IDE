@@ -199,10 +199,14 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(LRegHex));
     }
     
+    // Su eZ80 i registri indice, lo stack pointer e il PC sono a 24 bit: le
+    // proprieta' a 16 bit restano per lo Z80, e i valori estesi arrivano dal
+    // !DUMP24. Le stringhe .Hex scelgono la larghezza in base a IsEz80, cosi'
+    // i binding XAML esistenti continuano a valere senza modifiche.
     [ObservableProperty]
     private ushort _ixReg;
     
-    public string IxRegHex => IxReg.ToString("X4");
+    public string IxRegHex => UseWideAddresses ? Ix24.ToString("X6") : IxReg.ToString("X4");
     partial void OnIxRegChanged(ushort value)
     {
         OnPropertyChanged(nameof(IxRegHex));
@@ -211,7 +215,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private ushort _iyReg;
     
-    public string IyRegHex => IyReg.ToString("X4");
+    public string IyRegHex => UseWideAddresses ? Iy24.ToString("X6") : IyReg.ToString("X4");
     partial void OnIyRegChanged(ushort value)
     {
         OnPropertyChanged(nameof(IyRegHex));
@@ -220,7 +224,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private ushort _spReg;
     
-    public string SpRegHex => SpReg.ToString("X4");
+    public string SpRegHex => UseWideAddresses ? Spl24.ToString("X6") : SpReg.ToString("X4");
     partial void OnSpRegChanged(ushort value)
     {
         OnPropertyChanged(nameof(SpRegHex));
@@ -229,11 +233,196 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private ushort _pcReg;
     
-    public string PcRegHex => PcReg.ToString("X4");
+    public string PcRegHex => UseWideAddresses ? Pc24.ToString("X6") : PcReg.ToString("X4");
     partial void OnPcRegChanged(ushort value)
     {
         OnPropertyChanged(nameof(PcRegHex));
     }
+
+    // ---- stato esteso eZ80, popolato da !DUMP24 ----
+
+    [ObservableProperty] private bool _isEz80;
+
+    /// <summary>
+    /// Su scheda eZ80Test permette di lavorare come se fosse uno Z80: indirizzi
+    /// e registri a 16 bit. Serve quando il programma sul bersaglio gira in
+    /// modo Z80 anziche' ADL, dove i 24 bit non hanno significato.
+    /// </summary>
+    [ObservableProperty] private bool _z80CompatibilityMode;
+
+    /// <summary>Tipo di scheda collegata, usato per decidere cosa fa "play".</summary>
+    [ObservableProperty] private bool _isAlex80Full;
+    [ObservableProperty] private bool _isAlex80Micro;
+
+    /// <summary>
+    /// "Play" fa cose diverse a seconda della scheda, ma il significato per chi
+    /// lo preme e' lo stesso: manda in esecuzione il programma appena caricato.
+    /// </summary>
+    public string RunToolTip => IsEz80Context
+        ? "Carica il PC con l'indirizzo indicato e avvia la CPU"
+        : IsAlex80Micro
+            ? "Non ancora disponibile su ALEX80 micro"
+            : "Invia NMI: fa saltare lo Z80 al vettore di avvio";
+
+    public bool CanRun => IsSerialOpened && !IsAlex80Micro;
+
+    [RelayCommand]
+    private void Run()
+    {
+        if (IsEz80Context)
+        {
+            // Stesso campo indirizzo usato da lettura e scrittura, e dopo
+            // un'assemblata contiene gia' l'indirizzo di partenza del progetto.
+            var address = ParseAddressField(DefaultStartAdd);
+            _serialManager.RunFrom(address);
+            IsCpuHalted = false;
+            AppendSerialLine($"Avvio da {address:X6}h");
+        }
+        else if (!IsAlex80Micro)
+        {
+            SendNmi();
+        }
+    }
+
+    /// <summary>Vero quando la CPU e' ferma in break ZDI (bit 7 di STAT).</summary>
+    [ObservableProperty] private bool _isCpuHalted;
+
+    public string BreakButtonContent => IsCpuHalted ? "Continua" : "Break";
+
+    partial void OnIsCpuHaltedChanged(bool value) => OnPropertyChanged(nameof(BreakButtonContent));
+
+    /// <summary>
+    /// Ferma o fa ripartire la CPU. Serve perche' ogni accesso a memoria via
+    /// ZDI richiede il core fermo, e averlo sotto controllo esplicito rende
+    /// evidente in che stato si sta leggendo.
+    /// </summary>
+    [RelayCommand]
+    private void ToggleBreak()
+    {
+        if (IsCpuHalted)
+        {
+            _serialManager.ContinueCpu();
+            IsCpuHalted = false;
+        }
+        else
+        {
+            _serialManager.BreakCpu();
+            IsCpuHalted = true;
+        }
+    }
+
+    /// <summary>
+    /// Vero quando la CPU di progetto e' l'eZ80. Serve perche' assemblare non
+    /// richiede una scheda collegata: senza questo, dopo una compilazione gli
+    /// indirizzi verrebbero mostrati a 16 bit finche' non si apre la seriale.
+    /// </summary>
+    private bool IsEz80Cpu => string.Equals(CpuName, CardConfig.Ez80CardName, StringComparison.OrdinalIgnoreCase)
+                              || string.Equals(CpuName, "EZ80", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Vero quando indirizzi e registri vanno trattati a 24 bit: o perche' e'
+    /// collegata una scheda eZ80, o perche' il progetto ha per bersaglio l'eZ80.
+    /// </summary>
+    public bool UseWideAddresses => (IsEz80 || IsEz80Cpu) && !Z80CompatibilityMode;
+
+    /// <summary>
+    /// Vero quando l'eZ80 e' in gioco, per scheda collegata o per CPU di
+    /// progetto. Governa la visibilita' dei comandi specifici dell'eZ80.
+    /// </summary>
+    public bool IsEz80Context => IsEz80 || IsEz80Cpu;
+
+    /// <summary>
+    /// Interpreta il campo indirizzo come esadecimale, che e' il formato in cui
+    /// l'IDE lo scrive (vedi AddressHex = ToString("X4")). Ritorna il valore di
+    /// ripiego se il testo non e' valido o eccede l'ampiezza corrente: senza il
+    /// ramo OverflowException un indirizzo come FFF000 faceva terminare
+    /// l'applicazione invece di essere respinto.
+    /// </summary>
+    private uint ParseAddressField(uint fallback)
+    {
+        try
+        {
+            var parsed = uint.Parse(AddressHex, System.Globalization.NumberStyles.HexNumber);
+            if (!UseWideAddresses && parsed > 0xFFFF) return fallback;
+            return parsed & 0xFFFFFF;
+        }
+        catch (FormatException) { return fallback; }
+        catch (OverflowException) { return fallback; }
+    }
+    [ObservableProperty] private uint _bc24;
+    [ObservableProperty] private uint _de24;
+    [ObservableProperty] private uint _hl24;
+    [ObservableProperty] private uint _ix24;
+    [ObservableProperty] private uint _iy24;
+    [ObservableProperty] private uint _spl24;
+    [ObservableProperty] private uint _pc24;
+    [ObservableProperty] private ushort _sps16;
+    [ObservableProperty] private byte _mbReg;
+    [ObservableProperty] private byte _statReg;
+    [ObservableProperty] private byte _iReg;
+    [ObservableProperty] private byte _rReg;
+    [ObservableProperty] private bool _iff2;
+    [ObservableProperty] private bool _isAdl;
+
+    public string Bc24Hex => Bc24.ToString("X6");
+    public string De24Hex => De24.ToString("X6");
+    public string Hl24Hex => Hl24.ToString("X6");
+    public string Spl24Hex => Spl24.ToString("X6");
+    public string Sps16Hex => Sps16.ToString("X4");
+    public string MbRegHex => MbReg.ToString("X2");
+    public string StatRegHex => StatReg.ToString("X2");
+    public string IRegHex => IReg.ToString("X2");
+    public string RRegHex => RReg.ToString("X2");
+    public string AdlText => IsAdl ? "ADL" : "Z80";
+    public string Iff2Text => Iff2 ? "1" : "0";
+
+    // La larghezza mostrata dipende dalla modalita': ogni volta che cambia,
+    // vanno notificate tutte le stringhe derivate, non solo quelle riscritte.
+    private void NotifyAddressWidthChanged()
+    {
+        OnPropertyChanged(nameof(UseWideAddresses));
+        OnPropertyChanged(nameof(IsEz80Context));
+        OnPropertyChanged(nameof(RunToolTip));
+        OnPropertyChanged(nameof(CanRun));
+        OnPropertyChanged(nameof(IxRegHex));
+        OnPropertyChanged(nameof(IyRegHex));
+        OnPropertyChanged(nameof(SpRegHex));
+        OnPropertyChanged(nameof(PcRegHex));
+    }
+
+    partial void OnIsEz80Changed(bool value) => NotifyAddressWidthChanged();
+
+    partial void OnZ80CompatibilityModeChanged(bool value)
+    {
+        NotifyAddressWidthChanged();
+
+        // Non e' solo una questione di come si mostrano gli indirizzi: decide
+        // anche con quale modalita' il firmware raggiunge la memoria, e in modo
+        // Z80 la RAM a FFF000h non e' raggiungibile affatto.
+        if (IsSerialOpened)
+        {
+            _serialManager.SetAdlMode(!value);
+        }
+    }
+
+    partial void OnBc24Changed(uint value) => OnPropertyChanged(nameof(Bc24Hex));
+    partial void OnDe24Changed(uint value) => OnPropertyChanged(nameof(De24Hex));
+    partial void OnHl24Changed(uint value) => OnPropertyChanged(nameof(Hl24Hex));
+    partial void OnIx24Changed(uint value) => OnPropertyChanged(nameof(IxRegHex));
+    partial void OnIy24Changed(uint value) => OnPropertyChanged(nameof(IyRegHex));
+    partial void OnSpl24Changed(uint value)
+    {
+        OnPropertyChanged(nameof(Spl24Hex));
+        OnPropertyChanged(nameof(SpRegHex));
+    }
+    partial void OnPc24Changed(uint value) => OnPropertyChanged(nameof(PcRegHex));
+    partial void OnSps16Changed(ushort value) => OnPropertyChanged(nameof(Sps16Hex));
+    partial void OnMbRegChanged(byte value) => OnPropertyChanged(nameof(MbRegHex));
+    partial void OnStatRegChanged(byte value) => OnPropertyChanged(nameof(StatRegHex));
+    partial void OnIRegChanged(byte value) => OnPropertyChanged(nameof(IRegHex));
+    partial void OnRRegChanged(byte value) => OnPropertyChanged(nameof(RRegHex));
+    partial void OnIsAdlChanged(bool value) => OnPropertyChanged(nameof(AdlText));
+    partial void OnIff2Changed(bool value) => OnPropertyChanged(nameof(Iff2Text));
     
     [ObservableProperty]
     private byte _fReg;
@@ -263,19 +452,23 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ReadMemory()
     {
-        var readSize = DefaultBytesRead;
-        var readStart = DefaultStartAdd;
+        // uint e non ushort: la RAM dell'eZ80 sta a 0xFFF000, che in uno
+        // ushort non entra. Per lo Z80 il comportamento non cambia.
+        uint readSize = DefaultBytesRead;
+        uint readStart = ParseAddressField(DefaultStartAdd);
         
         try
         {
-            readSize = ushort.Parse(NumBytes);
-            readStart = ushort.Parse(AddressHex);
+            readSize = uint.Parse(NumBytes);
         }
         catch (FormatException)
         {
         }
+        catch (OverflowException)
+        {
+        }
         
-        _serialManager.ReadData((ushort)readStart, (ushort)readSize);
+        _serialManager.ReadData(readStart, readSize);
     }
 
     [RelayCommand(CanExecute = nameof(CanWriteMemory))]
@@ -283,15 +476,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (_fileBytesToWrite == null) return;
         
-        ushort writeStart = DefaultStartAdd;
-        
-        try
-        {
-            writeStart = ushort.Parse(AddressHex);
-        }
-        catch (FormatException)
-        {
-        }
+        uint writeStart = ParseAddressField(DefaultStartAdd);
 
         _serialManager.WriteData(_fileBytesToWrite, writeStart);
     }
@@ -418,6 +603,7 @@ public partial class MainViewModel : ObservableObject
         //_serialManager.LogProgress += OnLogProgress;
         _serialManager.LogMnemonicReceived += OnLogMnemonicReceived;
         _serialManager.DumpReceived += OnDumpReceived;
+        _serialManager.Dump24Received += OnDump24Received;
         _serialManager.MessageReceived += OnMessageReceived;
         _serialManager.ConfigReceived += OnConfigReceived;
         
@@ -477,14 +663,7 @@ public partial class MainViewModel : ObservableObject
     }
     private void OnDataReceived(byte[] bytes)
     {
-        ushort readStart = DefaultStartAdd;
-        try
-        {
-            readStart = ushort.Parse(AddressHex, System.Globalization.NumberStyles.HexNumber);
-        }
-        catch (FormatException)
-        {
-        }
+        uint readStart = ParseAddressField(DefaultStartAdd);
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             CreateArray(bytes, readStart);
@@ -518,6 +697,43 @@ public partial class MainViewModel : ObservableObject
         });
     }
     
+    private void OnDump24Received(Ez80Registers registers)
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            IsEz80 = true;
+
+            AReg = registers.A;
+            FReg = registers.F;
+            MbReg = registers.Mbase;
+            StatReg = registers.Stat;
+            IsAdl = registers.IsAdl;
+            IsCpuHalted = registers.IsHalted;
+
+            Bc24 = registers.Bc;
+            De24 = registers.De;
+            Hl24 = registers.Hl;
+            Ix24 = registers.Ix;
+            Iy24 = registers.Iy;
+            Spl24 = registers.Spl;
+            Sps16 = registers.Sps;
+            Pc24 = registers.Pc;
+
+            // Le meta' a 8 bit restano popolate: sono le stesse celle che la
+            // vista Z80 mostra, e su eZ80 corrispondono ai byte bassi.
+            BReg = (byte)(registers.Bc >> 8);
+            CReg = (byte)registers.Bc;
+            DReg = (byte)(registers.De >> 8);
+            EReg = (byte)registers.De;
+            HReg = (byte)(registers.Hl >> 8);
+            LReg = (byte)registers.Hl;
+
+            IReg = registers.I;
+            RReg = registers.R;
+            Iff2 = registers.Iff2;
+        });
+    }
+
     /*private void OnLogProgress(int progress)
     {
         Dispatcher.UIThread.InvokeAsync(() =>
@@ -552,6 +768,11 @@ public partial class MainViewModel : ObservableObject
             try
             {
                 CardName = cardConfig.CardName;
+                IsEz80 = cardConfig.IsEz80;
+                IsAlex80Full = cardConfig.IsAlex80Full;
+                IsAlex80Micro = cardConfig.IsAlex80Micro;
+                OnPropertyChanged(nameof(RunToolTip));
+                OnPropertyChanged(nameof(CanRun));
                 IsClockFromArduino = cardConfig.IsClockFromArduino;
                 IsMemoryFromArduino = cardConfig.IsMemFromArduino;
                 ClockFrequency = cardConfig.ClockFrequency.ToString();
@@ -987,14 +1208,7 @@ public partial class MainViewModel : ObservableObject
 
         if (_fileBytesToWrite != null)
         {
-            ushort writeStart = DefaultBytesRead;
-            try
-            {
-               writeStart = ushort.Parse(AddressHex, System.Globalization.NumberStyles.HexNumber);
-            }
-            catch (FormatException)
-            {
-            }
+            uint writeStart = ParseAddressField(DefaultStartAdd);
             
             Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -1007,7 +1221,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
     
-    private void CreateArray(byte[] bytes, ushort start = 0)
+    private void CreateArray(byte[] bytes, uint start = 0)
     {
         DataTable.Clear();
 
@@ -1027,10 +1241,10 @@ public partial class MainViewModel : ObservableObject
                 asciiString += ".";
             }
           
-            ushort address = (ushort)(start + ((i / 16) * 16));
+            uint address = (uint)(start + ((i / 16) * 16)) & 0xFFFFFF;
             if ((i + 1) % 16 == 0)
             {
-                var bankRow = new RowElement(address, new List<byte>(byteArray), asciiString);
+                var bankRow = new RowElement(address, new List<byte>(byteArray), asciiString, UseWideAddresses);
 
                 DataTable.Add(bankRow);
 
@@ -1040,7 +1254,7 @@ public partial class MainViewModel : ObservableObject
             else if (i == bytes.Length - 1 && (i + 1) % 16 != 0)
             {
                 //var bankRow = new RowElement((start + (ushort)((i / 16) * 16)) % 65536, new List<byte>(byteArray), asciiString);
-                var bankRow = new RowElement(address, new List<byte>(byteArray), asciiString);
+                var bankRow = new RowElement(address, new List<byte>(byteArray), asciiString, UseWideAddresses);
                 
                 DataTable.Add(bankRow);
             }

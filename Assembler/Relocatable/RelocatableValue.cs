@@ -7,7 +7,7 @@
     {
         public AddressType Type { get; set; }
 
-        public ushort Value { get; set; }
+        public uint Value { get; set; }
 
         public string CommonName { get; set; }
 

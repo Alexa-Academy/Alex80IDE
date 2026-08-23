@@ -7,16 +7,28 @@ namespace Konamiman.Nestor80.Assembler.Relocatable
         public static Address AbsoluteZero = new(AddressType.ASEG, 0);
         public static Address AbsoluteMinusOne = new(AddressType.ASEG, 0xFFFF);
 
-        public Address(AddressType type, ushort value, string commonBlockName = null)
+        /// <summary>
+        /// Ampiezza dello spazio di indirizzamento della CPU corrente:
+        /// 0xFFFF per Z80, R800 e Z280, 0xFFFFFF per eZ80.
+        /// Ogni valore viene mascherato qui, cosi' il troncamento resta in un
+        /// punto solo e lo Z80 mantiene esattamente il wraparound a 64 KB che
+        /// aveva quando Value era uno ushort.
+        /// </summary>
+        public static uint ValueMask { get; set; } = 0xFFFF;
+
+        /// <summary>Vero quando lo spazio di indirizzamento e' a 24 bit.</summary>
+        public static bool IsWideAddressSpace => ValueMask > 0xFFFF;
+
+        public Address(AddressType type, uint value, string commonBlockName = null)
         {
             Type = type;
-            Value = value;
+            Value = value & ValueMask;
             CommonBlockName = commonBlockName;
         }
 
-        public static Address Absolute(ushort value) => new(AddressType.ASEG, value);
-        public static Address Code(ushort value) => new(AddressType.CSEG, value);
-        public static Address Data(ushort value) => new(AddressType.DSEG, value);
+        public static Address Absolute(uint value) => new(AddressType.ASEG, value);
+        public static Address Code(uint value) => new(AddressType.CSEG, value);
+        public static Address Data(uint value) => new(AddressType.DSEG, value);
 
         public static bool IsSdccBuild { get; set; }
 
@@ -25,7 +37,7 @@ namespace Konamiman.Nestor80.Assembler.Relocatable
 
         public AddressType Type { get; private set; }
 
-        public ushort Value { get; private set; }
+        public uint Value { get; private set; }
 
         public string CommonBlockName { get; private set; }
 
@@ -41,7 +53,10 @@ namespace Konamiman.Nestor80.Assembler.Relocatable
         {
             get
             {
-                return Value < 256 || Value >= 0xFF00;
+                // Il secondo ramo accetta i valori negativi in complemento a
+                // due sull'ampiezza corrente (0xFF00..0xFFFF a 16 bit,
+                // 0xFFFF00..0xFFFFFF a 24 bit).
+                return Value < 256 || Value >= (ValueMask & ~0xFFu);
             }
         }
 
@@ -85,7 +100,7 @@ namespace Konamiman.Nestor80.Assembler.Relocatable
 
         public override int GetHashCode()
         {
-            var result = Value | (int)Type << 16;
+            var result = (int)Value ^ ((int)Type << 24);
             if (CommonBlockName is not null)
             {
                 result ^= CommonBlockName.GetHashCode();

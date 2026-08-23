@@ -58,6 +58,12 @@ public sealed class Alex80Project
     /// <summary>Accetta anche la sintassi TASM oltre a quella Macro80.</summary>
     public bool TasmCompatibility { get; set; } = true;
 
+    /// <summary>
+    /// CPU di destinazione: Z80 (predefinita), R800, Z280 o EZ80. Una direttiva
+    /// .CPU nel sorgente ha comunque la precedenza da quel punto in poi.
+    /// </summary>
+    public string CpuName { get; set; } = "Z80";
+
     /// <summary>Percorso del file .a80proj. Non viene serializzato.</summary>
     [JsonIgnore]
     public string? ProjectPath { get; set; }

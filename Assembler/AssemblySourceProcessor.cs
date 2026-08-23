@@ -82,6 +82,26 @@ namespace Konamiman.Nestor80.Assembler
         private static bool z280AllowPriviliegedInstructions;
         private static bool z280IoInstructionsArePrivileged;
         private static bool isZ280;
+
+        private static bool isEz80;
+
+        /// <summary>
+        /// Stato dichiarato da "ASSUME ADL = n". In modalita' ADL l'eZ80 usa
+        /// indirizzi a 24 bit. Per ora e' solo tracciato: le codifiche che ne
+        /// dipendono (CALL, JP, LD rr,nn, PUSH/POP...) arrivano insieme
+        /// all'allargamento del modello degli indirizzi.
+        /// </summary>
+        private static bool ez80AdlMode;
+
+        /// <summary>Vero dopo la prima ASSUME ADL incontrata.</summary>
+        private static bool ez80AdlModeWasSet;
+
+        /// <summary>
+        /// Vero se il file cambia modalita' ADL a meta' strada. Il modo misto
+        /// non e' ancora reso correttamente, perche' le espressioni risolte in
+        /// differita usano lo stato finale invece di quello della loro riga.
+        /// </summary>
+        private static bool ez80AdlModeChangedDuringAssembly;
         private static bool isZ280AutoIndexMode;
         private static bool isZ280LongIndexMode;
         private static Z280IndexMode z280IndexMode;
@@ -199,6 +219,13 @@ namespace Konamiman.Nestor80.Assembler
                 treatUnknownSymbolsAsExternals = configuration.TreatUnknownSymbolsAsExternals;
                 allowLabelsWithoutColon = configuration.TasmCompatibility;
 
+                // Stato eZ80 azzerato a ogni assemblata: sono statiche, e senza
+                // questo un file eZ80 lascerebbe la modalita' ADL accesa per
+                // quello successivo compilato nello stesso processo.
+                ez80AdlMode = false;
+                ez80AdlModeWasSet = false;
+                ez80AdlModeChangedDuringAssembly = false;
+
                 SetCurrentCpu(configuration.CpuName);
                 buildType = configuration.BuildType;
                 if(buildType is BuildType.Sdcc) {
@@ -303,7 +330,7 @@ namespace Konamiman.Nestor80.Assembler
             if(buildType == BuildType.Automatic)
                 buildType = BuildType.Absolute;
 
-            int programSize;
+            uint programSize;
             if(buildType == BuildType.Absolute) {
                 var firstOutputOrOrg = state.ProcessedLines.FirstOrDefault(l => l is ChangeOriginLine or IProducesOutput or DefineSpaceLine);
                 if(firstOutputOrOrg is null || firstOutputOrOrg is not ChangeOriginLine) {
@@ -367,7 +394,7 @@ namespace Konamiman.Nestor80.Assembler
         /// </summary>
         /// <param name="symbol">Symbol name</param>
         /// <param name="value">Symbol value</param>
-        private static void MaybeProcessSpecialSymbol(string symbol, ushort value)
+        private static void MaybeProcessSpecialSymbol(string symbol, uint value)
         {
             if(symbol.Equals(Z280_ALLOW_PRIV_SYMBOL, StringComparison.OrdinalIgnoreCase)) {
                 z280AllowPriviliegedInstructions = value != 0;
@@ -392,6 +419,12 @@ namespace Konamiman.Nestor80.Assembler
         private static void SetZ280ConfigVariables()
         {
             isZ280 = currentCpu == CpuType.Z280;
+            isEz80 = currentCpu == CpuType.EZ80;
+
+            // Unico punto in cui si decide l'ampiezza dello spazio indirizzi.
+            // Tutti i valori passano dal costruttore di Address, che maschera
+            // qui: per Z80, R800 e Z280 resta il wraparound a 64 KB di sempre.
+            Address.ValueMask = isEz80 ? 0xFFFFFFu : 0xFFFFu;
             isZ280AutoIndexMode = isZ280 && z280IndexMode == Z280IndexMode.Auto;
             isZ280LongIndexMode = isZ280 && z280IndexMode != Z280IndexMode.Short;
         }
@@ -929,7 +962,7 @@ namespace Konamiman.Nestor80.Assembler
 
             foreach(var part in expressionPendingEvaluation.Expression.Parts) {
                 if(part is Address ad) {
-                    items.Add(LinkItem.ForAddressReference(ad.Type, ad.Value));
+                    items.Add(LinkItem.ForAddressReference(ad.Type, (ushort)ad.Value));
                 }
                 else if(part is SymbolReference sr) {
                     var symbol = state.GetSymbolWithoutLocalNameReplacement(state.Modularize(sr));
@@ -940,7 +973,7 @@ namespace Konamiman.Nestor80.Assembler
                         items.Add(LinkItem.ForExternalReference(symbol.EffectiveName));
                     }
                     else {
-                        items.Add(LinkItem.ForAddressReference(symbol.Value.Type, symbol.Value.Value, symbol.SdccAreaName));
+                        items.Add(LinkItem.ForAddressReference(symbol.Value.Type, (ushort)symbol.Value.Value, symbol.SdccAreaName));
                     }
                 }
                 else if(part is ArithmeticOperator op) {
@@ -1212,7 +1245,7 @@ namespace Konamiman.Nestor80.Assembler
             }
         }
 
-        static ushort oldPointer, oldPhasedPointer;
+        static uint oldPointer, oldPhasedPointer;
         private static void IncreaseLocationPointer(int amount)
         {
             oldPointer = state.CurrentDephasedLocationPointer;

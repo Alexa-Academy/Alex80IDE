@@ -4,7 +4,7 @@
     {
         public AddressType ValueArea { get; set; }
 
-        public ushort Value { get; set; }
+        public uint Value { get; set; }
 
         public string Name { get; set; }
 

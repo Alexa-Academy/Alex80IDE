@@ -38,6 +38,8 @@
                             Command="{Binding OpenCloseSerialPortCommand}" />
                 </StackPanel>
 
+                <!-- Bolla a sinistra, centrata verticalmente sull'altezza del
+                     gruppo etichetta + interruttori. -->
                 <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Border Classes="cardBadge" VerticalAlignment="Center">
                         <TextBlock Text="{Binding CardBadgeText}"
@@ -45,12 +47,19 @@
                                    Foreground="{DynamicResource AccentBrush}"
                                    HorizontalAlignment="Center" />
                     </Border>
-                    <ToggleSwitch Content="Clock Arduino"
-                                  IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
-                                  IsEnabled="{Binding IsSerialOpened}" />
-                    <ToggleSwitch Content="Mem Arduino"
-                                  IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
-                                  IsEnabled="{Binding IsSerialOpened}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <ToggleSwitch Content="Clock Arduino"
+                                      IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
+                                      IsEnabled="{Binding IsSerialOpened}" />
+                        <ToggleSwitch Content="Mem Arduino"
+                                      IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
+                                      IsEnabled="{Binding IsSerialOpened}" />
+                        <ToggleSwitch Content="Modo Z80"
+                                      IsChecked="{Binding Z80CompatibilityMode, Mode=TwoWay}"
+                                      IsVisible="{Binding IsEz80Context}"
+                                      IsEnabled="{Binding IsSerialOpened}"
+                                      ToolTip.Tip="Spento: indirizzi a 24 bit (ADL). Acceso: modo Z80, solo 64 KB tramite MBASE." />
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
@@ -94,10 +103,24 @@
                             IsEnabled="{Binding IsSerialOpened}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource ResetIconData}" />
                     </Button>
-                    <Button Content="NMI"
+                    <!-- Un solo comando, significato uniforme: manda in
+                         esecuzione il programma caricato. Sull'Alex80 e' un NMI,
+                         sull'eZ80 e' il caricamento del PC seguito da continue. -->
+                    <Button Classes="primary iconOnly"
+                            Command="{Binding RunCommand}"
+                            IsEnabled="{Binding CanRun}"
+                            ToolTip.Tip="{Binding RunToolTip}">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource RunIconData}" />
+                    </Button>
+                    <!-- Ogni accesso a memoria via ZDI richiede il core fermo:
+                         averlo sotto controllo esplicito rende evidente in che
+                         stato si sta leggendo. -->
+                    <Button Content="{Binding BreakButtonContent}"
                             Classes="tool"
-                            Command="{Binding SendNmiCommand}"
-                            IsEnabled="{Binding IsSerialOpened}" />
+                            Command="{Binding ToggleBreakCommand}"
+                            IsVisible="{Binding IsEz80Context}"
+                            IsEnabled="{Binding IsSerialOpened}"
+                            ToolTip.Tip="Ferma o fa ripartire la CPU (break ZDI)" />
                     <Button Content="{Binding DebugEnabled, Converter={StaticResource EnableDisableConverter}}"
                             Classes="tool"
                             Command="{Binding DebugCommand}"
@@ -212,6 +235,14 @@
                             <Border Classes="separatorH" />
                             <TextBlock Text="ASSEMBLATORE" Classes="caption" />
                             <TextBlock Text="{Binding SettingsScopeText}" Classes="caption" TextWrapping="Wrap" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="CPU" Classes="caption" VerticalAlignment="Center" />
+                                <ComboBox ItemsSource="{Binding AvailableCpus}"
+                                          SelectedItem="{Binding CpuName, Mode=TwoWay}"
+                                          MinWidth="110"
+                                          ToolTip.Tip="CPU di destinazione. Una direttiva .CPU nel sorgente ha comunque la precedenza." />
+                            </StackPanel>
 
                             <CheckBox Content="Sintassi TASM"
                                       IsChecked="{Binding TasmCompatibility, Mode=TwoWay}"

@@ -27,7 +27,7 @@ namespace Konamiman.Nestor80.Assembler
 
         public AddressType ValueArea { get; set; }
 
-        public ushort Value { get; set; }
+        public uint Value { get; set; }
 
         /// <summary>
         /// Name of the COMMON block the symbol belongs to, if the symbol

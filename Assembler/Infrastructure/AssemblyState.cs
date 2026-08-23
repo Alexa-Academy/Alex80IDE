@@ -148,7 +148,7 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
             ClearExpressionsCache();
             lastUsedSdccAreaIndex = -1;
 
-            var initialLocation = buildType is BuildType.Absolute ? Configuration.StartAddress : (ushort)0;
+            uint initialLocation = buildType is BuildType.Absolute ? Configuration.StartAddress : 0u;
 
             if(isSdccBuild) {
                 SwitchToLocation(0);
@@ -175,13 +175,13 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
             }
         }
 
-        private readonly Dictionary<AddressType, ushort> LocationPointersByArea = new() {
+        private readonly Dictionary<AddressType, uint> LocationPointersByArea = new() {
             {AddressType.CSEG, 0},
             {AddressType.DSEG, 0},
             {AddressType.ASEG, 0}
         };
 
-        private readonly Dictionary<AddressType, ushort> AreaSizes = new() {
+        private readonly Dictionary<AddressType, uint> AreaSizes = new() {
             {AddressType.CSEG, 0},
             {AddressType.DSEG, 0},
             {AddressType.ASEG, 0}
@@ -212,11 +212,13 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
             CurrentLocationArea = locationAreaBeforePhase;
         }
 
-        private ushort currentDephasedLocationPointer;
+        // Il contatore di locazione e' a 24 bit per l'eZ80; la mascheratura
+        // con Address.ValueMask conserva il wraparound a 64 KB dello Z80.
+        private uint currentDephasedLocationPointer;
 
-        public ushort CurrentDephasedLocationPointer => currentDephasedLocationPointer;
+        public uint CurrentDephasedLocationPointer => currentDephasedLocationPointer;
 
-        public ushort CurrentLocationPointer
+        public uint CurrentLocationPointer
         {
             get => CurrentPhasedLocationPointer.GetValueOrDefault(currentDephasedLocationPointer);
             private set
@@ -225,7 +227,7 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
             }
         }
 
-        public ushort? CurrentPhasedLocationPointer { get; private set; } = null;
+        public uint? CurrentPhasedLocationPointer { get; private set; } = null;
 
         public bool IsCurrentlyPhased => CurrentPhasedLocationPointer is not null;
 
@@ -239,7 +241,7 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
 
             AdjustAreaSize();
 
-            CurrentLocationPointer = area is AddressType.COMMON ? (ushort)0 : LocationPointersByArea[area];
+            CurrentLocationPointer = area is AddressType.COMMON ? 0u : LocationPointersByArea[area];
             CurrentLocationArea = area;
             currentCommonBlockName = commonName;
         }
@@ -294,10 +296,10 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
         {
             if(CurrentLocationArea is AddressType.COMMON) {
                 if(commonAreaSizes.ContainsKey(currentCommonBlockName)) {
-                    commonAreaSizes[currentCommonBlockName] = Math.Max(commonAreaSizes[currentCommonBlockName], CurrentLocationPointer);
+                    commonAreaSizes[currentCommonBlockName] = Math.Max(commonAreaSizes[currentCommonBlockName], (int)CurrentLocationPointer);
                 }
                 else {
-                    commonAreaSizes.Add(currentCommonBlockName, CurrentLocationPointer);
+                    commonAreaSizes.Add(currentCommonBlockName, (int)CurrentLocationPointer);
                 }
             }
             else if(isSdccBuild) {
@@ -309,7 +311,7 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
             }
         }
 
-        public void SwitchToLocation(ushort location)
+        public void SwitchToLocation(uint location)
         {
             if(IsCurrentlyPhased) {
                 throw new InvalidOperationException($"{nameof(SwitchToLocation)} isn't intended to be executed while in .PHASE mode");
@@ -323,7 +325,7 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
             CurrentLocationPointer = location;
         }
 
-        public ushort GetAreaSize(AddressType area)
+        public uint GetAreaSize(AddressType area)
         {
             if(area == AddressType.COMMON) {
                 throw new InvalidOperationException($"{nameof(GetAreaSize)} isn't intended to be invoked for common blocks");
@@ -336,9 +338,9 @@ namespace Konamiman.Nestor80.Assembler.Infrastructure
 
         public void IncreaseLocationPointer(int amount)
         {
-            currentDephasedLocationPointer += (ushort)amount;
+            currentDephasedLocationPointer = (currentDephasedLocationPointer + (uint)amount) & Address.ValueMask;
             if(IsCurrentlyPhased) {
-                CurrentPhasedLocationPointer += (ushort)amount;
+                CurrentPhasedLocationPointer = (CurrentPhasedLocationPointer + (uint)amount) & Address.ValueMask;
             }
         }
 

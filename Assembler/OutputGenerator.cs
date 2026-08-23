@@ -33,9 +33,9 @@ namespace Konamiman.Nestor80.Assembler
         public static int GenerateAbsolute(AssemblyResult assemblyResult, Stream outputStream, bool directFileWrite = false, byte fillByte = 0)
         {
             var memory = new byte[65536];
-            var firstAddress = (int)assemblyResult.StartAddress;
-            var lastAddressPlusOne = 0;
-            var currentAddress = firstAddress;
+            long firstAddress = assemblyResult.StartAddress;
+            long lastAddressPlusOne = 0;
+            long currentAddress = firstAddress;
 
             if(fillByte != 0) {
                 Array.Fill(memory, fillByte);
@@ -58,9 +58,16 @@ namespace Konamiman.Nestor80.Assembler
                 currentAddress = 0;
             }
 
+            // L'immagine assoluta resta un blocco contiguo da 64 KB. Con lo
+            // spazio a 24 bit dell'eZ80 non puo' piu' essere indicizzata con
+            // l'indirizzo assoluto (0xFFF000 sfora l'array), quindi si indicizza
+            // a partire dal primo ORG. Per le CPU a 16 bit la base e' 0 e
+            // l'indicizzazione resta identica a prima.
+            long imageBase = Address.IsWideAddressSpace ? firstAddress : 0;
+
             //We do a deferred location counter update to prevent an ORG at the end of the file
             //(not followed by more output) from affecting the final output size
-            int newLocationCounter = -1;
+            long newLocationCounter = -1;
 
             foreach(var line in lines) {
                 if(!directFileWrite && newLocationCounter != -1 && line is IProducesOutput or DefineSpaceLine) {
@@ -81,63 +88,65 @@ namespace Konamiman.Nestor80.Assembler
                         outputStream.Write(ipo.OutputBytes);
                         lastAddressPlusOne += length;
                     }
-                    else if(currentAddress + length <= 65536) {
-                        Array.Copy(ipo.OutputBytes, 0, memory, currentAddress, ipo.OutputBytes.Length);
+                    else if(currentAddress - imageBase + length <= 65536) {
+                        Array.Copy(ipo.OutputBytes, 0, memory, (int)(currentAddress - imageBase), ipo.OutputBytes.Length);
                         currentAddress += length;
                     }
                     else {
-                        var length1 = 65536 - currentAddress;
-                        var length2 = length - length1;
-                        Array.Copy(ipo.OutputBytes, 0, memory, currentAddress, length1);
+                        var length1 = 65536 - (int)(currentAddress - imageBase);
+                        var length2 = (int)length - length1;
+                        Array.Copy(ipo.OutputBytes, 0, memory, (int)(currentAddress - imageBase), length1);
                         Array.Copy(ipo.OutputBytes, length1, memory, 0, length2);
-                        currentAddress = length2;
-                        firstAddress = 0;
-                        lastAddressPlusOne = 65536;
+                        currentAddress = imageBase + length2;
+                        firstAddress = imageBase;
+                        lastAddressPlusOne = imageBase + 65536;
                     }
                 }
                 else if(line is DefineSpaceLine ds) { //Note that this includes AlignLine too
                     var outputByte = ds.Value ?? fillByte;
                     var length = ds.Size;
                     if(directFileWrite) {
-                        var bytes = Enumerable.Repeat(outputByte, length).ToArray();
+                        var bytes = Enumerable.Repeat(outputByte, (int)length).ToArray();
                         outputStream.Write(bytes);
                         lastAddressPlusOne += length;
                     }
-                    else if(currentAddress + length <= 65536) {
-                        Array.Fill(memory, outputByte, currentAddress, length);
+                    else if(currentAddress - imageBase + length <= 65536) {
+                        Array.Fill(memory, outputByte, (int)(currentAddress - imageBase), (int)length);
                         currentAddress += length;
                     }
                     else {
-                        var length1 = 65536 - currentAddress;
-                        var length2 = length - length1;
-                        Array.Fill(memory, outputByte, currentAddress, length1);
+                        var length1 = 65536 - (int)(currentAddress - imageBase);
+                        var length2 = (int)length - length1;
+                        Array.Fill(memory, outputByte, (int)(currentAddress - imageBase), length1);
                         Array.Fill(memory, outputByte, 0, length2);
-                        currentAddress = length2;
-                        firstAddress = 0;
-                        lastAddressPlusOne = 65536;
+                        currentAddress = imageBase + length2;
+                        firstAddress = imageBase;
+                        lastAddressPlusOne = imageBase + 65536;
                     }
                 }
                 else if(line is AssemblyEndLine or EndOutputLine) {
                     break;
                 }
 
-                if(currentAddress >= 65536) {
-                    firstAddress = 0;
-                    currentAddress = 0;
-                    lastAddressPlusOne = 65536;
+                if(currentAddress - imageBase >= 65536) {
+                    firstAddress = imageBase;
+                    currentAddress = imageBase;
+                    lastAddressPlusOne = imageBase + 65536;
                 }
                 else {
                     lastAddressPlusOne = Math.Max(lastAddressPlusOne, currentAddress);
                 }
             }
 
-            var outputSize = lastAddressPlusOne-firstAddress;
+            var outputSize = (int)(lastAddressPlusOne-firstAddress);
             if(!directFileWrite && outputSize > 0) {
-                outputStream.Write(memory, firstAddress, outputSize);
+                outputStream.Write(memory, (int)(firstAddress - imageBase), outputSize);
             }
             
-            assemblyResult.FirstAddress = firstAddress;
-            assemblyResult.EndAddressPlusOne = lastAddressPlusOne;
+            // Un indirizzo a 24 bit entra comodamente in un int: 0xFFFFFF e'
+            // circa 16,7 milioni.
+            assemblyResult.FirstAddress = (int)firstAddress;
+            assemblyResult.EndAddressPlusOne = (int)lastAddressPlusOne;
 
             return outputSize;
         }
@@ -168,7 +177,7 @@ namespace Konamiman.Nestor80.Assembler
         static BitStreamWriter bitWriter;
         static Dictionary<string, Address> externalChains;
         static AddressType currentLocationArea;
-        static Dictionary<AddressType, ushort> locationCounters;
+        static Dictionary<AddressType, uint> locationCounters;
         static List<string> referencedExternals;
         static bool extendedFormat;
         static Encoding encoding;
@@ -189,11 +198,11 @@ namespace Konamiman.Nestor80.Assembler
             bitWriter = new BitStreamWriter(output);
             externalChains = new Dictionary<string, Address>(StringComparer.OrdinalIgnoreCase);
             referencedExternals = new List<string>();
-            ushort endAddress = 0;
+            uint endAddress = 0;
             bool changedToAseg = false;
             currentCommonBlockName = null;
             currentLocationArea = AddressType.CSEG;
-            locationCounters = new Dictionary<AddressType, ushort>() {
+            locationCounters = new Dictionary<AddressType, uint>() {
                 { AddressType.CSEG, 0 },
                 { AddressType.DSEG, 0 },
                 { AddressType.ASEG, 0 },
@@ -567,7 +576,7 @@ namespace Konamiman.Nestor80.Assembler
             WriteAddress(address.Type, address.Value);
         }
 
-        private static void WriteAddress(AddressType type, ushort value)
+        private static void WriteAddress(AddressType type, uint value)
         {
             bitWriter.Write(1, 1);
             bitWriter.Write((byte)type, 2);
@@ -598,12 +607,12 @@ namespace Konamiman.Nestor80.Assembler
             WriteLinkItem(type, address?.Type, address?.Value ?? 0, symbolBytes);
         }
 
-        private static void WriteLinkItem(LinkItemType type, AddressType? addressType, ushort addressValue, string symbolBytes)
+        private static void WriteLinkItem(LinkItemType type, AddressType? addressType, uint addressValue, string symbolBytes)
         {
             WriteLinkItem(type, addressType, addressValue, encoding.GetBytes(symbolBytes));
         }
 
-        private static void WriteLinkItem(LinkItemType type, AddressType? addressType, ushort addressValue, byte[] symbolBytes = null)
+        private static void WriteLinkItem(LinkItemType type, AddressType? addressType, uint addressValue, byte[] symbolBytes = null)
         {
             bitWriter.Write(0b100, 3);
             bitWriter.Write((byte)type, 4);
@@ -813,7 +822,7 @@ namespace Konamiman.Nestor80.Assembler
                     }
                     maybeInitCurrentOutputLine();
                     flushCurrentOutputLine();
-                    currentLocationPointer += defsLine.Size;
+                    currentLocationPointer += (int)defsLine.Size;
                 }
                 else if(line is IProducesOutput ipo) {
                     var relocatablePartsByIndex = ipo.RelocatableParts.ToDictionary(part => part.Index);

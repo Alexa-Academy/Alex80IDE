@@ -19,7 +19,7 @@
                         DockPanel.Dock="Right"
                         IsVisible="{Binding #Root.ShowToolbar}">
                 <TextBlock Text="Indirizzo" Classes="caption" VerticalAlignment="Center" />
-                <TextBox Text="{Binding AddressHex, Mode=TwoWay}" Width="82" Classes="mono" />
+                <TextBox Text="{Binding AddressHex, Mode=TwoWay}" Width="96" Classes="mono" />
                 <TextBlock Text="Byte" Classes="caption" VerticalAlignment="Center" />
                 <TextBox Text="{Binding NumBytes}" Width="62" Classes="mono" />
                 <Button Content="Leggi" Command="{Binding ReadMemoryCommand}" Classes="primary" />

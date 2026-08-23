@@ -20,7 +20,7 @@ namespace Konamiman.Nestor80.Assembler.ProcessedLineTypes
         public bool IsOverlay => Area.IsOverlay;
 
         public AddressType NewLocationArea { get; set; }
-        public ushort NewLocationCounter { get; set; }
+        public uint NewLocationCounter { get; set; }
 
         public override string ToString() => Area.ToString();
     }

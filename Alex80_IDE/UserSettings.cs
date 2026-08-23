@@ -14,6 +14,9 @@ public sealed class UserSettings
     /// <summary>Accetta anche la sintassi TASM (.EQU, etichette senza due punti, $ esadecimale...).</summary>
     public bool TasmCompatibility { get; set; } = true;
 
+    /// <summary>CPU usata quando non c'e' un progetto aperto.</summary>
+    public string CpuName { get; set; } = "Z80";
+
     /// <summary>Byte con cui riempire le posizioni di memoria che nessun file occupa.</summary>
     public byte FillByte { get; set; }
 

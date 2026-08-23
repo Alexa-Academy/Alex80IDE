@@ -25,6 +25,9 @@ public sealed class BuildRequest
     public byte FillByte { get; init; }
     public bool TasmCompatibility { get; init; } = true;
 
+    /// <summary>CPU di destinazione passata all'assembler.</summary>
+    public string CpuName { get; init; } = "Z80";
+
     /// <summary>Cartelle in cui cercare i file richiesti da INCLUDE/INCBIN.</summary>
     public IReadOnlyList<string> IncludeDirectories { get; init; } = Array.Empty<string>();
 }
@@ -77,7 +80,15 @@ public static class ProjectBuilder
         var chunks = new List<(string, int, int)>();
         var listing = new StringBuilder();
         int min = int.MaxValue, max = 0;
-        ushort nextAddress = 0;
+        uint nextAddress = 0;
+
+        // L'immagine di memoria dell'IDE e' una finestra da 64 KB indicizzata
+        // con l'indirizzo assoluto. Con l'eZ80 il codice puo' stare oltre i
+        // 64 KB (la RAM interna e' a FFF000h), quindi la finestra viene
+        // ancorata al primo blocco che non ci starebbe. Per lo Z80 la base
+        // resta 0 e l'indicizzazione e' identica a prima.
+        var memoryBase = 0;
+        var memoryBaseSet = false;
 
         foreach (var source in request.Sources)
         {
@@ -101,10 +112,17 @@ public static class ProjectBuilder
             var bytes = outputStream.ToArray();
             var address = result.FirstAddress;
 
-            if (address + bytes.Length > MemorySize)
+            if (!memoryBaseSet && address + bytes.Length > MemorySize)
+            {
+                memoryBase = address;
+                memoryBaseSet = true;
+            }
+
+            if (address < memoryBase || address - memoryBase + bytes.Length > MemorySize)
             {
                 messages.Add(new BuildMessage(source.DisplayName, null, false,
-                    $"Il blocco non ci sta in memoria: {bytes.Length} byte a partire da {address:X4}h."));
+                    $"Il blocco non ci sta nella finestra di {MemorySize / 1024} KB " +
+                    $"che parte da {memoryBase:X6}h: {bytes.Length} byte a partire da {address:X6}h."));
                 continue;
             }
 
@@ -118,14 +136,14 @@ public static class ProjectBuilder
                 continue;
             }
 
-            Array.Copy(bytes, 0, memory, address, bytes.Length);
+            Array.Copy(bytes, 0, memory, address - memoryBase, bytes.Length);
             chunks.Add((source.DisplayName, address, bytes.Length));
             min = Math.Min(min, address);
             max = Math.Max(max, address + bytes.Length);
-            nextAddress = (ushort)(address + bytes.Length);
+            nextAddress = (uint)(address + bytes.Length);
         }
 
-        return CreateResult(memory, min, max, chunks, listing.ToString(), messages);
+        return CreateResult(memory, min, max, memoryBase, chunks, listing.ToString(), messages);
     }
 
     /// <summary>
@@ -165,10 +183,18 @@ public static class ProjectBuilder
         }
 
         var bytes = outputStream.ToArray();
-        Array.Copy(bytes, 0, memory, result.FirstAddress, bytes.Length);
+        var singleBase = result.FirstAddress + bytes.Length > MemorySize ? result.FirstAddress : 0;
+        if (bytes.Length > MemorySize)
+        {
+            messages.Add(new BuildMessage(rootSource.DisplayName, null, false,
+                $"Il blocco non ci sta nella finestra di {MemorySize / 1024} KB: {bytes.Length} byte."));
+            return new BuildResult { Messages = messages, Listing = listing.ToString() };
+        }
+
+        Array.Copy(bytes, 0, memory, result.FirstAddress - singleBase, bytes.Length);
 
         var chunks = new List<(string, int, int)> { ("progetto", result.FirstAddress, bytes.Length) };
-        return CreateResult(memory, result.FirstAddress, result.FirstAddress + bytes.Length, chunks,
+        return CreateResult(memory, result.FirstAddress, result.FirstAddress + bytes.Length, singleBase, chunks,
             listing.ToString(), messages);
     }
 
@@ -252,7 +278,7 @@ public static class ProjectBuilder
 
         return new AssemblyConfiguration
         {
-            CpuName = "Z80",
+            CpuName = string.IsNullOrWhiteSpace(request.CpuName) ? "Z80" : request.CpuName,
             BuildType = BuildType.Absolute,
             MaxErrors = 0,
             TasmCompatibility = request.TasmCompatibility,
@@ -347,10 +373,16 @@ public static class ProjectBuilder
         return memory;
     }
 
+    /// <param name="memoryBase">
+    /// Indirizzo a cui corrisponde memory[0]. E' 0 per lo Z80; con l'eZ80 la
+    /// finestra da 64 KB puo' essere ancorata piu' in alto. FirstAddress resta
+    /// comunque l'indirizzo assoluto.
+    /// </param>
     private static BuildResult CreateResult(
         byte[] memory,
         int min,
         int max,
+        int memoryBase,
         IReadOnlyList<(string, int, int)> chunks,
         string listing,
         IReadOnlyList<BuildMessage> messages)
@@ -362,7 +394,7 @@ public static class ProjectBuilder
 
         return new BuildResult
         {
-            Bytes = memory[min..max],
+            Bytes = memory[(min - memoryBase)..(max - memoryBase)],
             FirstAddress = min,
             Chunks = chunks,
             Listing = listing,
