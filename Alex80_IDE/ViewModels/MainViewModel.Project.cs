@@ -56,9 +56,20 @@ public partial class MainViewModel
 
     public string ProjectTitle => CurrentProject?.DisplayName ?? "nessun progetto";
 
-    /// <summary>Spiega a chi si applicano le impostazioni mostrate nel pannello.</summary>
+    /// <summary>
+    /// Spiega a chi si applicano le impostazioni mostrate nel pannello.
+    /// <para>
+    /// Senza un progetto aperto non sono solo dei valori predefiniti, come diceva prima
+    /// questo testo: sono le impostazioni con cui "Assembla" lavora davvero sul sorgente
+    /// selezionato (vedi <see cref="CreateSingleFileBuildRequest"/>), e insieme quelle da
+    /// cui parte un progetto nuovo. Per questo il pannello resta attivo anche senza
+    /// progetto, e non esiste un secondo posto dove modificare gli stessi valori.
+    /// </para>
+    /// </summary>
     public string SettingsScopeText =>
-        CurrentProject is null ? "valori predefiniti (nessun progetto aperto)" : "impostazioni del progetto";
+        CurrentProject is null
+            ? "Valgono per l'assemblata del sorgente selezionato, e sono i valori da cui parte un progetto nuovo."
+            : $"Valgono per il progetto «{CurrentProject.DisplayName}» e sono salvate nel suo file.";
 
     private void InitializeProjectCommands()
     {
