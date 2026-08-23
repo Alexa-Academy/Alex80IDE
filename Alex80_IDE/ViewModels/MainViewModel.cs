@@ -115,8 +115,8 @@ public partial class MainViewModel : ObservableObject
 
         WriteMemoryCommand.NotifyCanExecuteChanged();
 
-        OnPropertyChanged(nameof(CanConfigureArduinoSignals));
-        OnPropertyChanged(nameof(CanChooseCpuMode));
+        // Aprire o chiudere la porta cambia chi decide fra scheda e CPU di progetto.
+        NotifyAddressWidthChanged();
     }
     
     [ObservableProperty] 
@@ -324,16 +324,28 @@ public partial class MainViewModel : ObservableObject
                               || string.Equals(CpuName, "EZ80", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Vero quando indirizzi e registri vanno trattati a 24 bit: o perche' e'
-    /// collegata una scheda eZ80, o perche' il progetto ha per bersaglio l'eZ80.
+    /// Vero quando l'eZ80 e' in gioco. Governa i comandi specifici dell'eZ80 e la
+    /// larghezza con cui si mostrano indirizzi e registri.
+    /// <para>
+    /// Con una scheda collegata decide la scheda, non la CPU di progetto: e'
+    /// l'hardware davanti a noi a dire cosa si puo' fare. Senza questa precedenza
+    /// un progetto impostato su eZ80 con una ALEX80 collegata faceva mandare a
+    /// "play" un comando ZDI invece dell'NMI, comparire il pulsante di break e
+    /// mostrare gli indirizzi a 24 bit su una macchina che ne ha 16.
+    /// </para>
+    /// <para>
+    /// A porta chiusa decide invece la CPU di progetto: assemblare non richiede una
+    /// scheda, e dopo una compilazione per eZ80 gli indirizzi vanno mostrati per
+    /// quello che sono.
+    /// </para>
     /// </summary>
-    public bool UseWideAddresses => (IsEz80 || IsEz80Cpu) && !Z80CompatibilityMode;
+    public bool IsEz80Context => IsSerialOpened ? IsEz80 : IsEz80Cpu;
 
     /// <summary>
-    /// Vero quando l'eZ80 e' in gioco, per scheda collegata o per CPU di
-    /// progetto. Governa la visibilita' dei comandi specifici dell'eZ80.
+    /// Vero quando indirizzi e registri vanno trattati a 24 bit: l'eZ80 e' in gioco
+    /// e non si sta lavorando in modo Z80.
     /// </summary>
-    public bool IsEz80Context => IsEz80 || IsEz80Cpu;
+    public bool UseWideAddresses => IsEz80Context && !Z80CompatibilityMode;
 
     /// <summary>
     /// Clock e cicli di memoria serviti dall'Arduino esistono solo sulle schede
