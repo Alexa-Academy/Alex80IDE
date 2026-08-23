@@ -126,7 +126,7 @@ public partial class MainViewModel
             }
 
             OnPropertyChanged();
-            NotifyAddressWidthChanged();
+            NotifyCpuContextChanged();
         }
     }
 
@@ -522,7 +522,7 @@ public partial class MainViewModel
         }
 
         _fileBytesToWrite = result.Bytes;
-        AssemblerStatus = CreateAssemblerStatus(result);
+        AssemblerStatus = CreateAssemblerStatus(result) + CpuMismatchSuffix;
         (SaveArduinoArrayCommand as RelayCommand)?.RaiseCanExecuteChanged();
 
         Dispatcher.UIThread.InvokeAsync(() =>
@@ -552,6 +552,13 @@ public partial class MainViewModel
             ? $"{status} · {ProjectFiles.Count} file, {mode}"
             : $"{status} · {fileCount} file, {mode}";
     }
+
+    /// <summary>
+    /// Coda dell'esito quando il progetto assembla per una CPU che la scheda collegata
+    /// non ha. L'assemblata si fa lo stesso, con la CPU scritta nel progetto: cambiarla
+    /// di nascosto vorrebbe dire produrre un binario diverso da quello chiesto.
+    /// </summary>
+    private string CpuMismatchSuffix => HasCpuMismatch ? $" · attenzione: bersaglio {CpuName}, scheda {CardName}" : string.Empty;
 
     private BuildRequest? CreateProjectBuildRequest()
     {

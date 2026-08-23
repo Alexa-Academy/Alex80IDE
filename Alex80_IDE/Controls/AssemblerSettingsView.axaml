@@ -16,8 +16,23 @@
             <TextBlock Text="CPU" Classes="caption" />
             <ComboBox ItemsSource="{Binding AvailableCpus}"
                       SelectedItem="{Binding CpuName, Mode=TwoWay}"
+                      IsEnabled="{Binding CanChooseCpu}"
                       HorizontalAlignment="Stretch"
                       ToolTip.Tip="CPU di destinazione. Una direttiva .CPU nel sorgente ha comunque la precedenza." />
+
+            <!-- Con una ALEX80 collegata non c'e' niente da scegliere: monta uno Z80. -->
+            <TextBlock Classes="caption"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding !CanChooseCpu}"
+                       Text="La scheda collegata monta uno Z80: la scelta si riapre chiudendo la porta." />
+
+            <!-- Il progetto non viene riscritto di nascosto: se punta a un'altra CPU
+                 resta com'e' e l'assemblata lo segnala nell'esito. -->
+            <TextBlock Classes="caption"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource WarningBrush}"
+                       IsVisible="{Binding HasCpuMismatch}"
+                       Text="{Binding CpuMismatchText}" />
         </StackPanel>
 
         <Border Classes="separatorH" />

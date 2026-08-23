@@ -116,7 +116,7 @@ public partial class MainViewModel : ObservableObject
         WriteMemoryCommand.NotifyCanExecuteChanged();
 
         // Aprire o chiudere la porta cambia chi decide fra scheda e CPU di progetto.
-        NotifyAddressWidthChanged();
+        NotifyCpuContextChanged();
     }
     
     [ObservableProperty] 
@@ -362,6 +362,29 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public bool CanChooseCpuMode => IsSerialOpened && IsEz80;
 
+    /// <summary>Vero quando la scheda collegata e' una ALEX80, modulare o micro.</summary>
+    public bool IsAlex80Board => IsAlex80Full || IsAlex80Micro;
+
+    /// <summary>
+    /// La CPU di destinazione si sceglie finche' non c'e' una ALEX80 collegata: quella
+    /// scheda monta uno Z80 e non c'e' altro da scegliere. Il blocco impedisce di
+    /// impostare una combinazione impossibile, ma non riscrive il progetto: un .a80
+    /// gia' impostato su un'altra CPU resta com'e', e lo dice <see cref="CpuMismatchText"/>.
+    /// </summary>
+    public bool CanChooseCpu => !(IsSerialOpened && IsAlex80Board);
+
+    /// <summary>
+    /// Vero quando il progetto ha per bersaglio l'eZ80 ma la scheda collegata e' una
+    /// ALEX80: si puo' assemblare lo stesso, ma il binario non gira su quella scheda.
+    /// </summary>
+    public bool HasCpuMismatch => IsSerialOpened && IsAlex80Board && IsEz80Cpu;
+
+    /// <summary>Il perche' del disaccordo, per il pannello e per l'esito dell'assemblata.</summary>
+    public string CpuMismatchText =>
+        HasCpuMismatch
+            ? $"Il progetto assembla per {CpuName}, ma la scheda collegata è {CardName}: il binario non girerà su questa scheda."
+            : string.Empty;
+
     /// <summary>
     /// Interpreta il campo indirizzo come esadecimale, che e' il formato in cui
     /// l'IDE lo scrive (vedi AddressHex = ToString("X4")). Ritorna il valore di
@@ -407,9 +430,10 @@ public partial class MainViewModel : ObservableObject
     public string AdlText => IsAdl ? "ADL" : "Z80";
     public string Iff2Text => Iff2 ? "1" : "0";
 
-    // La larghezza mostrata dipende dalla modalita': ogni volta che cambia,
-    // vanno notificate tutte le stringhe derivate, non solo quelle riscritte.
-    private void NotifyAddressWidthChanged()
+    // Scheda collegata e CPU di progetto decidono insieme cosa si puo' fare e con che
+    // larghezza si leggono gli indirizzi: quando cambia uno dei due vanno notificate
+    // tutte le proprieta' che ne derivano, non solo quelle appena riscritte.
+    private void NotifyCpuContextChanged()
     {
         OnPropertyChanged(nameof(UseWideAddresses));
         OnPropertyChanged(nameof(IsEz80Context));
@@ -417,17 +441,27 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanRun));
         OnPropertyChanged(nameof(CanConfigureArduinoSignals));
         OnPropertyChanged(nameof(CanChooseCpuMode));
+        OnPropertyChanged(nameof(IsAlex80Board));
+        OnPropertyChanged(nameof(CanChooseCpu));
+        OnPropertyChanged(nameof(HasCpuMismatch));
+        OnPropertyChanged(nameof(CpuMismatchText));
         OnPropertyChanged(nameof(IxRegHex));
         OnPropertyChanged(nameof(IyRegHex));
         OnPropertyChanged(nameof(SpRegHex));
         OnPropertyChanged(nameof(PcRegHex));
     }
 
-    partial void OnIsEz80Changed(bool value) => NotifyAddressWidthChanged();
+    partial void OnIsEz80Changed(bool value) => NotifyCpuContextChanged();
+
+    // Quale scheda risponde lo dice il messaggio !INFO, che arriva dopo l'apertura
+    // della porta: senza queste due il pannello resterebbe fermo allo stato di prima.
+    partial void OnIsAlex80FullChanged(bool value) => NotifyCpuContextChanged();
+
+    partial void OnIsAlex80MicroChanged(bool value) => NotifyCpuContextChanged();
 
     partial void OnZ80CompatibilityModeChanged(bool value)
     {
-        NotifyAddressWidthChanged();
+        NotifyCpuContextChanged();
 
         // Non e' solo una questione di come si mostrano gli indirizzi: decide
         // anche con quale modalita' il firmware raggiunge la memoria, e in modo
