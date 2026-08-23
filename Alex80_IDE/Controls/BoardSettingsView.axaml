@@ -10,6 +10,13 @@
          mette l'intestazione della tool window che ospita la vista. -->
     <StackPanel Spacing="16">
 
+        <!-- A porta chiusa e' spento tutto, e senza una riga che lo dica sembrerebbe
+             guasto invece che in attesa. -->
+        <TextBlock Classes="caption"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding !IsSerialOpened}"
+                   Text="Apri la porta seriale per configurare la scheda." />
+
         <!-- Segnali che esistono solo sulle ALEX80: sull'eZ80 si passa da ZDI e questi
              comandi non hanno un corrispettivo, quindi restano spenti. -->
         <StackPanel Spacing="10" IsEnabled="{Binding CanConfigureArduinoSignals}">

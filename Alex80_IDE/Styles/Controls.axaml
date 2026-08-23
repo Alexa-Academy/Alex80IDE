@@ -129,29 +129,6 @@
         <Setter Property="TextBlock.Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 
-    <!-- Pulsantini di riga (sposta, principale, rimuovi). -->
-    <Style Selector="Button.rowAction">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="0" />
-        <Setter Property="Width" Value="20" />
-        <Setter Property="Height" Value="20" />
-        <Setter Property="FontSize" Value="10" />
-        <Setter Property="CornerRadius" Value="4" />
-        <Setter Property="HorizontalContentAlignment" Value="Center" />
-        <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
-    </Style>
-
-    <Style Selector="Button.rowAction:pointerover">
-        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
-    </Style>
-
-    <Style Selector="Button.rowAction.danger:pointerover">
-        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
-    </Style>
-
     <!-- Pulsante con la sola icona: quadrato, il colore lo eredita dal pulsante. -->
     <Style Selector="Button.iconOnly">
         <Setter Property="MinHeight" Value="28" />

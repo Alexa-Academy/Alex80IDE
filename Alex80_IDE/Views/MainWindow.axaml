@@ -30,7 +30,7 @@
         </DataTemplate>
     </Window.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
         <!-- Barra dei menu. Su macOS il menu e' esportato nella barra di sistema e questo
              controllo non occupa spazio; su Windows e Linux e' qui che compare. -->
@@ -64,6 +64,11 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                    <!-- Assembla sta con i comandi di esecuzione, come negli IDE: si
+                         costruisce e si manda in esecuzione con lo stesso gesto. -->
+                    <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
+                    <Border Classes="separator" />
                     <Button Content="{Binding IsClockActive, Converter={StaticResource StartStopConverter}}"
                             Classes="primary tool"
                             Command="{Binding StartStopBoardCommand}"
@@ -110,36 +115,10 @@
             </Grid>
         </Border>
 
-        <!-- Toolbar contestuale: sorgenti e assemblaggio a sinistra, configurazione della
-             scheda a destra. -->
-        <Border Grid.Row="2" Classes="toolBar">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                <!-- Apertura e salvataggio sono passati al menu File: qui resta solo
-                     l'assemblaggio, che e' il comando che si usa di continuo. -->
-                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                    <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
-                </StackPanel>
-
-                <!-- La configurazione della scheda e' passata alla tool window "Scheda",
-                     nel pannello di destra: sono impostazioni che si toccano all'inizio
-                     della sessione, non a ogni assemblata. -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <ProgressBar Minimum="0"
-                                 Maximum="100"
-                                 Width="160"
-                                 Height="6"
-                                 VerticalAlignment="Center"
-                                 Value="{Binding ProgressValue}"
-                                 IsVisible="{Binding ProgressVisible}" />
-                </StackPanel>
-            </Grid>
-        </Border>
-
         <!-- Area di lavoro. Le strip di bordo sono sempre visibili: ogni pannello si apre
              e si chiude dalla propria icona, come in Rider e Android Studio. La misura dei
              pannelli e' gestita da ToolDockLayout, nel code-behind. -->
-        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto">
+        <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto">
 
             <!-- Strip di sinistra, due gruppi come negli IDE JetBrains: in alto gli
                  strumenti che si aprono di fianco, in basso quelli che si aprono sotto. -->
@@ -404,12 +383,21 @@
 
         <!-- Status bar: stato della scheda ed esito dell'ultima assemblata. PC e SP stanno
              nella tool window dei registri. -->
-        <Border Grid.Row="4" Classes="statusBar">
+        <Border Grid.Row="3" Classes="statusBar">
             <Grid ColumnDefinitions="Auto,*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                     <TextBlock Text="{Binding CardBadgeText}" Classes="statusItem" />
                     <TextBlock Text="{Binding IsClockActive, Converter={StaticResource ClockStateConverter}}"
                                Classes="statusItem" />
+                    <!-- L'avanzamento della scrittura sulla scheda: sta nella status bar,
+                         che e' il posto dove si guarda come sta andando un'operazione. -->
+                    <ProgressBar Minimum="0"
+                                 Maximum="100"
+                                 Width="160"
+                                 Height="6"
+                                 VerticalAlignment="Center"
+                                 Value="{Binding ProgressValue}"
+                                 IsVisible="{Binding ProgressVisible}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
