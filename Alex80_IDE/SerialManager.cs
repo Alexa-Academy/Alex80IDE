@@ -390,6 +390,16 @@ public class SerialManager {
              // Su alcune porte USB native (ad esempio UNO R4) l'evento
              // DataReceived può non essere notificato immediatamente.
              await PollSerialInputAsync(2000);
+
+             // Ora l'interfaccia aspetta !INFO per accendere i comandi che vogliono una
+             // scheda, quindi una risposta persa non è più solo un badge vuoto: lascia
+             // l'IDE inutilizzabile. La richiesta si ripete un paio di volte, perché a
+             // volte la scheda si sta ancora riavviando quando arriva la prima.
+             for (var attempt = 0; attempt < 2 && _serialPort.IsOpen && !mainViewModel.IsBoardConnected; attempt++)
+             {
+                 GetInfo();
+                 await PollSerialInputAsync(1500);
+             }
           }
 
           return _serialPort.IsOpen;

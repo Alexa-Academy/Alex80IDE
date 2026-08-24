@@ -20,7 +20,7 @@
                 <Button Content="{Binding LogEnabled, Converter={StaticResource EnableDisableConverter}}"
                         Classes="tool"
                         Command="{Binding EnableDisableLogsCommand}"
-                        IsEnabled="{Binding IsSerialOpened}" />
+                        IsEnabled="{Binding IsBoardConnected}" />
                 <ToggleSwitch Content="Autoscroll"
                               IsChecked="{Binding IsAutoScrollEnabled, Mode=TwoWay}" />
                 <Button Content="Cancella log" Classes="tool" Command="{Binding ClearLogsCommand}" />

@@ -72,11 +72,11 @@
                     <Button Content="{Binding IsClockActive, Converter={StaticResource StartStopConverter}}"
                             Classes="primary tool"
                             Command="{Binding StartStopBoardCommand}"
-                            IsEnabled="{Binding IsSerialOpened}" />
+                            IsEnabled="{Binding IsBoardConnected}" />
                     <Button Classes="danger iconOnly"
                             ToolTip.Tip="Reset"
                             Command="{Binding ResetCommand}"
-                            IsEnabled="{Binding IsSerialOpened}">
+                            IsEnabled="{Binding IsBoardConnected}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource ResetIconData}" />
                     </Button>
                     <!-- Un solo comando, significato uniforme: manda in
@@ -95,22 +95,22 @@
                             Classes="tool"
                             Command="{Binding ToggleBreakCommand}"
                             IsVisible="{Binding IsEz80Context}"
-                            IsEnabled="{Binding IsSerialOpened}"
+                            IsEnabled="{Binding IsBoardConnected}"
                             ToolTip.Tip="Ferma o fa ripartire la CPU (break ZDI)" />
                     <Button Content="{Binding DebugEnabled, Converter={StaticResource EnableDisableConverter}}"
                             Classes="tool"
                             Command="{Binding DebugCommand}"
-                            IsEnabled="{Binding IsSerialOpened}" />
+                            IsEnabled="{Binding IsBoardConnected}" />
                     <Button Classes="iconOnly"
                             ToolTip.Tip="Step"
                             Command="{Binding StepCommand}"
-                            IsEnabled="{Binding IsSerialOpened}">
+                            IsEnabled="{Binding IsBoardConnected}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource StepIconData}" />
                     </Button>
                     <Button Content="Dump registri"
                             Classes="tool"
                             Command="{Binding DumpCommand}"
-                            IsEnabled="{Binding IsSerialOpened}" />
+                            IsEnabled="{Binding IsBoardConnected}" />
                 </StackPanel>
             </Grid>
         </Border>

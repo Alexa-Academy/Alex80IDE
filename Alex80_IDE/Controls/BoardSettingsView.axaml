@@ -10,12 +10,18 @@
          mette l'intestazione della tool window che ospita la vista. -->
     <StackPanel Spacing="16">
 
-        <!-- A porta chiusa e' spento tutto, e senza una riga che lo dica sembrerebbe
-             guasto invece che in attesa. -->
+        <!-- Finche' non c'e' una scheda e' spento tutto, e senza una riga che lo dica
+             sembrerebbe guasto invece che in attesa. I due casi restano distinti: la
+             porta chiusa e' una cosa da fare, l'attesa e' una cosa che sta succedendo. -->
         <TextBlock Classes="caption"
                    TextWrapping="Wrap"
                    IsVisible="{Binding !IsSerialOpened}"
                    Text="Apri la porta seriale per configurare la scheda." />
+
+        <TextBlock Classes="caption"
+                   TextWrapping="Wrap"
+                   IsVisible="{Binding IsWaitingForBoard}"
+                   Text="In attesa che la scheda si presenti." />
 
         <!-- Segnali che esistono solo sulle ALEX80: sull'eZ80 si passa da ZDI e questi
              comandi non hanno un corrispettivo, quindi restano spenti. -->

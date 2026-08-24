@@ -61,9 +61,34 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string _cardName = string.Empty;
     public string CardBadgeText => string.IsNullOrWhiteSpace(CardName) ? "scheda non connessa" : CardName;
+
+    /// <summary>
+    /// Vero quando una scheda ha risposto e ha detto chi e'. La porta aperta da sola non
+    /// basta: finche' non arriva !INFO non si sa se dall'altra parte c'e' una scheda
+    /// dell'ecosistema ALEX80 o un dispositivo qualunque, e i comandi partirebbero alla
+    /// cieca. E' la condizione di tutti i comandi che presuppongono una scheda.
+    /// <para>
+    /// Non serve controllare anche la porta: chiudendola il nome della scheda viene
+    /// azzerato insieme al resto della sua identita'.
+    /// </para>
+    /// </summary>
+    public bool IsBoardConnected => !string.IsNullOrWhiteSpace(CardName);
+
+    /// <summary>
+    /// Porta aperta ma nessuna scheda che si sia ancora presentata. E' uno stato di
+    /// passaggio che dura qualche secondo, e va distinto dalla porta chiusa: li' c'e'
+    /// qualcosa da fare, qui c'e' solo da aspettare.
+    /// </summary>
+    public bool IsWaitingForBoard => IsSerialOpened && !IsBoardConnected;
+
     partial void OnCardNameChanged(string value)
     {
         OnPropertyChanged(nameof(CardBadgeText));
+        OnPropertyChanged(nameof(IsBoardConnected));
+        OnPropertyChanged(nameof(IsWaitingForBoard));
+        ReadMemoryCommand.NotifyCanExecuteChanged();
+        WriteMemoryCommand.NotifyCanExecuteChanged();
+        NotifyCpuContextChanged();
     }
     
     [ObservableProperty]
@@ -110,7 +135,12 @@ public partial class MainViewModel : ObservableObject
     {
         if (!value)
         {
+            // Con la porta se ne va anche l'identita' della scheda: tenerla vorrebbe dire
+            // continuare a decidere in base a un hardware che non c'e' piu'.
             CardName = string.Empty;
+            IsEz80 = false;
+            IsAlex80Full = false;
+            IsAlex80Micro = false;
         }
 
         ReadMemoryCommand.NotifyCanExecuteChanged();
@@ -269,7 +299,7 @@ public partial class MainViewModel : ObservableObject
             ? "Non ancora disponibile su ALEX80 micro"
             : "Invia NMI: fa saltare lo Z80 al vettore di avvio";
 
-    public bool CanRun => IsSerialOpened && !IsAlex80Micro;
+    public bool CanRun => IsBoardConnected && !IsAlex80Micro;
 
     [RelayCommand]
     private void Run()
@@ -340,7 +370,7 @@ public partial class MainViewModel : ObservableObject
     /// quello che sono.
     /// </para>
     /// </summary>
-    public bool IsEz80Context => IsSerialOpened ? IsEz80 : IsEz80Cpu;
+    public bool IsEz80Context => IsBoardConnected ? IsEz80 : IsEz80Cpu;
 
     /// <summary>
     /// Vero quando indirizzi e registri vanno trattati a 24 bit: l'eZ80 e' in gioco
@@ -355,13 +385,13 @@ public partial class MainViewModel : ObservableObject
     /// scheda collegata e non alla CPU di progetto: e' l'hardware davanti a noi a
     /// dire quali segnali esistono.
     /// </summary>
-    public bool CanConfigureArduinoSignals => IsSerialOpened && !IsEz80;
+    public bool CanConfigureArduinoSignals => IsBoardConnected && !IsEz80;
 
     /// <summary>
     /// Scegliere fra modo ADL e modo Z80 ha senso solo sull'eZ80. Su una ALEX80 la
     /// CPU e' uno Z80 e non c'e' niente da scegliere: la levetta resta spenta.
     /// </summary>
-    public bool CanChooseCpuMode => IsSerialOpened && IsEz80;
+    public bool CanChooseCpuMode => IsBoardConnected && IsEz80;
 
     /// <summary>Vero quando la scheda collegata e' una ALEX80, modulare o micro.</summary>
     public bool IsAlex80Board => IsAlex80Full || IsAlex80Micro;
@@ -372,13 +402,13 @@ public partial class MainViewModel : ObservableObject
     /// impostare una combinazione impossibile, ma non riscrive il progetto: un .a80
     /// gia' impostato su un'altra CPU resta com'e', e lo dice <see cref="CpuMismatchText"/>.
     /// </summary>
-    public bool CanChooseCpu => !(IsSerialOpened && IsAlex80Board);
+    public bool CanChooseCpu => !(IsBoardConnected && IsAlex80Board);
 
     /// <summary>
     /// Vero quando il progetto ha per bersaglio l'eZ80 ma la scheda collegata e' una
     /// ALEX80: si puo' assemblare lo stesso, ma il binario non gira su quella scheda.
     /// </summary>
-    public bool HasCpuMismatch => IsSerialOpened && IsAlex80Board && IsEz80Cpu;
+    public bool HasCpuMismatch => IsBoardConnected && IsAlex80Board && IsEz80Cpu;
 
     /// <summary>Il perche' del disaccordo, per il pannello e per l'esito dell'assemblata.</summary>
     public string CpuMismatchText =>
@@ -437,6 +467,8 @@ public partial class MainViewModel : ObservableObject
     private void NotifyCpuContextChanged()
     {
         OnPropertyChanged(nameof(UseWideAddresses));
+        OnPropertyChanged(nameof(IsBoardConnected));
+        OnPropertyChanged(nameof(IsWaitingForBoard));
         OnPropertyChanged(nameof(IsEz80Context));
         OnPropertyChanged(nameof(RunToolTip));
         OnPropertyChanged(nameof(CanRun));
@@ -576,13 +608,13 @@ public partial class MainViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Leggere e scrivere la memoria vuole una scheda che risponda: senza porta aperta
-    /// il comando partirebbe verso nessuno. Vale per tutti e due, che sono la stessa
+    /// Leggere e scrivere la memoria vuole una scheda che abbia detto chi e': prima di
+    /// allora il comando partirebbe alla cieca. Vale per tutti e due, che sono la stessa
     /// operazione in due versi.
     /// </summary>
     private bool CanReachBoard()
     {
-        return IsSerialOpened;
+        return IsBoardConnected;
     }
 
     /// <summary>
