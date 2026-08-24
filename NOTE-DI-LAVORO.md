@@ -94,6 +94,12 @@ dall'IDE: diventa `ThemeVariant.Default`, che è il modo con cui Avalonia lascia
 decidere alla piattaforma e tiene la variante aggiornata quando l'impostazione di
 sistema cambia. Il valore predefinito resta Scuro.
 
+### Modo Z80 acceso di partenza
+
+`Z80CompatibilityMode` parte a `true`: senza una scheda collegata il bersaglio è
+quasi sempre uno Z80 e i registri vanno mostrati a 16 bit. Collegando un eZ80 lo
+si spegne dal pannello Scheda per tornare agli indirizzi a 24 bit.
+
 ### Impostazioni di assemblaggio
 
 Hanno un pannello loro nel dock sinistro. Restano lì e non in un menu Impostazioni
@@ -205,6 +211,9 @@ seconda di cosa è collegato.
 | Run | scheda presentata (anche ALEX80µ: il suo firmware implementa `nmi`) |
 | Pausa / Riprendi | scheda eZ80 |
 | Rileggi registri | eZ80 sempre; ALEX80µ con memoria Arduino + debug + clock in moto; ALEX80 mai |
+| Abilita debug | scheda ALEX80 o ALEX80µ (sull'eZ80 il comando è un no-op) |
+| Registrazione del log del bus | scheda ALEX80 o ALEX80µ |
+| Strumento «Bus log» nella strip | sempre, tranne con un eZ80 collegato — le righe già catturate restano leggibili a scheda staccata |
 
 ---
 
@@ -277,14 +286,12 @@ il pulsante è spento su questa scheda. Nel sorgente il ramo di iniezione esiste
 Se venisse riabilitato, seguirebbero: il dump automatico dopo lo step come sul
 micro, e il pulsante «Rileggi dalla scheda» attivo anche su ALEX80.
 
-### Da decidere — firmware eZ80 e IDE
+### Da decidere — firmware eZ80
 
-- **`debug on/off` è un no-op** (`{ alex_ok(); return true; }`): il pulsante
-  «Abilita» cambia etichetta e mette `DebugEnabled = true`, ma sull'eZ80 non
-  cambia niente. Sull'eZ80 il controllo dell'esecuzione è già pausa/riprendi.
-  Da nascondere il pulsante su questa scheda, oppure da implementare.
-- **Il log del bus è rifiutato** («no bus visibility over ZDI») ma la tool window
-  «Bus log» e il suo pulsante Abilita restano attivi. Da spegnere su eZ80.
+- **`debug on/off` è un no-op** (`{ alex_ok(); return true; }`). Lato IDE è
+  risolto: il pulsante è spento su eZ80, con scritto accanto che lì si governa
+  con pausa e riprendi. Resta da decidere se il firmware debba implementarlo
+  davvero o se pausa/riprendi bastino.
 
 ### Da decidere — IDE
 
