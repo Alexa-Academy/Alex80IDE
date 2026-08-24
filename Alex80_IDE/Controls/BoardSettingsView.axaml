@@ -36,10 +36,29 @@
                           IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
                           ToolTip.Tip="Acceso: i cicli di memoria li serve l'Arduino. Spento: rispondono le memorie della scheda." />
 
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <TextBlock Text="Frequenza" Classes="caption" VerticalAlignment="Center" />
-                <TextBox Text="{Binding ClockFrequency}" Width="86" Classes="mono" />
-                <TextBlock Text="Hz" Classes="caption" VerticalAlignment="Center" />
+            <!-- Frequenza e comando del clock stanno insieme: si usano insieme, e senza
+                 il clock dell'Arduino non c'e' ne' cosa avviare ne' cosa regolare. -->
+            <StackPanel Spacing="8" IsEnabled="{Binding CanControlClock}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Frequenza" Classes="caption" VerticalAlignment="Center" />
+                    <TextBox x:Name="ClockFrequencyBox"
+                             Text="{Binding ClockFrequency, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                             Width="86"
+                             Classes="mono"
+                             KeyDown="OnClockFrequencyKeyDown"
+                             ToolTip.Tip="Frequenza del clock generato dall'Arduino. Viene inviata alla scheda quando si preme Invio o si esce dal campo." />
+                    <TextBlock Text="Hz" Classes="caption" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <Button Classes="tool"
+                        HorizontalAlignment="Left"
+                        Command="{Binding StartStopBoardCommand}"
+                        ToolTip.Tip="Avvia o ferma il clock generato dall'Arduino">
+                    <StackPanel Orientation="Horizontal" Spacing="7">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource ClockIconData}" />
+                        <TextBlock Text="{Binding ClockToggleText}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </StackPanel>
 

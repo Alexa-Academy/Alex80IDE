@@ -172,6 +172,8 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty] 
     private bool _isClockActive;
+
+    partial void OnIsClockActiveChanged(bool value) => OnPropertyChanged(nameof(ClockToggleText));
     
     [ObservableProperty] 
     private bool _isMemoryFromArduino;
@@ -393,6 +395,17 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public bool CanChooseCpuMode => IsBoardConnected && IsEz80;
 
+    /// <summary>
+    /// Il clock si comanda solo quando a generarlo e' l'Arduino: con l'oscillatore della
+    /// scheda non c'e' niente da avviare o fermare, e sull'eZ80 il clock non passa di qui
+    /// (il firmware ZDI risponde "the eZ80 clocks itself"). Vale anche per la frequenza,
+    /// che senza il clock dell'Arduino non ha nulla da regolare.
+    /// </summary>
+    public bool CanControlClock => CanConfigureArduinoSignals && IsClockFromArduino;
+
+    /// <summary>Etichetta del comando: dice cosa fa il clic, non lo stato attuale.</summary>
+    public string ClockToggleText => IsClockActive ? "Ferma" : "Avvia";
+
     /// <summary>Vero quando la scheda collegata e' una ALEX80, modulare o micro.</summary>
     public bool IsAlex80Board => IsAlex80Full || IsAlex80Micro;
 
@@ -474,6 +487,8 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanRun));
         OnPropertyChanged(nameof(CanConfigureArduinoSignals));
         OnPropertyChanged(nameof(CanChooseCpuMode));
+        OnPropertyChanged(nameof(CanControlClock));
+        StartStopBoardCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(IsAlex80Board));
         OnPropertyChanged(nameof(CanChooseCpu));
         OnPropertyChanged(nameof(HasCpuMismatch));
@@ -562,6 +577,28 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty]
     private string _clockFrequency = DefaultClockFreq.ToString();
+
+    /// <summary>
+    /// Cambiare la frequenza la manda subito alla scheda. Il campo la conferma quando
+    /// perde il fuoco o si preme Invio, non a ogni tasto premuto: il firmware, per
+    /// applicare sclk, ferma e riavvia il clock e scrive il valore in EEPROM, quindi
+    /// digitare "1000" a colpi di tasto vorrebbe dire quattro fermate della CPU e
+    /// quattro scritture, tre delle quali su valori che nessuno ha chiesto.
+    /// </summary>
+    partial void OnClockFrequencyChanged(string value)
+    {
+        // Il valore arrivato con !INFO e' quello che la scheda ha gia': rimandarglielo
+        // la farebbe fermare e ripartire appena connessa.
+        if (_isApplyingCardConfig || !CanControlClock)
+        {
+            return;
+        }
+
+        if (int.TryParse(value, out var freq) && freq > 0)
+        {
+            _serialManager.SendSerialText($"sclk {freq}\r");
+        }
+    }
     
     [ObservableProperty]
     private bool _logEnabled;
@@ -679,8 +716,13 @@ public partial class MainViewModel : ObservableObject
         _serialManager.SendSerialText("d\r");
     }
     
-    [RelayCommand]
-    private async Task StartStopBoard()
+    /// <summary>
+    /// Avvia o ferma il clock. Non tocca piu' la frequenza: quella la manda il campo
+    /// apposta quando la si cambia, cosi' i due comandi restano separati come i due
+    /// comandi del firmware, e cambiare frequenza a clock fermo non lo fa partire.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanControlClock))]
+    private void StartStopBoard()
     {
         if (IsClockActive)
         {
@@ -689,21 +731,10 @@ public partial class MainViewModel : ObservableObject
         }
         else
         {
+            // Il disassemblatore e i contatori del log del bus ripartono con il clock:
+            // senza questo il log proseguirebbe dalla corsa precedente.
             _serialManager.RestartBoard();
-       
-            int freq = DefaultClockFreq;
-            try
-            {
-                freq = int.Parse(ClockFrequency);
-            }
-            catch (FormatException)
-            {
-            }
-       
-            _serialManager.SendSerialText($"sclk {freq}\r");
-            await Task.Delay(400);
             _serialManager.SendSerialText("clk start\r");
-
             IsClockActive = true;
         }
     }
@@ -802,6 +833,9 @@ public partial class MainViewModel : ObservableObject
     
     partial void OnIsClockFromArduinoChanged(bool value)
     {
+        OnPropertyChanged(nameof(CanControlClock));
+        StartStopBoardCommand.NotifyCanExecuteChanged();
+
         if (_isApplyingCardConfig)
             return;
 

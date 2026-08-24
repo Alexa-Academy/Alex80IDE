@@ -19,7 +19,6 @@
 
             <global:HexadecimalConverter x:Key="HexadecimalConverter" />
             <converters:ByteToHexConverter x:Key="ByteToHexConverter" />
-            <global:StartStopConverter x:Key="StartStopConverter" />
             <converters:EnableDisableConverter x:Key="EnableDisableConverter" />
             <converters:ClockStateConverter x:Key="ClockStateConverter" />
             <converters:FileTypeBadgeConverter x:Key="FileTypeBadgeConverter" />

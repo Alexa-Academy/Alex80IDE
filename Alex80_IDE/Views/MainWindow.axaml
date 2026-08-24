@@ -71,10 +71,9 @@
                         <PathIcon Classes="btnIcon" Data="{DynamicResource AssembleIconData}" />
                     </Button>
                     <Border Classes="separator" />
-                    <Button Content="{Binding IsClockActive, Converter={StaticResource StartStopConverter}}"
-                            Classes="primary tool"
-                            Command="{Binding StartStopBoardCommand}"
-                            IsEnabled="{Binding IsBoardConnected}" />
+                    <!-- Il comando del clock e' passato al pannello Scheda, accanto alla
+                         frequenza che governa: le due cose si usano insieme, e li' possono
+                         spegnersi insieme quando la scheda non ha un clock da comandare. -->
                     <Button Classes="danger iconOnly"
                             ToolTip.Tip="Reset"
                             Command="{Binding ResetCommand}"

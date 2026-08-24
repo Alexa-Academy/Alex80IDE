@@ -60,6 +60,9 @@
     <!-- Carica bin: un file, non una freccia, per non confonderlo con la lettura. -->
     <StreamGeometry x:Key="LoadBinIconData">M5,2 H14 L19,7 V22 H5 Z M7,4 V20 H17 V9 H12 V4 Z M11,11 H13 V15 H16 L12,19 L8,15 H11 Z</StreamGeometry>
     <StreamGeometry x:Key="ResetIconData">M5,4 H7 V20 H5 Z M20,4 V20 L9,12 Z</StreamGeometry>
+    <!-- Orologio ad anello: a 15 pixel un quadrante pieno con le lancette scavate
+         diventa un disco, mentre l'anello resta riconoscibile. -->
+    <StreamGeometry x:Key="ClockIconData">M12,2 A10,10 0 1,0 12.01,2 Z M12,4.2 A7.8,7.8 0 1,1 11.99,4.2 Z M11.1,6 H12.9 V12.9 H11.1 Z M12,11.1 H17 V12.9 H12 Z</StreamGeometry>
     <!-- Martello: assemblare e' costruire, e il martello e' il segno con cui lo dicono
          gli IDE. Inclinato perche' a 15 pixel una testa dritta si confonde col manico. -->
     <StreamGeometry x:Key="AssembleIconData">M12.5,1.5 L21.5,7 L18.5,12 L9.5,6.5 Z M12,8 L14.6,9.6 L7,21.5 L4.4,19.9 Z</StreamGeometry>
