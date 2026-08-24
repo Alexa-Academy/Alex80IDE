@@ -687,8 +687,45 @@ public partial class MainViewModel
         SelectedDocument = tab;
     }
 
+    /// <summary>
+    /// Intestazione messa in cima al listato quando il progetto ha per bersaglio una CPU
+    /// che la scheda collegata non monta.
+    /// <para>
+    /// E' scritta come commento perche' il listato finisce anche su disco come .lst:
+    /// cosi' resta un listato valido e si porta dietro il motivo per cui e' stato
+    /// prodotto per una CPU diversa da quella scritta nel progetto. Chi lo ritrova
+    /// mesi dopo capisce perche' e' quello che e'.
+    /// </para>
+    /// </summary>
+    private string CpuMismatchListingHeader
+    {
+        get
+        {
+            if (!HasCpuMismatch)
+            {
+                return string.Empty;
+            }
+
+            var rule = new string('=', 68);
+
+            return string.Join(Environment.NewLine,
+                $"; {rule}",
+                $"; ATTENZIONE: il progetto è impostato sulla CPU {CpuName}, ma la scheda",
+                $"; collegata è {CardName}, che monta uno Z80.",
+                "; Questo listato è stato prodotto per Z80, non per la CPU del progetto.",
+                "; Il progetto non è stato modificato: la sua impostazione torna a valere",
+                "; appena la scheda viene scollegata.",
+                $"; {rule}",
+                string.Empty,
+                string.Empty);
+        }
+    }
+
     private void ShowListing(string listingText)
     {
+        // L'avviso entra anche nel file su disco, non solo nella scheda dell'editor.
+        listingText = CpuMismatchListingHeader + listingText;
+
         var listingFileName = CurrentProject is not null
             ? CurrentProject.DisplayName + ".lst"
             : Path.ChangeExtension(SelectedDocument!.FileName, ".lst")!;
