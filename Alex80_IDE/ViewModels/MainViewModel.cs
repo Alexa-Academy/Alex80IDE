@@ -113,6 +113,7 @@ public partial class MainViewModel : ObservableObject
             CardName = string.Empty;
         }
 
+        ReadMemoryCommand.NotifyCanExecuteChanged();
         WriteMemoryCommand.NotifyCanExecuteChanged();
 
         // Aprire o chiudere la porta cambia chi decide fra scheda e CPU di progetto.
@@ -542,7 +543,7 @@ public partial class MainViewModel : ObservableObject
         _serialManager.SendSerialText("nmi\r");
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanReachBoard))]
     private void ReadMemory()
     {
         // uint e non ushort: la RAM dell'eZ80 sta a 0xFFF000, che in uno
@@ -564,7 +565,7 @@ public partial class MainViewModel : ObservableObject
         _serialManager.ReadData(readStart, readSize);
     }
 
-    [RelayCommand(CanExecute = nameof(CanWriteMemory))]
+    [RelayCommand(CanExecute = nameof(CanReachBoard))]
     private void WriteMemory()
     {
         if (_fileBytesToWrite == null) return;
@@ -574,7 +575,12 @@ public partial class MainViewModel : ObservableObject
         _serialManager.WriteData(_fileBytesToWrite, writeStart);
     }
 
-    private bool CanWriteMemory()
+    /// <summary>
+    /// Leggere e scrivere la memoria vuole una scheda che risponda: senza porta aperta
+    /// il comando partirebbe verso nessuno. Vale per tutti e due, che sono la stessa
+    /// operazione in due versi.
+    /// </summary>
+    private bool CanReachBoard()
     {
         return IsSerialOpened;
     }
