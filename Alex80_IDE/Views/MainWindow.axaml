@@ -105,7 +105,7 @@
                             Command="{Binding DebugCommand}"
                             IsEnabled="{Binding IsBoardConnected}" />
                     <Button Classes="iconOnly"
-                            ToolTip.Tip="Step"
+                            ToolTip.Tip="Esegue una sola istruzione. È uno step into: dentro le CALL ci entra."
                             Command="{Binding StepCommand}"
                             IsEnabled="{Binding IsBoardConnected}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource StepIconData}" />
