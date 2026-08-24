@@ -297,11 +297,9 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public string RunToolTip => IsEz80Context
         ? "Carica il PC con l'indirizzo indicato e avvia la CPU"
-        : IsAlex80Micro
-            ? "Non ancora disponibile su ALEX80 micro"
-            : "Invia NMI: fa saltare lo Z80 al vettore di avvio";
+        : "Invia NMI: fa saltare lo Z80 al vettore di avvio";
 
-    public bool CanRun => IsBoardConnected && !IsAlex80Micro;
+    public bool CanRun => IsBoardConnected;
 
     [RelayCommand]
     private void Run()
@@ -315,8 +313,10 @@ public partial class MainViewModel : ObservableObject
             IsCpuHalted = false;
             AppendSerialLine($"Avvio da {address:X6}h");
         }
-        else if (!IsAlex80Micro)
+        else
         {
+            // Anche l'ALEX80 micro: il suo firmware implementa "nmi" e pulsa la linea
+            // Z80_NMI, quindi l'esclusione che c'era qui era rimasta indietro.
             SendNmi();
         }
     }
