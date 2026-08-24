@@ -66,8 +66,10 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <!-- Assembla sta con i comandi di esecuzione, come negli IDE: si
                          costruisce e si manda in esecuzione con lo stesso gesto. -->
-                    <Button Command="{Binding AssembleCommand}" Content="Assembla" Classes="primary tool"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}" />
+                    <Button Command="{Binding AssembleCommand}" Classes="primary iconOnly"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource AssembleIconData}" />
+                    </Button>
                     <Border Classes="separator" />
                     <Button Content="{Binding IsClockActive, Converter={StaticResource StartStopConverter}}"
                             Classes="primary tool"
