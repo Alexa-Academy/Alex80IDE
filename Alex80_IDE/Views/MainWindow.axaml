@@ -92,12 +92,14 @@
                     <!-- Ogni accesso a memoria via ZDI richiede il core fermo:
                          averlo sotto controllo esplicito rende evidente in che
                          stato si sta leggendo. -->
-                    <Button Content="{Binding BreakButtonContent}"
-                            Classes="tool"
+                    <Button Classes="iconOnly"
                             Command="{Binding ToggleBreakCommand}"
                             IsVisible="{Binding IsEz80Context}"
                             IsEnabled="{Binding IsBoardConnected}"
-                            ToolTip.Tip="Ferma o fa ripartire la CPU (break ZDI)" />
+                            ToolTip.Tip="{Binding BreakButtonToolTip}">
+                        <PathIcon Classes="btnIcon"
+                                  Data="{Binding BreakButtonIconKey, Converter={StaticResource ResourceKeyConverter}}" />
+                    </Button>
                     <Button Content="{Binding DebugEnabled, Converter={StaticResource EnableDisableConverter}}"
                             Classes="tool"
                             Command="{Binding DebugCommand}"

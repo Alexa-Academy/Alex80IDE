@@ -324,9 +324,22 @@ public partial class MainViewModel : ObservableObject
     /// <summary>Vero quando la CPU e' ferma in break ZDI (bit 7 di STAT).</summary>
     [ObservableProperty] private bool _isCpuHalted;
 
-    public string BreakButtonContent => IsCpuHalted ? "Continua" : "Break";
+    /// <summary>
+    /// Icona del comando: dice cosa fa il clic, non lo stato della CPU. Con la CPU che
+    /// gira il pulsante ferma, quindi mostra la pausa; ferma, riprende, quindi mostra
+    /// barra e triangolo.
+    /// </summary>
+    public string BreakButtonIconKey => IsCpuHalted ? "ContinueIconData" : "PauseIconData";
 
-    partial void OnIsCpuHaltedChanged(bool value) => OnPropertyChanged(nameof(BreakButtonContent));
+    public string BreakButtonToolTip => IsCpuHalted
+        ? "Riprende dal punto in cui la CPU e' ferma, senza toccare il PC (cont)"
+        : "Ferma la CPU (break ZDI)";
+
+    partial void OnIsCpuHaltedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BreakButtonIconKey));
+        OnPropertyChanged(nameof(BreakButtonToolTip));
+    }
 
     /// <summary>
     /// Ferma o fa ripartire la CPU. Serve perche' ogni accesso a memoria via
