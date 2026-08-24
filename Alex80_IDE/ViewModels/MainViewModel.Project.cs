@@ -137,6 +137,7 @@ public partial class MainViewModel
             }
 
             OnPropertyChanged();
+            OnPropertyChanged(nameof(EffectiveCpuName));
             NotifyCpuContextChanged();
         }
     }
@@ -569,7 +570,7 @@ public partial class MainViewModel
     /// non ha. L'assemblata si fa lo stesso, con la CPU scritta nel progetto: cambiarla
     /// di nascosto vorrebbe dire produrre un binario diverso da quello chiesto.
     /// </summary>
-    private string CpuMismatchSuffix => HasCpuMismatch ? $" · attenzione: bersaglio {CpuName}, scheda {CardName}" : string.Empty;
+    private string CpuMismatchSuffix => HasCpuMismatch ? $" · progetto {CpuName}, assemblato per Z80 (scheda {CardName})" : string.Empty;
 
     private BuildRequest? CreateProjectBuildRequest()
     {
@@ -613,7 +614,7 @@ public partial class MainViewModel
             LinkMode = project.LinkMode,
             FillByte = project.FillByte,
             TasmCompatibility = project.TasmCompatibility,
-            CpuName = project.CpuName,
+            CpuName = EffectiveCpuName,
             IncludeDirectories = includeDirectories
         };
     }
@@ -634,7 +635,7 @@ public partial class MainViewModel
             LinkMode = ProjectLinkMode.SeparateUnits,
             FillByte = settings.FillByte,
             TasmCompatibility = settings.TasmCompatibility,
-            CpuName = settings.CpuName,
+            CpuName = EffectiveCpuName,
             IncludeDirectories = OpenDocuments
                 .Select(d => d.FilePath)
                 .Where(p => !string.IsNullOrWhiteSpace(p))

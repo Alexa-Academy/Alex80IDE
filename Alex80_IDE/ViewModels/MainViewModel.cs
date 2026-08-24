@@ -436,10 +436,20 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public bool HasCpuMismatch => IsBoardConnected && IsAlex80Board && IsEz80Cpu;
 
+    /// <summary>
+    /// La CPU per cui si assembla davvero. Con una ALEX80 collegata e' Z80 comunque:
+    /// quella scheda monta uno Z80 e un binario per eZ80 non ci girerebbe. Il file di
+    /// progetto non viene riscritto, la scelta resta quella che c'e' scritta dentro, ma
+    /// finche' la scheda e' collegata vale questa - ed e' questa che mostrano la status
+    /// bar e l'esito dell'assemblata, perche' un indicatore che dicesse la CPU scelta
+    /// mentre se ne usa un'altra sarebbe peggio che non averlo.
+    /// </summary>
+    public string EffectiveCpuName => IsBoardConnected && IsAlex80Board ? "Z80" : CpuName;
+
     /// <summary>Il perche' del disaccordo, per il pannello e per l'esito dell'assemblata.</summary>
     public string CpuMismatchText =>
         HasCpuMismatch
-            ? $"Il progetto assembla per {CpuName}, ma la scheda collegata è {CardName}: il binario non girerà su questa scheda."
+            ? $"Il progetto è impostato su {CpuName}, ma la scheda collegata è {CardName}: finché resta collegata si assembla per Z80. Il progetto non viene modificato."
             : string.Empty;
 
     /// <summary>
@@ -506,6 +516,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanChooseCpu));
         OnPropertyChanged(nameof(HasCpuMismatch));
         OnPropertyChanged(nameof(CpuMismatchText));
+        OnPropertyChanged(nameof(EffectiveCpuName));
         OnPropertyChanged(nameof(IxRegHex));
         OnPropertyChanged(nameof(IyRegHex));
         OnPropertyChanged(nameof(SpRegHex));
