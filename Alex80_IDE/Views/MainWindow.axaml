@@ -23,6 +23,7 @@
             <Button Classes="toolStripButton"
                     Classes.active="{Binding IsActive}"
                     Command="{Binding ToggleCommand}"
+                    IsEnabled="{Binding IsAvailable}"
                     ToolTip.Tip="{Binding Title}">
                 <PathIcon Classes="stripIcon"
                           Data="{Binding IconKey, Converter={StaticResource ResourceKeyConverter}}" />
@@ -100,10 +101,6 @@
                         <PathIcon Classes="btnIcon"
                                   Data="{Binding BreakButtonIconKey, Converter={StaticResource ResourceKeyConverter}}" />
                     </Button>
-                    <Button Content="{Binding DebugEnabled, Converter={StaticResource EnableDisableConverter}}"
-                            Classes="tool"
-                            Command="{Binding DebugCommand}"
-                            IsEnabled="{Binding IsBoardConnected}" />
                     <Button Classes="iconOnly"
                             ToolTip.Tip="Esegue una sola istruzione. È uno step into: dentro le CALL ci entra."
                             Command="{Binding StepCommand}"

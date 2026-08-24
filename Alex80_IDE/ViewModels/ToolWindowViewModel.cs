@@ -43,6 +43,24 @@ public sealed partial class ToolWindowViewModel : ObservableObject
     /// <summary>Dock che la ospita. Lo imposta il dock stesso quando la prende in carico.</summary>
     internal ToolDockViewModel? Dock { get; set; }
 
+    /// <summary>
+    /// Falso quando la scheda collegata non ha niente da mostrare in questo strumento:
+    /// il pulsante nella strip resta al suo posto ma spento, cosi' si vede che lo
+    /// strumento esiste e che non e' questa scheda a poterlo usare.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isAvailable = true;
+
+    partial void OnIsAvailableChanged(bool value)
+    {
+        if (!value)
+        {
+            // Se il pannello era aperto proprio qui va chiuso: lasciarlo aperto su uno
+            // strumento non utilizzabile mostrerebbe dati di una scheda che non c'e'.
+            Dock?.CloseIfShowing(this);
+        }
+    }
+
     /// <summary>Vero quando il pannello e' aperto proprio su questa tool window.</summary>
     [ObservableProperty]
     private bool _isActive;

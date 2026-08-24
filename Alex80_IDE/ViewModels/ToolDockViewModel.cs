@@ -84,6 +84,11 @@ public sealed partial class ToolDockViewModel : ObservableObject
     /// </summary>
     public void Toggle(ToolWindowViewModel tool)
     {
+        if (!tool.IsAvailable)
+        {
+            return;
+        }
+
         if (IsOpen && ReferenceEquals(SelectedTool, tool))
         {
             IsOpen = false;
@@ -96,6 +101,15 @@ public sealed partial class ToolDockViewModel : ObservableObject
 
     [RelayCommand]
     private void Close() => IsOpen = false;
+
+    /// <summary>Chiude il pannello se sta mostrando proprio lo strumento indicato.</summary>
+    internal void CloseIfShowing(ToolWindowViewModel tool)
+    {
+        if (IsOpen && ReferenceEquals(SelectedTool, tool))
+        {
+            IsOpen = false;
+        }
+    }
 
     /// <summary>Ripristina lo stato salvato nelle impostazioni.</summary>
     public void Restore(bool isOpen, string? selectedToolId, IReadOnlyDictionary<string, double>? toolSizes)

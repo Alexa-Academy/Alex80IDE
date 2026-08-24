@@ -71,6 +71,25 @@
 
         <Border Classes="separatorH" />
 
+        <!-- Il debug passo-passo esiste solo sulle ALEX80: sull'eZ80 il firmware accetta
+             il comando e non fa niente, perche' li' si governa con pausa e riprendi. -->
+        <StackPanel Spacing="10">
+            <TextBlock Text="DEBUG" Classes="caption" />
+
+            <Button Classes="tool"
+                    HorizontalAlignment="Left"
+                    Command="{Binding DebugCommand}"
+                    Content="{Binding DebugEnabled, Converter={StaticResource EnableDisableConverter}}"
+                    ToolTip.Tip="Ferma la CPU a ogni istruzione, cosi' si puo' procedere a passi e leggere i registri" />
+
+            <TextBlock Classes="caption"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding IsEz80}"
+                       Text="Sull'eZ80 l'esecuzione si governa con pausa e riprendi, non con questa modalità." />
+        </StackPanel>
+
+        <Border Classes="separatorH" />
+
         <!-- Il modo della CPU riguarda solo l'eZ80: su una ALEX80 c'e' uno Z80 e non
              c'e' niente da scegliere. -->
         <StackPanel Spacing="10">

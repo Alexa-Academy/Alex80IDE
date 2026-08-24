@@ -14,15 +14,20 @@
     </UserControl.Styles>
 
     <Grid RowDefinitions="Auto,*">
+        <!-- I comandi stanno a sinistra, dove comincia la lettura, come nel pannello
+             della memoria. Le tre voci sono separate perche' fanno cose diverse:
+             accendere la registrazione, scegliere come scorre, svuotare quel che c'e'. -->
         <DockPanel Margin="14,14,14,10">
-            <StackPanel Orientation="Horizontal" Spacing="8" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                <TextBlock Text="Log" Classes="caption" VerticalAlignment="Center" />
-                <Button Content="{Binding LogEnabled, Converter={StaticResource EnableDisableConverter}}"
+            <StackPanel Orientation="Horizontal" Spacing="18" DockPanel.Dock="Left" VerticalAlignment="Center">
+                <Button Content="{Binding BusLogToggleText}"
                         Classes="tool"
-                        Command="{Binding EnableDisableLogsCommand}"
-                        IsEnabled="{Binding IsBoardConnected}" />
-                <ToggleSwitch Content="Autoscroll"
-                              IsChecked="{Binding IsAutoScrollEnabled, Mode=TwoWay}" />
+                        Command="{Binding EnableDisableLogsCommand}" />
+
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <TextBlock Text="Scorrimento automatico" Classes="caption" VerticalAlignment="Center" />
+                    <ToggleSwitch IsChecked="{Binding IsAutoScrollEnabled, Mode=TwoWay}" />
+                </StackPanel>
+
                 <Button Content="Cancella log" Classes="tool" Command="{Binding ClearLogsCommand}" />
             </StackPanel>
         </DockPanel>

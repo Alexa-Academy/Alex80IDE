@@ -190,6 +190,11 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(DumpUnavailableText));
         DumpCommand.NotifyCanExecuteChanged();
     }
+
+    /// <summary>Etichetta del comando del log: dice cosa fa il clic.</summary>
+    public string BusLogToggleText => LogEnabled ? "Disabilita log" : "Abilita log";
+
+    partial void OnLogEnabledChanged(bool value) => OnPropertyChanged(nameof(BusLogToggleText));
     
     [ObservableProperty] 
     private bool _isMemoryFromArduino;
@@ -301,7 +306,12 @@ public partial class MainViewModel : ObservableObject
     /// e registri a 16 bit. Serve quando il programma sul bersaglio gira in
     /// modo Z80 anziche' ADL, dove i 24 bit non hanno significato.
     /// </summary>
-    [ObservableProperty] private bool _z80CompatibilityMode;
+    /// <summary>
+    /// Acceso di partenza: senza una scheda collegata il bersaglio del progetto e' quasi
+    /// sempre uno Z80, e i registri vanno mostrati a 16 bit. Collegando un eZ80 lo si
+    /// spegne dal pannello Scheda per tornare agli indirizzi a 24 bit.
+    /// </summary>
+    [ObservableProperty] private bool _z80CompatibilityMode = true;
 
     /// <summary>Tipo di scheda collegata, usato per decidere cosa fa "play".</summary>
     [ObservableProperty] private bool _isAlex80Full;
@@ -460,6 +470,29 @@ public partial class MainViewModel : ObservableObject
         (IsEz80 ||
          (IsAlex80Micro && IsMemoryFromArduino && DebugEnabled && (!IsClockFromArduino || IsClockActive)));
 
+    /// <summary>
+    /// Il debug passo-passo esiste solo sulle ALEX80: sull'eZ80 il firmware ZDI accetta
+    /// "debug on" e non fa niente (alex_ok e basta), perche' li' l'esecuzione si governa
+    /// con break e cont. Tenerlo acceso voleva dire un pulsante che cambiava etichetta
+    /// senza che sulla scheda cambiasse nulla.
+    /// </summary>
+    public bool CanUseDebug => IsBoardConnected && IsAlex80Board;
+
+    /// <summary>
+    /// Registrare il log vuole una scheda che sappia mostrare il bus. Sull'eZ80 si passa
+    /// da ZDI e il firmware risponde "no bus visibility over ZDI": non c'e' niente da
+    /// registrare.
+    /// </summary>
+    public bool CanUseBusLog => IsBoardConnected && IsAlex80Board;
+
+    /// <summary>
+    /// Lo strumento resta raggiungibile anche a scheda scollegata: le righe gia'
+    /// catturate si rileggono lo stesso, ed e' proprio dopo aver staccato la scheda che
+    /// capita di volerle guardare. Sparisce solo quando c'e' collegato un eZ80, che un
+    /// log del bus non lo produrra' mai.
+    /// </summary>
+    private bool IsBusLogToolAvailable => !(IsBoardConnected && IsEz80);
+
     /// <summary>Perche' la lettura non e' disponibile, quando non lo e'.</summary>
     public string DumpUnavailableText
     {
@@ -579,6 +612,11 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HasCpuMismatch));
         OnPropertyChanged(nameof(CpuMismatchText));
         OnPropertyChanged(nameof(EffectiveCpuName));
+        OnPropertyChanged(nameof(CanUseDebug));
+        OnPropertyChanged(nameof(CanUseBusLog));
+        DebugCommand.NotifyCanExecuteChanged();
+        EnableDisableLogsCommand.NotifyCanExecuteChanged();
+        BusLogTool.IsAvailable = IsBusLogToolAvailable;
         NotifyDumpAvailabilityChanged();
         OnPropertyChanged(nameof(IxRegHex));
         OnPropertyChanged(nameof(IyRegHex));
@@ -785,7 +823,7 @@ public partial class MainViewModel : ObservableObject
         _serialManager.SendSerialText("reset\r");
     }
     
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanUseDebug))]
     private void Debug()
     {
         DebugEnabled = !DebugEnabled;
@@ -828,7 +866,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
     
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanUseBusLog))]
     private void EnableDisableLogs()
     {
         LogEnabled = !LogEnabled;
