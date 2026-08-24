@@ -402,9 +402,9 @@
                     <!-- La CPU di destinazione si legge qui invece che aprendo il pannello
                          dell'assemblatore: decide cosa esce dall'assemblata, ed e' la prima
                          cosa da guardare quando il risultato non e' quello atteso. -->
-                    <TextBlock Text="{Binding EffectiveCpuName, StringFormat='CPU: {0}'}"
+                    <TextBlock Text="{Binding CpuStatusText}"
                                Classes="statusItem"
-                               ToolTip.Tip="CPU per cui si assembla. Si sceglie nel pannello Assemblatore, ma con una scheda ALEX80 collegata resta Z80." />
+                               ToolTip.Tip="CPU per cui si assembla, e modo di indirizzamento quando i due non coincidono. La CPU si sceglie nel pannello Assemblatore, il modo nel pannello Scheda." />
                     <TextBlock Text="{Binding AssemblerStatus}" Classes="statusItem" />
                 </StackPanel>
             </Grid>

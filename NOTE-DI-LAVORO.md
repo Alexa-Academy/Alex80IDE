@@ -94,6 +94,13 @@ dall'IDE: diventa `ThemeVariant.Default`, che è il modo con cui Avalonia lascia
 decidere alla piattaforma e tiene la variante aggiornata quando l'impostazione di
 sistema cambia. Il valore predefinito resta Scuro.
 
+### Bersaglio dell'assemblata e modo di indirizzamento sono due cose
+
+La status bar scrive `CPU: EZ80 · modo Z80` quando non coincidono. Il bersaglio
+decide che codice esce dall'assemblatore; il modo decide come la CPU indirizza la
+memoria — un eZ80 in modo Z80 assembla per eZ80 ma vede 64 KB via MBASE. Scritto
+il solo bersaglio, «CPU: EZ80» accanto a registri a 16 bit sembrava un errore.
+
 ### Modo Z80 acceso di partenza
 
 `Z80CompatibilityMode` parte a `true`: senza una scheda collegata il bersaglio è

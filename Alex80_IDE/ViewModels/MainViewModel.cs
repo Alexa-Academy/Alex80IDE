@@ -541,6 +541,17 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public string EffectiveCpuName => IsBoardConnected && IsAlex80Board ? "Z80" : CpuName;
 
+    /// <summary>
+    /// Quel che la status bar scrive della CPU. Bersaglio dell'assemblata e modo di
+    /// indirizzamento sono due cose diverse e possono non coincidere: un eZ80 che lavora
+    /// in modo Z80 assembla per eZ80 ma indirizza 64 KB via MBASE. Scritto il solo
+    /// bersaglio, "CPU: EZ80" accanto a registri a 16 bit sembrava un errore.
+    /// </summary>
+    public string CpuStatusText =>
+        IsEz80Context && Z80CompatibilityMode
+            ? $"CPU: {EffectiveCpuName} · modo Z80"
+            : $"CPU: {EffectiveCpuName}";
+
     /// <summary>Il perche' del disaccordo, per il pannello e per l'esito dell'assemblata.</summary>
     public string CpuMismatchText =>
         HasCpuMismatch
@@ -612,6 +623,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HasCpuMismatch));
         OnPropertyChanged(nameof(CpuMismatchText));
         OnPropertyChanged(nameof(EffectiveCpuName));
+        OnPropertyChanged(nameof(CpuStatusText));
         OnPropertyChanged(nameof(CanUseDebug));
         OnPropertyChanged(nameof(CanUseBusLog));
         DebugCommand.NotifyCanExecuteChanged();

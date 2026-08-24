@@ -138,6 +138,7 @@ public partial class MainViewModel
 
             OnPropertyChanged();
             OnPropertyChanged(nameof(EffectiveCpuName));
+            OnPropertyChanged(nameof(CpuStatusText));
             NotifyCpuContextChanged();
         }
     }
