@@ -110,10 +110,6 @@
                             IsEnabled="{Binding IsBoardConnected}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource StepIconData}" />
                     </Button>
-                    <Button Content="Dump registri"
-                            Classes="tool"
-                            Command="{Binding DumpCommand}"
-                            IsEnabled="{Binding IsBoardConnected}" />
                 </StackPanel>
             </Grid>
         </Border>

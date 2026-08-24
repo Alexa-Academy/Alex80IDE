@@ -173,7 +173,23 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] 
     private bool _isClockActive;
 
-    partial void OnIsClockActiveChanged(bool value) => OnPropertyChanged(nameof(ClockToggleText));
+    partial void OnIsClockActiveChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ClockToggleText));
+        NotifyDumpAvailabilityChanged();
+    }
+
+    /// <summary>
+    /// La lettura dei registri dipende da parecchie cose insieme - scheda, debug, clock,
+    /// da dove arriva la memoria - e ognuna cambia per conto suo: la notifica sta in un
+    /// posto solo perche' non se ne dimentichi una.
+    /// </summary>
+    private void NotifyDumpAvailabilityChanged()
+    {
+        OnPropertyChanged(nameof(CanDumpRegisters));
+        OnPropertyChanged(nameof(DumpUnavailableText));
+        DumpCommand.NotifyCanExecuteChanged();
+    }
     
     [ObservableProperty] 
     private bool _isMemoryFromArduino;
@@ -423,6 +439,52 @@ public partial class MainViewModel : ObservableObject
     public bool IsAlex80Board => IsAlex80Full || IsAlex80Micro;
 
     /// <summary>
+    /// Vero quando la scheda puo' davvero restituire i registri.
+    /// <para>
+    /// Sull'eZ80 sempre: il firmware ferma la CPU da se', legge, e la fa ripartire se
+    /// stava girando, quindi funziona anche a programma in corsa.
+    /// </para>
+    /// <para>
+    /// Sull'ALEX80 micro serve la via dell'iniezione, che il firmware concede solo con
+    /// memoria servita dall'Arduino, debug attivo e clock che gira: sono le stesse
+    /// condizioni che controlla lui prima di provarci.
+    /// </para>
+    /// <para>
+    /// Sull'ALEX80 modulare mai: li' il dump passa dal modo monitor, che carica in RAM
+    /// un programma suo e si prende il clock. Accenderlo per leggere i registri
+    /// vorrebbe dire cancellare il programma dell'utente.
+    /// </para>
+    /// </summary>
+    public bool CanDumpRegisters =>
+        IsBoardConnected &&
+        (IsEz80 ||
+         (IsAlex80Micro && IsMemoryFromArduino && DebugEnabled && (!IsClockFromArduino || IsClockActive)));
+
+    /// <summary>Perche' la lettura non e' disponibile, quando non lo e'.</summary>
+    public string DumpUnavailableText
+    {
+        get
+        {
+            if (CanDumpRegisters)
+            {
+                return string.Empty;
+            }
+
+            if (!IsBoardConnected)
+            {
+                return "Collega una scheda per leggere i registri.";
+            }
+
+            if (IsAlex80Full)
+            {
+                return "Su ALEX80 la lettura dei registri passa dal modo monitor, che carica in RAM un programma suo: cancellerebbe il tuo. Non è disponibile da qui.";
+            }
+
+            return "Servono la memoria servita dall'Arduino, il debug attivo e il clock in moto.";
+        }
+    }
+
+    /// <summary>
     /// La CPU di destinazione si sceglie finche' non c'e' una ALEX80 collegata: quella
     /// scheda monta uno Z80 e non c'e' altro da scegliere. Il blocco impedisce di
     /// impostare una combinazione impossibile, ma non riscrive il progetto: un .a80
@@ -517,6 +579,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HasCpuMismatch));
         OnPropertyChanged(nameof(CpuMismatchText));
         OnPropertyChanged(nameof(EffectiveCpuName));
+        NotifyDumpAvailabilityChanged();
         OnPropertyChanged(nameof(IxRegHex));
         OnPropertyChanged(nameof(IyRegHex));
         OnPropertyChanged(nameof(SpRegHex));
@@ -629,6 +692,8 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty]
     private bool _debugEnabled;
+
+    partial void OnDebugEnabledChanged(bool value) => NotifyDumpAvailabilityChanged();
     
     [RelayCommand]
     private void SendNmi()
@@ -734,7 +799,7 @@ public partial class MainViewModel : ObservableObject
         _serialManager.SendSerialText("s\r");
     }
     
-    [RelayCommand] 
+    [RelayCommand(CanExecute = nameof(CanDumpRegisters))]
     private void Dump()
     {
         _serialManager.SendSerialText("d\r");
@@ -859,6 +924,7 @@ public partial class MainViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(CanControlClock));
         StartStopBoardCommand.NotifyCanExecuteChanged();
+        NotifyDumpAvailabilityChanged();
 
         if (_isApplyingCardConfig)
             return;
@@ -875,6 +941,8 @@ public partial class MainViewModel : ObservableObject
     
     partial void OnIsMemoryFromArduinoChanged(bool value)
     {
+        NotifyDumpAvailabilityChanged();
+
         if (_isApplyingCardConfig)
             return;
 

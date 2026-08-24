@@ -9,6 +9,26 @@
          La spaziatura fra i riquadri sta nello stile registerChip: cosi' togliere
          o aggiungere un registro non costringe a rifare i margini a mano. -->
     <StackPanel Spacing="12">
+        <!-- La rilettura sta qui e non nella barra in alto: e' qui che il risultato
+             compare, e qui puo' spegnersi con la spiegazione accanto quando la scheda
+             collegata non e' in grado di darli. -->
+        <StackPanel Spacing="7">
+            <Button Classes="tool"
+                    HorizontalAlignment="Left"
+                    Command="{Binding DumpCommand}"
+                    ToolTip.Tip="Rilegge i registri dalla scheda. Sull'eZ80 la CPU viene fermata e fatta ripartire da sola.">
+                <StackPanel Orientation="Horizontal" Spacing="7">
+                    <PathIcon Classes="btnIcon" Data="{DynamicResource RegistersIconData}" />
+                    <TextBlock Text="Rileggi dalla scheda" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+
+            <TextBlock Classes="caption"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding !CanDumpRegisters}"
+                       Text="{Binding DumpUnavailableText}" />
+        </StackPanel>
+
         <!-- Vista Z80: registri a 8 e 16 bit. -->
         <UniformGrid Columns="3" IsVisible="{Binding !IsEz80}">
             <Border Classes="registerChip"><StackPanel><TextBlock Text="A" Classes="registerLabel" /><TextBlock Text="{Binding ARegHex}" Classes="registerValue" /></StackPanel></Border>
