@@ -184,6 +184,33 @@
              proprieta' di spazio, e i margini a mano andavano rifatti a ogni registro
              aggiunto o tolto. -->
         <Setter Property="Margin" Value="0,0,7,7" />
+        <!-- Il riquadro si accende e si spegne sfumando: a passi ravvicinati un
+             cambio netto di colore a ogni passo stanca e si legge peggio. -->
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.30" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.30" />
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <!-- Registro appena cambiato: dopo un passo di debug e' quello che dice cosa ha
+         fatto l'istruzione. Lo spegne il temporizzatore della vista registri dopo
+         qualche secondo; la transizione evita che i riquadri si accendano e si
+         spengano di scatto a ogni passo. Oltre al colore cambia anche il peso della
+         cifra: il colore da solo non basta a chi non lo distingue. -->
+    <Style Selector="Border.registerChip.changed">
+        <Setter Property="Background" Value="{DynamicResource ValueChangedSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource ValueChangedBorderBrush}" />
+    </Style>
+
+    <Style Selector="Border.registerChip.changed TextBlock.registerLabel">
+        <Setter Property="Foreground" Value="{DynamicResource ValueChangedTextBrush}" />
+    </Style>
+
+    <Style Selector="Border.registerChip.changed TextBlock.registerValue">
+        <Setter Property="Foreground" Value="{DynamicResource ValueChangedTextBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
     <!-- Un flag del registro F: sigla e stato, con il significato nel suggerimento.
@@ -195,6 +222,12 @@
         <Setter Property="CornerRadius" Value="6" />
         <Setter Property="Padding" Value="8,4" />
         <Setter Property="Margin" Value="0,0,6,6" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.30" />
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.30" />
+            </Transitions>
+        </Setter>
     </Style>
 
     <Style Selector="Border.flagChip.set">
@@ -222,6 +255,24 @@
 
     <Style Selector="Border.flagChip.set TextBlock.flagState">
         <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Flag appena ribaltato dall'istruzione dell'ultimo passo. A differenza dei
+         registri qui si tinge il contorno e non lo sfondo: lo sfondo e' quello che
+         distingue il flag acceso dallo spento, e coprirlo per due secondi vorrebbe
+         dire togliere l'informazione principale proprio nel momento in cui la si
+         sta guardando. -->
+    <Style Selector="Border.flagChip.changed">
+        <Setter Property="BorderBrush" Value="{DynamicResource ValueChangedBorderBrush}" />
+    </Style>
+
+    <Style Selector="Border.flagChip.changed TextBlock.flagName">
+        <Setter Property="Foreground" Value="{DynamicResource ValueChangedTextBrush}" />
+    </Style>
+
+    <Style Selector="Border.flagChip.changed TextBlock.flagState">
+        <Setter Property="Foreground" Value="{DynamicResource ValueChangedTextBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 

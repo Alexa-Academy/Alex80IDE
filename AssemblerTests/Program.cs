@@ -282,5 +282,21 @@ Console.WriteLine(e3.Length > 0 ? $"call in ADL -> {e3[0]}" : $"call in ADL -> {
     if (!(ok1 && ok2)) failures++;
 }
 
+// Il firmware Z80 interpreta rb/wb in base 16; quello eZ80 in base 10,
+// anche quando il processore eZ80 lavora in modalita' Z80.
+foreach (var (address, ez80, expected) in new (uint, bool, string)[]
+{
+    (0, false, "0"), (0x8000, false, "8000"),
+    (0xFFFF, false, "FFFF"), (0x8000, true, "32768"),
+    (0xFFF000, true, "16773120")
+})
+{
+    var actual = Alex80_IDE.SerialManager.FormatMemoryAddress(address, ez80);
+    Console.WriteLine(actual == expected
+        ? $"ok   indirizzo seriale {address:X} eZ80={ez80}: {actual}"
+        : $"FAIL indirizzo seriale: atteso {expected}, ricevuto {actual}");
+    if (actual != expected) failures++;
+}
+
 Console.WriteLine(failures == 0 ? "\nTUTTI I TEST PASSATI" : $"\n{failures} TEST FALLITI");
 return failures;

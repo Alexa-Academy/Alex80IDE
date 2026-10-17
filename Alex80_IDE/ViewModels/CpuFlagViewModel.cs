@@ -29,13 +29,45 @@ public sealed partial class CpuFlagViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSet;
 
+    /// <summary>
+    /// Vero quando l'ultima rilettura ha ribaltato questo bit. Vale per i flag lo
+    /// stesso motivo che vale per i registri: dopo un passo di debug quello che
+    /// serve sapere e' quali flag ha mosso l'istruzione appena eseguita, e un
+    /// flag e' proprio il caso in cui il valore da solo non lo dice, perche' fra
+    /// acceso e spento non c'e' differenza fra "cambiato" e "gia' cosi' da prima".
+    /// Lo spegne il temporizzatore della vista registri.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isChanged;
+
     public string StateText => IsSet ? "1" : "0";
 
     /// <summary>Suggerimento completo: sigla, stato corrente e significato.</summary>
     public string ToolTipText => $"{Name} = {StateText} — {Description}";
 
-    /// <summary>Rilegge il proprio bit dal registro F appena arrivato dalla scheda.</summary>
-    public void Update(byte f) => IsSet = (f & Mask) != 0;
+    /// <summary>
+    /// Rilegge il proprio bit dal registro F appena arrivato dalla scheda e dice se
+    /// e' cambiato. Con <paramref name="highlight"/> spento aggiorna senza accendere
+    /// l'evidenza: serve alla prima lettura, dove non c'e' un passo precedente.
+    /// </summary>
+    public bool Refresh(byte f, bool highlight)
+    {
+        bool isSet = (f & Mask) != 0;
+
+        if (isSet == IsSet)
+        {
+            return false;
+        }
+
+        IsSet = isSet;
+
+        if (highlight)
+        {
+            IsChanged = true;
+        }
+
+        return true;
+    }
 
     partial void OnIsSetChanged(bool value)
     {

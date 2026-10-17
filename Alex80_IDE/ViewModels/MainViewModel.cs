@@ -143,6 +143,10 @@ public partial class MainViewModel : ObservableObject
             IsAlex80Micro = false;
         }
 
+        // Aprendo o chiudendo la porta il confronto riparte da zero: i registri di
+        // prima appartengono a una sessione che non c'e' piu'.
+        ResetRegisterComparison();
+
         ReadMemoryCommand.NotifyCanExecuteChanged();
         WriteMemoryCommand.NotifyCanExecuteChanged();
 
@@ -634,6 +638,10 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IyRegHex));
         OnPropertyChanged(nameof(SpRegHex));
         OnPropertyChanged(nameof(PcRegHex));
+
+        // Qui a cambiare e' il numero di cifre con cui si scrive un indirizzo, non
+        // il valore letto dalla scheda: le celle si riscrivono senza evidenziare.
+        RefreshRegisterCells(highlight: false);
     }
 
     partial void OnIsEz80Changed(bool value) => NotifyCpuContextChanged();
@@ -702,14 +710,158 @@ public partial class MainViewModel : ObservableObject
 
     public string FlagsString => GetZ80FlagsString(FReg);
     
-    partial void OnFRegChanged(byte value)
+    // I flag li rilegge RefreshRegisterCells insieme ai registri, non questa: e' li'
+    // che si sa se il valore e' diverso da quello del passo precedente. Qui resta la
+    // sola stringa riassuntiva, che non ha bisogno del confronto.
+    partial void OnFRegChanged(byte value) => OnPropertyChanged(nameof(FlagsString));
+
+    // ---- registri e flag della vista, con l'evidenza di quelli appena cambiati ----
+
+    /// <summary>Per quanto resta acceso l'evidenziatore su un registro o un flag appena cambiato.</summary>
+    private static readonly TimeSpan RegisterHighlightDuration = TimeSpan.FromSeconds(2);
+
+    /// <summary>Spegne l'evidenza da solo: il debug e' a passi, non a comandi di annullamento.</summary>
+    private DispatcherTimer? _registerHighlightTimer;
+
+    /// <summary>
+    /// Alla prima rilettura non c'e' un valore di prima con cui confrontarsi: senza
+    /// questo ogni registro risulterebbe cambiato appena la scheda risponde.
+    /// </summary>
+    private bool _hasRegisterSnapshot;
+
+    /// <summary>Registri della vista Z80, nell'ordine in cui la vista li dispone.</summary>
+    public IReadOnlyList<CpuRegisterViewModel> Z80Registers { get; private set; } = [];
+
+    /// <summary>Registri della vista eZ80: le coppie a 24 bit e quelli che il formato Z80 non rappresenta.</summary>
+    public IReadOnlyList<CpuRegisterViewModel> Ez80Registers { get; private set; } = [];
+
+    /// <summary>
+    /// Costruisce le due viste dei registri. Leggono le stesse proprieta' .Hex di
+    /// prima, cosi' la larghezza degli indirizzi continua a dipendere da un posto
+    /// solo; quello che aggiungono e' il confronto con la lettura precedente.
+    /// </summary>
+    private void InitializeRegisterCells()
     {
-        OnPropertyChanged(nameof(FlagsString));
+        Z80Registers =
+        [
+            new("A", "Accumulatore: ci finisce il risultato della maggior parte delle operazioni aritmetiche e logiche", () => ARegHex),
+            new("B", "Registro generale. Fa da contatore in DJNZ e nelle istruzioni di blocco", () => BRegHex),
+            new("C", "Registro generale. Porta il numero di porta nelle IN e OUT indirizzate da C", () => CRegHex),
+            new("D", "Registro generale, meta' alta della coppia DE", () => DRegHex),
+            new("E", "Registro generale, meta' bassa della coppia DE", () => ERegHex),
+            new("H", "Registro generale, meta' alta della coppia HL, l'indirizzo negli accessi indiretti a memoria", () => HRegHex),
+            new("L", "Registro generale, meta' bassa della coppia HL", () => LRegHex),
+            new("IX", "Registro indice: indirizzo di base degli accessi con scostamento (IX+d)", () => IxRegHex),
+            new("IY", "Registro indice: indirizzo di base degli accessi con scostamento (IY+d)", () => IyRegHex),
+            new("SP", "Puntatore alla cima dello stack", () => SpRegHex),
+            new("PC", "Contatore di programma: indirizzo della prossima istruzione da eseguire", () => PcRegHex)
+        ];
+
+        Ez80Registers =
+        [
+            new("A", "Accumulatore: ci finisce il risultato della maggior parte delle operazioni aritmetiche e logiche", () => ARegHex),
+            new("MB", "MBASE: i 16 bit alti dell'indirizzo quando l'eZ80 lavora in modo Z80", () => MbRegHex),
+            new("STAT", "Stato riportato dall'interfaccia ZDI, dove fra l'altro si legge se la CPU e' ferma", () => StatRegHex),
+            new("BC", "Coppia BC a 24 bit", () => Bc24Hex),
+            new("DE", "Coppia DE a 24 bit", () => De24Hex),
+            new("HL", "Coppia HL a 24 bit: l'indirizzo negli accessi indiretti a memoria", () => Hl24Hex),
+            new("IX", "Registro indice: indirizzo di base degli accessi con scostamento (IX+d)", () => IxRegHex),
+            new("IY", "Registro indice: indirizzo di base degli accessi con scostamento (IY+d)", () => IyRegHex),
+            new("PC", "Contatore di programma: indirizzo della prossima istruzione da eseguire", () => PcRegHex),
+            new("SPL", "Stack pointer lungo, a 24 bit: e' quello in uso in modo ADL", () => Spl24Hex),
+            new("SPS", "Stack pointer corto, a 16 bit: e' quello in uso in modo Z80", () => Sps16Hex),
+            new("MODO", "Modo di indirizzamento corrente: ADL a 24 bit oppure Z80 a 16 bit", () => AdlText),
+            new("I", "Registro dei vettori di interruzione", () => IRegHex),
+            new("R", "Contatore di rinfresco della memoria dinamica, incrementato a ogni prelievo di istruzione", () => RRegHex)
+        ];
+
+        _registerHighlightTimer = new DispatcherTimer { Interval = RegisterHighlightDuration };
+        _registerHighlightTimer.Tick += (_, _) => ClearRegisterHighlights();
+    }
+
+    /// <summary>
+    /// Riporta nelle celle i valori correnti, registri e flag del registro F insieme:
+    /// arrivano dalla stessa rilettura e vanno confrontati con lo stesso passo di prima.
+    /// Con <paramref name="highlight"/> acceso quelli diversi dalla lettura precedente
+    /// restano evidenziati per qualche secondo:
+    /// in una sessione di debug, dove si avanza un'istruzione alla volta, e' quello che
+    /// dice cosa ha toccato l'istruzione appena eseguita. L'evidenza della lettura
+    /// precedente si spegne qui: si riferisce a un passo che non e' piu' l'ultimo.
+    /// </summary>
+    private void RefreshRegisterCells(bool highlight)
+    {
+        // Puo' arrivarci una notifica prima che il costruttore abbia costruito le celle.
+        if (_registerHighlightTimer is null)
+        {
+            return;
+        }
+
+        ClearRegisterHighlights();
+
+        bool changed = false;
+
+        foreach (var cell in Z80Registers)
+        {
+            changed |= cell.Refresh(highlight);
+        }
+
+        foreach (var cell in Ez80Registers)
+        {
+            changed |= cell.Refresh(highlight);
+        }
 
         foreach (var flag in Flags)
         {
-            flag.Update(value);
+            changed |= flag.Refresh(FReg, highlight);
         }
+
+        if (highlight && changed)
+        {
+            _registerHighlightTimer.Start();
+        }
+    }
+
+    /// <summary>
+    /// Da chiamare a fine rilettura, quando i registri sono tutti scritti. La prima
+    /// lettura dopo l'apertura della porta non evidenzia niente: non c'e' un passo
+    /// precedente, e mostrare tutto acceso non direbbe niente a nessuno.
+    /// </summary>
+    private void ApplyRegisterDump()
+    {
+        RefreshRegisterCells(highlight: _hasRegisterSnapshot);
+        _hasRegisterSnapshot = true;
+    }
+
+    /// <summary>Spegne l'evidenza su tutte le celle e ferma il conto alla rovescia.</summary>
+    private void ClearRegisterHighlights()
+    {
+        _registerHighlightTimer?.Stop();
+
+        foreach (var cell in Z80Registers)
+        {
+            cell.IsChanged = false;
+        }
+
+        foreach (var flag in Flags)
+        {
+            flag.IsChanged = false;
+        }
+
+        foreach (var cell in Ez80Registers)
+        {
+            cell.IsChanged = false;
+        }
+    }
+
+    /// <summary>
+    /// Chiude il confronto in corso: la prossima lettura fa da nuovo punto di
+    /// partenza. Serve quando la scheda se ne va o quando ne risponde un'altra,
+    /// dove i registri di prima non appartengono piu' a niente.
+    /// </summary>
+    private void ResetRegisterComparison()
+    {
+        _hasRegisterSnapshot = false;
+        ClearRegisterHighlights();
     }
     
     [ObservableProperty]
@@ -932,6 +1084,10 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel(IDialogService dialogService)
     {
+        // Prima di tutto il resto: le notifiche che partono dal costruttore passano
+        // anche da qui, e le celle devono gia' esserci.
+        InitializeRegisterCells();
+
         _dialogService = dialogService;
         
         _serialManager = new SerialManager(this);
@@ -1038,6 +1194,8 @@ public partial class MainViewModel : ObservableObject
             SpReg = spReg;
             PcReg = pcReg;
             FReg = fReg;
+
+            ApplyRegisterDump();
         });
     }
     
@@ -1075,6 +1233,8 @@ public partial class MainViewModel : ObservableObject
             IReg = registers.I;
             RReg = registers.R;
             Iff2 = registers.Iff2;
+
+            ApplyRegisterDump();
         });
     }
 

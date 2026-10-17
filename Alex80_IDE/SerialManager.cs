@@ -422,18 +422,24 @@ public class SerialManager {
     }
     
     /// <summary>
-    /// start e size viaggiano in decimale. Sono uint e non ushort perche' la
+    /// L'indirizzo viaggia in esadecimale per Z80, in decimale per eZ80;
+    /// la lunghezza e' sempre decimale. Sono uint e non ushort perche' la
     /// RAM dell'eZ80 sta a 0xFFF000, fuori dai 64 KB indirizzabili da uno Z80.
     /// </summary>
     public void ReadData(uint start, uint size) {
         totalLength = (int)size;   // il contatore di avanzamento resta int
         
-        SendSerialText($"rb {start} {size}\r");
+        SendSerialText($"rb {FormatMemoryAddress(start, mainViewModel.IsEz80)} {size}\r");
     }
+
+    // Il formato dipende dal firmware collegato, non dalla CPU del progetto
+    // o dalla modalita' ADL/Z80 selezionata per l'eZ80.
+    public static string FormatMemoryAddress(uint address, bool isEz80) =>
+        address.ToString(isEz80 ? "D" : "X", System.Globalization.CultureInfo.InvariantCulture);
         
     public async void WriteData(byte[] data, uint startAddress)
     {
-        var startHex = startAddress.ToString();
+        var startHex = FormatMemoryAddress(startAddress, mainViewModel.IsEz80);
         
         writeDataArray = new List<byte>(data);
         
@@ -593,7 +599,7 @@ public class SerialManager {
 
     /// <summary>
     /// Carica il PC dell'eZ80 e fa ripartire la CPU da li'. L'indirizzo viaggia
-    /// in decimale, come per rb e wb.
+    /// in decimale, come per rb e wb sul firmware eZ80.
     /// </summary>
     public void RunFrom(uint address) => SendSerialText($"go {address}\r");
 

@@ -21,6 +21,12 @@
             <SolidColorBrush x:Key="DangerSurfaceBrush" Color="#332024" />
             <SolidColorBrush x:Key="DangerTextBrush" Color="#FFDCDC" />
             <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#1C3A35" />
+            <!-- Registro o flag appena cambiato nella vista registri. Non usa l'accento:
+                 quello e' gia' il colore dei valori e dei flag accesi, e una cella
+                 evidenziata non si distinguerebbe dalle altre. -->
+            <SolidColorBrush x:Key="ValueChangedSurfaceBrush" Color="#3A2F1C" />
+            <SolidColorBrush x:Key="ValueChangedBorderBrush" Color="#EAB85F" />
+            <SolidColorBrush x:Key="ValueChangedTextBrush" Color="#F3D28C" />
             <SolidColorBrush x:Key="EditorSelectionBrush" Color="#805FB3F3" />
             <SolidColorBrush x:Key="EditorSearchResultsBrush" Color="#66F2C94C" />
         </ResourceDictionary>
@@ -43,6 +49,9 @@
             <SolidColorBrush x:Key="DangerSurfaceBrush" Color="#FCE8E8" />
             <SolidColorBrush x:Key="DangerTextBrush" Color="#8B1E1E" />
             <SolidColorBrush x:Key="BadgeBackgroundBrush" Color="#DDF6F1" />
+            <SolidColorBrush x:Key="ValueChangedSurfaceBrush" Color="#FDF1D6" />
+            <SolidColorBrush x:Key="ValueChangedBorderBrush" Color="#B98216" />
+            <SolidColorBrush x:Key="ValueChangedTextBrush" Color="#7A5200" />
             <SolidColorBrush x:Key="EditorSelectionBrush" Color="#6638BDF8" />
             <SolidColorBrush x:Key="EditorSearchResultsBrush" Color="#66F59E0B" />
         </ResourceDictionary>

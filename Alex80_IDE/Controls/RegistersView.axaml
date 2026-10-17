@@ -29,39 +29,53 @@
                        Text="{Binding DumpUnavailableText}" />
         </StackPanel>
 
+        <!-- Le due viste sono elenchi e non riquadri scritti a mano: ogni cella deve
+             poter dire da sola se il valore e' appena cambiato, e con i riquadri fissi
+             voleva dire una proprieta' in piu' per ogni registro. La disposizione
+             resta quella di prima, la griglia a tre colonne. -->
+
         <!-- Vista Z80: registri a 8 e 16 bit. -->
-        <UniformGrid Columns="3" IsVisible="{Binding !IsEz80}">
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="A" Classes="registerLabel" /><TextBlock Text="{Binding ARegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="B" Classes="registerLabel" /><TextBlock Text="{Binding BRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="C" Classes="registerLabel" /><TextBlock Text="{Binding CRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="D" Classes="registerLabel" /><TextBlock Text="{Binding DRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="E" Classes="registerLabel" /><TextBlock Text="{Binding ERegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="H" Classes="registerLabel" /><TextBlock Text="{Binding HRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="L" Classes="registerLabel" /><TextBlock Text="{Binding LRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="IX" Classes="registerLabel" /><TextBlock Text="{Binding IxRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="IY" Classes="registerLabel" /><TextBlock Text="{Binding IyRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="SP" Classes="registerLabel" /><TextBlock Text="{Binding SpRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="PC" Classes="registerLabel" /><TextBlock Text="{Binding PcRegHex}" Classes="registerValue" /></StackPanel></Border>
-        </UniformGrid>
+        <ItemsControl ItemsSource="{Binding Z80Registers}" IsVisible="{Binding !IsEz80}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="3" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:CpuRegisterViewModel">
+                    <Border Classes="registerChip"
+                            Classes.changed="{Binding IsChanged}"
+                            ToolTip.Tip="{Binding ToolTipText}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" Classes="registerLabel" />
+                            <TextBlock Text="{Binding ValueText}" Classes="registerValue" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
         <!-- Vista eZ80: coppie a 24 bit intere, piu' MBASE, STAT, lo stack
              pointer corto e i registri che il formato Z80 non rappresenta. -->
-        <UniformGrid Columns="3" IsVisible="{Binding IsEz80}">
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="A" Classes="registerLabel" /><TextBlock Text="{Binding ARegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="MB" Classes="registerLabel" /><TextBlock Text="{Binding MbRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="STAT" Classes="registerLabel" /><TextBlock Text="{Binding StatRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="BC" Classes="registerLabel" /><TextBlock Text="{Binding Bc24Hex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="DE" Classes="registerLabel" /><TextBlock Text="{Binding De24Hex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="HL" Classes="registerLabel" /><TextBlock Text="{Binding Hl24Hex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="IX" Classes="registerLabel" /><TextBlock Text="{Binding IxRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="IY" Classes="registerLabel" /><TextBlock Text="{Binding IyRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="PC" Classes="registerLabel" /><TextBlock Text="{Binding PcRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="SPL" Classes="registerLabel" /><TextBlock Text="{Binding Spl24Hex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="SPS" Classes="registerLabel" /><TextBlock Text="{Binding Sps16Hex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="MODO" Classes="registerLabel" /><TextBlock Text="{Binding AdlText}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="I" Classes="registerLabel" /><TextBlock Text="{Binding IRegHex}" Classes="registerValue" /></StackPanel></Border>
-            <Border Classes="registerChip"><StackPanel><TextBlock Text="R" Classes="registerLabel" /><TextBlock Text="{Binding RRegHex}" Classes="registerValue" /></StackPanel></Border>
-        </UniformGrid>
+        <ItemsControl ItemsSource="{Binding Ez80Registers}" IsVisible="{Binding IsEz80}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="3" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:CpuRegisterViewModel">
+                    <Border Classes="registerChip"
+                            Classes.changed="{Binding IsChanged}"
+                            ToolTip.Tip="{Binding ToolTipText}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Name}" Classes="registerLabel" />
+                            <TextBlock Text="{Binding ValueText}" Classes="registerValue" />
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
 
         <!-- I flag su una riga a se': in un riquadro solo la stringa veniva
              troncata. Il WrapPanel manda a capo quando il pannello si stringe,
@@ -79,6 +93,7 @@
                     <DataTemplate x:DataType="vm:CpuFlagViewModel">
                         <Border Classes="flagChip"
                                 Classes.set="{Binding IsSet}"
+                                Classes.changed="{Binding IsChanged}"
                                 ToolTip.Tip="{Binding ToolTipText}">
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <TextBlock Text="{Binding Name}" Classes="flagName" />
