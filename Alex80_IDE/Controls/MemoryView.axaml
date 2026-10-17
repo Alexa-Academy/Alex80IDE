@@ -27,7 +27,7 @@
                 <TextBlock Text="Byte" Classes="caption" VerticalAlignment="Center" Margin="4,0,0,0" />
                 <TextBox Text="{Binding NumBytes}" Width="62" Classes="mono" />
 
-                <Button Classes="primary iconOnly"
+                <Button Classes="iconOnly"
                         Command="{Binding ReadMemoryCommand}"
                         Margin="4,0,0,0"
                         ToolTip.Tip="Leggi dalla scheda i byte indicati a partire dall'indirizzo">

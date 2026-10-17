@@ -41,3 +41,9 @@ Quando è necessario implementare un comportamento specifico per macOS, Windows 
 - Non introdurre nuove dipendenze senza una reale necessità.
 - Prima di implementare una funzionalità già potenzialmente fornita da Avalonia, verificare se esiste una soluzione standard nel framework.
 - Non sacrificare la compatibilità multipiattaforma per semplificare l'implementazione su macOS.
+
+# Commit al termine delle attività
+
+Al termine di ogni attività che modifica file, creare un commit nel repository interessato con un messaggio che sintetizzi quanto fatto.
+
+Se l'attività coinvolge più repository, creare un commit separato in ciascuno. Includere solo le modifiche pertinenti all'attività, senza inglobare modifiche preesistenti non correlate.

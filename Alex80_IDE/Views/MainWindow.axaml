@@ -54,7 +54,7 @@
                               ItemsSource="{Binding PortsList}"
                               SelectedIndex="{Binding SelectedIdx, Mode=TwoWay}" />
                     <Button Content="{Binding ToggleButtonContent}"
-                            Classes="primary tool"
+                            Classes="tool"
                             Command="{Binding OpenCloseSerialPortCommand}" />
                     <Border Classes="cardBadge" VerticalAlignment="Center">
                         <TextBlock Text="{Binding CardBadgeText}"
@@ -67,7 +67,7 @@
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                     <!-- Assembla sta con i comandi di esecuzione, come negli IDE: si
                          costruisce e si manda in esecuzione con lo stesso gesto. -->
-                    <Button Command="{Binding AssembleCommand}" Classes="primary iconOnly"
+                    <Button Command="{Binding AssembleCommand}" Classes="iconOnly"
                             ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource AssembleIconData}" />
                     </Button>
@@ -84,7 +84,7 @@
                     <!-- Un solo comando, significato uniforme: manda in
                          esecuzione il programma caricato. Sull'Alex80 e' un NMI,
                          sull'eZ80 e' il caricamento del PC seguito da continue. -->
-                    <Button Classes="primary iconOnly"
+                    <Button Classes="iconOnly"
                             Command="{Binding RunCommand}"
                             IsEnabled="{Binding CanRun}"
                             ToolTip.Tip="{Binding RunToolTip}">
