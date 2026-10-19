@@ -1716,6 +1716,7 @@ public partial class MainViewModel : ObservableObject
             
             Dispatcher.UIThread.InvokeAsync(() =>
             {
+                NumBytes = _fileBytesToWrite.Length.ToString();
                 CreateArray(_fileBytesToWrite, writeStart); 
             });
         }
