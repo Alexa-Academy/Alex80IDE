@@ -90,7 +90,7 @@ public class SerialManager {
         mainViewModel.IsSerialOpened = false;
         
         _serialPort = new SerialPort {
-              BaudRate = 115200,           // Velocità di trasmissione
+              BaudRate = mainViewModel.SelectedBaudRate, // Velocità di trasmissione
               Parity = Parity.None,       // Parità
               DataBits = 8,               // Bit di dati
               StopBits = StopBits.One,    // Bit di stop
@@ -372,12 +372,13 @@ public class SerialManager {
         }
     }
     
-    public async Task<bool> OpenCloseSerialPortAsync(string portName) {
+    public async Task<bool> OpenCloseSerialPortAsync(string portName, int baudRate) {
           if (_serialPort.IsOpen) {
               _serialPort.Close();
               mainViewModel.IsSerialOpened = false;
           } else {
               _serialPort.PortName = portName;
+              _serialPort.BaudRate = baudRate;
              _serialPort.Open();
              mainViewModel.IsSerialOpened = true;
              

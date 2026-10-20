@@ -117,6 +117,11 @@ public partial class MainViewModel : ObservableObject
         SerialMessageText += line + Environment.NewLine;
     }
     public ObservableCollection<string> PortsList { get; set; }
+
+    public IReadOnlyList<int> BaudRates { get; } = new[] { 9600, 115200 };
+
+    [ObservableProperty]
+    private int _selectedBaudRate = 115200;
     
     [ObservableProperty]
     private int _selectedIdx = -1;
@@ -1671,7 +1676,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             SerialMessageText = string.Empty;
-            bool isOpen = await _serialManager.OpenCloseSerialPortAsync(PortsList[SelectedIdx]);
+            bool isOpen = await _serialManager.OpenCloseSerialPortAsync(PortsList[SelectedIdx], SelectedBaudRate);
             ToggleButtonContent = isOpen ? "Chiudi" : "Apri";
 
             if (isOpen)

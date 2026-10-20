@@ -53,6 +53,13 @@
                               Width="210"
                               ItemsSource="{Binding PortsList}"
                               SelectedIndex="{Binding SelectedIdx, Mode=TwoWay}" />
+                    <TextBlock Text="Baud" Classes="caption" VerticalAlignment="Center" />
+                    <ComboBox x:Name="BaudRateDropdown"
+                              Width="110"
+                              ItemsSource="{Binding BaudRates}"
+                              SelectedItem="{Binding SelectedBaudRate, Mode=TwoWay}"
+                              IsEnabled="{Binding !IsSerialOpened}"
+                              ToolTip.Tip="Velocità della seriale in baud. Seleziona il valore configurato nello sketch prima di aprire la porta." />
                     <Button Content="{Binding ToggleButtonContent}"
                             Classes="tool"
                             Command="{Binding OpenCloseSerialPortCommand}" />
