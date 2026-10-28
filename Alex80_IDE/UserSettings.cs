@@ -12,6 +12,9 @@ public sealed class UserSettings
     public double? MainWindowHeight { get; set; }
     public bool MainWindowMaximized { get; set; }
 
+    /// <summary>Ultima velocità selezionata per la connessione seriale.</summary>
+    public int BaudRate { get; set; } = 115200;
+
     /// <summary>Accetta anche la sintassi TASM (.EQU, etichette senza due punti, $ esadecimale...).</summary>
     public bool TasmCompatibility { get; set; } = true;
 

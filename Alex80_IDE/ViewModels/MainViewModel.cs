@@ -122,6 +122,11 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private int _selectedBaudRate = 115200;
+
+    partial void OnSelectedBaudRateChanged(int value)
+    {
+        if (BaudRates.Contains(value)) UpdateSettings(settings => settings.BaudRate = value);
+    }
     
     [ObservableProperty]
     private int _selectedIdx = -1;
@@ -1158,6 +1163,9 @@ public partial class MainViewModel : ObservableObject
         // Prima di tutto il resto: le notifiche che partono dal costruttore passano
         // anche da qui, e le celle devono gia' esserci.
         InitializeRegisterCells();
+
+        var savedBaudRate = UserSettings.Load().BaudRate;
+        if (BaudRates.Contains(savedBaudRate)) _selectedBaudRate = savedBaudRate;
 
         _dialogService = dialogService;
         

@@ -20,9 +20,7 @@ public static class AppThemeManager
 {
     public static event Action<AppTheme>? ThemeChanged;
 
-    private static readonly UserSettings Settings = UserSettings.Load();
-
-    public static AppTheme CurrentTheme { get; private set; } = ParseTheme(Settings.Theme);
+    public static AppTheme CurrentTheme { get; private set; } = ParseTheme(UserSettings.Load().Theme);
 
     /// <summary>Applica il tema salvato all'avvio dell'applicazione.</summary>
     public static void Initialize(Application application)
@@ -38,8 +36,9 @@ public static class AppThemeManager
         }
 
         CurrentTheme = theme;
-        Settings.Theme = theme.ToString();
-        Settings.Save();
+        var settings = UserSettings.Load();
+        settings.Theme = theme.ToString();
+        settings.Save();
 
         if (Application.Current is not null)
         {
