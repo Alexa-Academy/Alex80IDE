@@ -379,6 +379,7 @@ public class SerialManager {
           } else {
               _serialPort.PortName = portName;
               _serialPort.BaudRate = baudRate;
+             lock (_serialReadLock) { _serialBuffer = string.Empty; }
              _serialPort.Open();
              mainViewModel.IsSerialOpened = true;
              
@@ -386,7 +387,7 @@ public class SerialManager {
              SetComputerConnected();
 
              await Task.Delay(400);  // Aspetta altri 0.4 secondi
-             GetInfo();
+             RefreshConfiguration();
 
              // Su alcune porte USB native (ad esempio UNO R4) l'evento
              // DataReceived può non essere notificato immediatamente.
@@ -398,7 +399,7 @@ public class SerialManager {
              // volte la scheda si sta ancora riavviando quando arriva la prima.
              for (var attempt = 0; attempt < 2 && _serialPort.IsOpen && !mainViewModel.IsBoardConnected; attempt++)
              {
-                 GetInfo();
+                 RefreshConfiguration();
                  await PollSerialInputAsync(1500);
              }
           }
@@ -613,7 +614,8 @@ public class SerialManager {
     /// </summary>
     public void SetAdlMode(bool adl) => SendSerialText($"adl {(adl ? 1 : 0)}\r");
     
-    private void GetInfo()
+    /// <summary>Read actual board state without changing its settings.</summary>
+    public void RefreshConfiguration()
     { 
         SendSerialText("info\r");
     }
@@ -621,21 +623,25 @@ public class SerialManager {
     public void SetClockFromArduino()
     {
         SendSerialText("clk arduino\r");
+        RefreshConfiguration();
     }
     
     public void SetClockExternal()
     {
         SendSerialText("clk external\r");
+        RefreshConfiguration();
     }
     
     public void SetMemoryFromArduino()
     {
         SendSerialText("mem arduino\r");
+        RefreshConfiguration();
     }
     
     public void SetMemoryExternal()
     {
         SendSerialText("mem external\r");
+        RefreshConfiguration();
     }
     
     public async Task DrainInputAsync(int quietMs = 200, int maxMs = 2000, CancellationToken ct = default)

@@ -1,0 +1,86 @@
+using System.Reflection;
+using Avalonia.Threading;
+using Alex80_IDE;
+
+// Exercise the actual INFO parser -> SerialManager event -> UI properties path
+// without opening a physical port or changing hardware configuration.
+internal static class BoardConnectionTests
+{
+    public static int Run()
+    {
+        var failures = 0;
+        void Check(string name, bool passed)
+        {
+            Console.WriteLine($"{(passed ? "ok  " : "FAIL")} {name}");
+            if (!passed) failures++;
+        }
+
+        var legacy = CardConfig.Parse("CARD:ALEX80,SCLK:A,FCLK:50,ECLK:1,SMEM:E");
+        Check("INFO legacy Z80: campi opzionali assenti", legacy.LogEnabled is null &&
+            legacy.DebugEnabled is null && legacy.MonitorEnabled is null && legacy.ClockActive);
+        var optional = CardConfig.Parse("CARD:ALEX80micro,SCLK:E,FCLK:500,ECLK:0,SMEM:A,LOG:on,DEBUG:1,MONITOR:0,FUTURE:abc");
+        Check("INFO flag ON/OFF e numerici", optional.LogEnabled == true &&
+            optional.DebugEnabled == true && optional.MonitorEnabled == false && !optional.IsClockFromArduino);
+        var malformed = CardConfig.Parse("CARD:ALEX80micro,SCLK:,SMEM:,FCLK:,LOG:?,DEBUG:,MONITOR:");
+        Check("INFO incompleto non interrompe la ricezione", malformed.LogEnabled is null &&
+            malformed.DebugEnabled is null && malformed.MonitorEnabled is null);
+
+        var vm = new MainViewModel(new NoDialogs());
+        var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        var manager = (SerialManager)typeof(MainViewModel).GetField("_serialManager", flags)!.GetValue(vm)!;
+        var receive = typeof(SerialManager).GetMethod("HandleSerialMessage", flags)!;
+        void Receive(string payload)
+        {
+            receive.Invoke(manager, new object[] { "!INFO:" + payload + ";" });
+            Dispatcher.UIThread.RunJobs();
+        }
+        try
+        {
+            vm.IsSerialOpened = true;
+            var originalOutput = Console.Out;
+            var receivedOutput = new StringWriter();
+            try
+            {
+                Console.SetOut(receivedOutput);
+                Receive("CARD:ALEX80µ,SCLK:A,FCLK:32768,ECLK:1,SMEM:A,LOG:ON,DEBUG:ON,MONITOR:OFF");
+            }
+            finally { Console.SetOut(originalOutput); }
+            Check("connessione: stato reale completo applicato alla UI", vm.IsBoardConnected &&
+                vm.IsClockFromArduino && vm.IsMemoryFromArduino && vm.ClockFrequency == "32768" &&
+                vm.IsClockActive && vm.LogEnabled && vm.DebugEnabled && vm.MonitorEnabled == false);
+            Check("configurazione ricevuta non invia comandi alla scheda",
+                !receivedOutput.ToString().Contains("Porta seriale non aperta."));
+            Check("etichette log/debug aggiornate", vm.BusLogToggleText == "Disabilita log" && vm.CanDumpRegisters);
+
+            // A subsequent report also corrects optimistic state after a refused command.
+            vm.LogEnabled = false; vm.DebugEnabled = false;
+            Receive("CARD:ALEX80µ,SCLK:A,FCLK:32768,ECLK:1,SMEM:A,LOG:ON,DEBUG:ON,MONITOR:ON");
+            Check("INFO corregge lo stato dopo un comando rifiutato", vm.LogEnabled && vm.DebugEnabled &&
+                vm.MonitorEnabled == true && vm.MonitorStatusText.Contains("attivo"));
+
+            vm.IsSerialOpened = false;
+            Check("disconnessione: nessuno stato resta dalla sessione precedente", !vm.IsBoardConnected &&
+                !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && vm.MonitorEnabled is null);
+            vm.IsSerialOpened = true;
+            Receive("CARD:ALEX80µ,SCLK:E,FCLK:100,ECLK:0,SMEM:E,LOG:OFF,DEBUG:OFF,MONITOR:OFF");
+            Check("riconnessione: nuovi valori OFF e sorgenti esterne", vm.IsBoardConnected &&
+                !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && !vm.IsClockFromArduino &&
+                !vm.IsMemoryFromArduino && vm.ClockFrequency == "100");
+
+            Receive("CARD:eZ80Test,SCLK:E,FCLK:0,ECLK:1,SMEM:E");
+            Check("INFO eZ80 esistente resta compatibile", vm.IsEz80 && vm.IsBoardConnected &&
+                !vm.CanUseDebug && !vm.CanUseBusLog && vm.MonitorEnabled is null);
+        }
+        finally
+        {
+            ((System.Timers.Timer)typeof(MainViewModel).GetField("_serialPortCheckTimer", flags)!.GetValue(vm)!).Dispose();
+            manager.SerialPort.Dispose();
+        }
+        return failures;
+    }
+
+    private sealed class NoDialogs : IDialogService
+    {
+        public Task ShowErrorAsync(string title, string message) => Task.CompletedTask;
+    }
+}

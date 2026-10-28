@@ -138,6 +138,11 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsSerialOpenedChanged(bool value)
     {
+        // Clear the previous session before the new board's !INFO arrives.
+        LogEnabled = false;
+        DebugEnabled = false;
+        MonitorEnabled = null;
+        IsClockActive = false;
         if (!value)
         {
             // Con la porta se ne va anche l'identita' della scheda: tenerla vorrebbe dire
@@ -891,6 +896,7 @@ public partial class MainViewModel : ObservableObject
         if (int.TryParse(value, out var freq) && freq > 0)
         {
             _serialManager.SendSerialText($"sclk {freq}\r");
+            _serialManager.RefreshConfiguration();
         }
     }
     
@@ -901,6 +907,18 @@ public partial class MainViewModel : ObservableObject
     private bool _debugEnabled;
 
     partial void OnDebugEnabledChanged(bool value) => NotifyDumpAvailabilityChanged();
+
+    [ObservableProperty]
+    private bool? _monitorEnabled;
+
+    public string MonitorStatusText => MonitorEnabled switch
+    {
+        true => "Monitor della scheda: attivo",
+        false => "Monitor della scheda: disattivo",
+        null => string.Empty
+    };
+
+    partial void OnMonitorEnabledChanged(bool? value) => OnPropertyChanged(nameof(MonitorStatusText));
     
     [RelayCommand]
     private void SendNmi()
@@ -996,8 +1014,8 @@ public partial class MainViewModel : ObservableObject
     private void Debug()
     {
         DebugEnabled = !DebugEnabled;
-        
         _serialManager.SendSerialText(DebugEnabled ? "debug on\r" : "debug off\r");
+        _serialManager.RefreshConfiguration();
     }
     
     [RelayCommand]
@@ -1033,14 +1051,15 @@ public partial class MainViewModel : ObservableObject
             _serialManager.SendSerialText("clk start\r");
             IsClockActive = true;
         }
+        _serialManager.RefreshConfiguration();
     }
     
     [RelayCommand(CanExecute = nameof(CanUseBusLog))]
     private void EnableDisableLogs()
     {
         LogEnabled = !LogEnabled;
-        
         _serialManager.SendSerialText(LogEnabled ? "log on\r" : "log off\r");
+        _serialManager.RefreshConfiguration();
     }
     
     [RelayCommand]
@@ -1286,6 +1305,9 @@ public partial class MainViewModel : ObservableObject
                 IsMemoryFromArduino = cardConfig.IsMemFromArduino;
                 ClockFrequency = cardConfig.ClockFrequency.ToString();
                 IsClockActive = cardConfig.ClockActive;
+                if (cardConfig.LogEnabled is { } logEnabled) LogEnabled = logEnabled;
+                if (cardConfig.DebugEnabled is { } debugEnabled) DebugEnabled = debugEnabled;
+                MonitorEnabled = cardConfig.MonitorEnabled;
                 AppendSerialLine($"UI config: CARD={CardName}, IsSerialOpened={IsSerialOpened}");
             }
             finally
@@ -1679,11 +1701,6 @@ public partial class MainViewModel : ObservableObject
             bool isOpen = await _serialManager.OpenCloseSerialPortAsync(PortsList[SelectedIdx], SelectedBaudRate);
             ToggleButtonContent = isOpen ? "Chiudi" : "Apri";
 
-            if (isOpen)
-            {
-                LogEnabled = false;
-                DebugEnabled = false;
-            }
     
         }
         catch (UnauthorizedAccessException ex)

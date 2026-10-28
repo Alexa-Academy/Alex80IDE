@@ -83,6 +83,9 @@
                     ToolTip.Tip="Ferma la CPU a ogni istruzione, cosi' si puo' procedere a passi e leggere i registri" />
 
             <TextBlock Classes="caption"
+                       Text="{Binding MonitorStatusText}" />
+
+            <TextBlock Classes="caption"
                        TextWrapping="Wrap"
                        IsVisible="{Binding IsEz80}"
                        Text="Sull'eZ80 l'esecuzione si governa con pausa e riprendi, non con questa modalità." />

@@ -100,6 +100,25 @@ Run
 
 dotnet run
 
+Board state on connection
+
+On opening a serial connection, the IDE sends `cc` and requests `info` to read
+the board's current clock source/frequency/running state, memory source, log,
+debug and monitor state. It updates the controls without sending these settings
+back to the board. Log/debug are cleared for the old session before requesting
+the new snapshot, rather than overwriting the received state after connection.
+Configuration changes in the IDE also request a fresh snapshot for confirmation.
+
+The library's `ALEX80u_manager_terminal` example reports `LOG:ON/OFF`,
+`DEBUG:ON/OFF` and `MONITOR:ON/OFF` in the existing `!INFO` frame. Use the updated
+IDE and upload that updated example to synchronize the log state. Older firmware
+remains accepted; missing fields mean the firmware does not report that state,
+so it cannot be recovered from `info`. The board's monitor status is read-only.
+
+`dotnet run --project AssemblerTests` includes board-state parsing and UI
+synchronization tests in addition to assembler regressions. These tests simulate
+INFO messages without opening or reconfiguring physical hardware.
+
 Contributing
 
 Contributions, bug reports, feature requests, and suggestions are welcome.
