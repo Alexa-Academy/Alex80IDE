@@ -140,6 +140,8 @@ public partial class MainViewModel : ObservableObject
     {
         // Clear the previous session before the new board's !INFO arrives.
         LogEnabled = false;
+        HasLogModeSupport = false;
+        FullLogEnabled = false;
         DebugEnabled = false;
         MonitorEnabled = null;
         IsClockActive = false;
@@ -640,6 +642,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CpuStatusText));
         OnPropertyChanged(nameof(CanUseDebug));
         OnPropertyChanged(nameof(CanUseBusLog));
+        OnPropertyChanged(nameof(CanConfigureLogMode));
         DebugCommand.NotifyCanExecuteChanged();
         EnableDisableLogsCommand.NotifyCanExecuteChanged();
         BusLogTool.IsAvailable = IsBusLogToolAvailable;
@@ -903,6 +906,23 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _logEnabled;
     
+    [ObservableProperty]
+    private bool _fullLogEnabled;
+
+    [ObservableProperty]
+    private bool _hasLogModeSupport;
+
+    public bool CanConfigureLogMode => IsBoardConnected && IsAlex80Board && HasLogModeSupport;
+
+    partial void OnHasLogModeSupportChanged(bool value) => OnPropertyChanged(nameof(CanConfigureLogMode));
+
+    partial void OnFullLogEnabledChanged(bool value)
+    {
+        if (_isApplyingCardConfig || !CanConfigureLogMode) return;
+        _serialManager.SendSerialText(value ? "log full\r" : "log compact\r");
+        _serialManager.RefreshConfiguration();
+    }
+
     [ObservableProperty]
     private bool _debugEnabled;
 
@@ -1306,6 +1326,8 @@ public partial class MainViewModel : ObservableObject
                 ClockFrequency = cardConfig.ClockFrequency.ToString();
                 IsClockActive = cardConfig.ClockActive;
                 if (cardConfig.LogEnabled is { } logEnabled) LogEnabled = logEnabled;
+                HasLogModeSupport = cardConfig.FullLogEnabled.HasValue;
+                FullLogEnabled = cardConfig.FullLogEnabled ?? false;
                 if (cardConfig.DebugEnabled is { } debugEnabled) DebugEnabled = debugEnabled;
                 MonitorEnabled = cardConfig.MonitorEnabled;
                 AppendSerialLine($"UI config: CARD={CardName}, IsSerialOpened={IsSerialOpened}");

@@ -115,6 +115,16 @@ IDE and upload that updated example to synchronize the log state. Older firmware
 remains accepted; missing fields mean the firmware does not report that state,
 so it cannot be recovered from `info`. The board's monitor status is read-only.
 
+In the bus-log panel, **Tutti i clock** selects `log full`; unchecked selects
+`log compact` (the existing behavior). Full logging includes repeated WAIT rows,
+register-dump injection and reset pulses, yielding one row per generated clock
+while logging is active. The FASE column identifies internal register reads
+and reset; those bytes do not enter the program disassembler. Full logging can
+fill the table quickly while the CPU is held in WAIT. The mode is read from
+`LOGMODE:FULL/COMPACT` on the board, including after reconnection. The checkbox
+is disabled for older firmware that does not report this capability. Update
+the IDE and the library's manager sketch together to use full logging.
+
 `dotnet run --project AssemblerTests` includes board-state parsing and UI
 synchronization tests in addition to assembler regressions. These tests simulate
 INFO messages without opening or reconfiguring physical hardware.

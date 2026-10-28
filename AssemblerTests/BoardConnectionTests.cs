@@ -17,7 +17,7 @@ internal static class BoardConnectionTests
 
         var legacy = CardConfig.Parse("CARD:ALEX80,SCLK:A,FCLK:50,ECLK:1,SMEM:E");
         Check("INFO legacy Z80: campi opzionali assenti", legacy.LogEnabled is null &&
-            legacy.DebugEnabled is null && legacy.MonitorEnabled is null && legacy.ClockActive);
+            legacy.DebugEnabled is null && legacy.MonitorEnabled is null && legacy.FullLogEnabled is null && legacy.ClockActive);
         var optional = CardConfig.Parse("CARD:ALEX80micro,SCLK:E,FCLK:500,ECLK:0,SMEM:A,LOG:on,DEBUG:1,MONITOR:0,FUTURE:abc");
         Check("INFO flag ON/OFF e numerici", optional.LogEnabled == true &&
             optional.DebugEnabled == true && optional.MonitorEnabled == false && !optional.IsClockFromArduino);
@@ -42,12 +42,13 @@ internal static class BoardConnectionTests
             try
             {
                 Console.SetOut(receivedOutput);
-                Receive("CARD:ALEX80µ,SCLK:A,FCLK:32768,ECLK:1,SMEM:A,LOG:ON,DEBUG:ON,MONITOR:OFF");
+                Receive("CARD:ALEX80µ,SCLK:A,FCLK:32768,ECLK:1,SMEM:A,LOG:ON,LOGMODE:FULL,DEBUG:ON,MONITOR:OFF");
             }
             finally { Console.SetOut(originalOutput); }
             Check("connessione: stato reale completo applicato alla UI", vm.IsBoardConnected &&
                 vm.IsClockFromArduino && vm.IsMemoryFromArduino && vm.ClockFrequency == "32768" &&
-                vm.IsClockActive && vm.LogEnabled && vm.DebugEnabled && vm.MonitorEnabled == false);
+                vm.IsClockActive && vm.LogEnabled && vm.DebugEnabled && vm.MonitorEnabled == false &&
+                vm.FullLogEnabled && vm.CanConfigureLogMode);
             Check("configurazione ricevuta non invia comandi alla scheda",
                 !receivedOutput.ToString().Contains("Porta seriale non aperta."));
             Check("etichette log/debug aggiornate", vm.BusLogToggleText == "Disabilita log" && vm.CanDumpRegisters);
@@ -60,16 +61,37 @@ internal static class BoardConnectionTests
 
             vm.IsSerialOpened = false;
             Check("disconnessione: nessuno stato resta dalla sessione precedente", !vm.IsBoardConnected &&
-                !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && vm.MonitorEnabled is null);
+                !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && vm.MonitorEnabled is null &&
+                !vm.FullLogEnabled && !vm.CanConfigureLogMode);
             vm.IsSerialOpened = true;
-            Receive("CARD:ALEX80µ,SCLK:E,FCLK:100,ECLK:0,SMEM:E,LOG:OFF,DEBUG:OFF,MONITOR:OFF");
+            Receive("CARD:ALEX80µ,SCLK:E,FCLK:100,ECLK:0,SMEM:E,LOG:OFF,LOGMODE:COMPACT,DEBUG:OFF,MONITOR:OFF");
             Check("riconnessione: nuovi valori OFF e sorgenti esterne", vm.IsBoardConnected &&
                 !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && !vm.IsClockFromArduino &&
-                !vm.IsMemoryFromArduino && vm.ClockFrequency == "100");
+                !vm.IsMemoryFromArduino && vm.ClockFrequency == "100" && !vm.FullLogEnabled && vm.CanConfigureLogMode);
 
             Receive("CARD:eZ80Test,SCLK:E,FCLK:0,ECLK:1,SMEM:E");
             Check("INFO eZ80 esistente resta compatibile", vm.IsEz80 && vm.IsBoardConnected &&
-                !vm.CanUseDebug && !vm.CanUseBusLog && vm.MonitorEnabled is null);
+                !vm.CanUseDebug && !vm.CanUseBusLog && vm.MonitorEnabled is null && !vm.CanConfigureLogMode);
+
+            // Full-log metadata must not feed debugger/reset opcodes into the
+            // program disassembler or move its pending mnemonic to another row.
+            manager.RestartBoard(); vm.LogTable.Clear();
+            void Log(ushort address, byte data, byte control)
+            {
+                var bytes = new byte[] { (byte)(address >> 8), (byte)address, data, control };
+                receive.Invoke(manager, new object[] { "!LOG" + Convert.ToBase64String(bytes) + ";" });
+                Dispatcher.UIThread.RunJobs();
+            }
+            Log(0x2000, 0x3E, 0x1A); // LD A,n
+            Log(0x2001, 0xC5, 0x5A); // injected PUSH BC, excluded from disassembly
+            Log(0xFFFF, 0x00, 0xBF); // reset/floating bus
+            Log(0x2001, 0x42, 0x1B); // real immediate operand
+            Check("log completo: righe interne identificate", vm.LogTable.Count == 4 &&
+                vm.LogTable[1].IsInjected && vm.LogTable[1].TracePhase == "Lettura registri" &&
+                vm.LogTable[2].IsReset && vm.LogTable[2].TracePhase == "Reset");
+            Check("log completo: disassemblaggio del programma preservato",
+                vm.LogTable[0].Mnemonic.Contains("42") && vm.LogTable[1].Mnemonic == "" &&
+                vm.LogTable[2].Mnemonic == "");
         }
         finally
         {

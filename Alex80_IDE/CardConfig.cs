@@ -13,6 +13,7 @@ public class CardConfig
 
     // Optional fields: old firmware may omit them. Missing is not an OFF report.
     public bool? LogEnabled { get; set; }
+    public bool? FullLogEnabled { get; set; }
     public bool? DebugEnabled { get; set; }
     public bool? MonitorEnabled { get; set; }
 
@@ -73,6 +74,14 @@ public class CardConfig
                     break;
                 case "LOG":
                     result.LogEnabled = ParseSwitch(value);
+                    break;
+                case "LOGMODE":
+                    result.FullLogEnabled = value.ToUpperInvariant() switch
+                    {
+                        "FULL" => true,
+                        "COMPACT" => false,
+                        _ => null
+                    };
                     break;
                 case "DEBUG":
                     result.DebugEnabled = ParseSwitch(value);

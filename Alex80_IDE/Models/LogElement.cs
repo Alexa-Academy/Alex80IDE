@@ -13,6 +13,9 @@ public partial class LogElement : ObservableObject
     public bool Z80_MREQ { get; set; }
     public bool Z80_RFSH { get; set; }
     public bool Z80_M1 { get; set; }
+    public bool IsInjected { get; }
+    public bool IsReset { get; }
+    public string TracePhase => IsReset ? "Reset" : IsInjected ? "Lettura registri" : string.Empty;
 
     [ObservableProperty] 
     private string _mnemonic;
@@ -22,7 +25,7 @@ public partial class LogElement : ObservableObject
     public string AddressHex => Address.ToString("X4");
     public string DataHex => Data.ToString("X2");
     
-    public LogElement(ushort address, byte data, bool z80_rd, bool z80_wr, bool z80_iorq, bool z80_mreq, bool z80_rfsh, bool z80_m1, string mnemonic)
+    public LogElement(ushort address, byte data, bool z80_rd, bool z80_wr, bool z80_iorq, bool z80_mreq, bool z80_rfsh, bool z80_m1, string mnemonic, bool injected = false, bool reset = false)
     {
         Address = address;
         Data = data;
@@ -33,6 +36,8 @@ public partial class LogElement : ObservableObject
         Z80_RFSH = z80_rfsh;
         Z80_M1 = z80_m1;
         Mnemonic = mnemonic;
+        IsInjected = injected;
+        IsReset = reset;
     }
     
 }

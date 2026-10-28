@@ -15,10 +15,10 @@
 
     <Grid RowDefinitions="Auto,*">
         <!-- I comandi stanno a sinistra, dove comincia la lettura, come nel pannello
-             della memoria. Le tre voci sono separate perche' fanno cose diverse:
-             accendere la registrazione, scegliere come scorre, svuotare quel che c'e'. -->
-        <DockPanel Margin="14,14,14,10">
-            <StackPanel Orientation="Horizontal" Spacing="18" DockPanel.Dock="Left" VerticalAlignment="Center">
+             della memoria. Registrazione, scorrimento e pulizia restano sulla prima
+             riga; la scelta dei campioni sta sotto per restare leggibile anche stretta. -->
+        <StackPanel Margin="14,14,14,10" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
                 <Button Content="{Binding BusLogToggleText}"
                         Classes="tool"
                         Command="{Binding EnableDisableLogsCommand}" />
@@ -30,7 +30,11 @@
 
                 <Button Content="Cancella log" Classes="tool" Command="{Binding ClearLogsCommand}" />
             </StackPanel>
-        </DockPanel>
+            <CheckBox Content="Tutti i clock"
+                      IsChecked="{Binding FullLogEnabled, Mode=TwoWay}"
+                      IsEnabled="{Binding CanConfigureLogMode}"
+                      ToolTip.Tip="Include WAIT ripetuti, lettura dei registri e reset. La tabella cresce anche mentre la CPU è in pausa. Richiede un firmware che supporti questa opzione." />
+        </StackPanel>
 
         <DataGrid Grid.Row="1"
                   Margin="14,0,14,0"
@@ -88,6 +92,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
+                <DataGridTextColumn Header="FASE" Binding="{Binding TracePhase}" Width="125" />
                 <DataGridTextColumn Header="MNEMONICO" Binding="{Binding Mnemonic}" Width="*" />
             </DataGrid.Columns>
         </DataGrid>

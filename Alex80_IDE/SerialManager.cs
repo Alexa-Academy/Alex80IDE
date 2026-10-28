@@ -269,15 +269,17 @@ public class SerialManager {
                     var rfsh = (control & 0x02) == 0x02;
                     var m1 = (control & 0x01) == 0x01;
 
-                    if (!m1 && !mreq && !rd) {
+                    var injected = (control & 0x40) != 0;
+                    var reset = (control & 0x80) != 0;
+                    if (!injected && !reset && !m1 && !mreq && !rd) {
                         idxM1Start = logId;
                     }
                         
-                    LogReceived?.Invoke(new LogElement(add, data, rd, wr, iorq, mreq, rfsh, m1, ""));
+                    LogReceived?.Invoke(new LogElement(add, data, rd, wr, iorq, mreq, rfsh, m1, "", injected, reset));
                         
                     logId++;
                         
-                    if (rfsh && !mreq && !rd)
+                    if (!injected && !reset && rfsh && !mreq && !rd)
                     {
                         string mnem = disassembler.Disassemble(add, data);
                         if (mnem != "")
