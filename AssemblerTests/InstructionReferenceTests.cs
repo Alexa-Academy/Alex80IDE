@@ -42,6 +42,25 @@ internal static class InstructionReferenceTests
         Check("eZ80 NEG non confuso con TST", D("ED 44", true).Mnemonic == "NEG");
         Check("eZ80 riferimento diverso da Z80", ezinc.ManualUrl.Contains("UM0077.pdf"));
 
+        // Destinations are actual one-based PDF pages from official bookmarks;
+        // JP nn is printed page 262 but PDF page 276 (not 278).
+        foreach (var (hex, page) in new[] {
+            ("C3 01 00",276), ("C2 01 00",277), ("E9",289), ("DD E9",290), ("FD E9",291),
+            ("3C",179), ("34",181), ("DD 34 FE",182), ("FD 34 FE",183), ("03",212), ("DD 23",213), ("3D",184), ("0B",215),
+            ("3E 01",86), ("78",85), ("21 00 10",113), ("DD 21 00 10",114), ("2A 00 10",116), ("ED 4B 00 10",117), ("22 00 10",121),
+            ("CB 46",259), ("DD CB FE 46",261), ("FD CB FE 46",263), ("CB 00",227), ("FD CB FE 06",233), ("CB 1E",241),
+            ("ED 52",206), ("DB 03",309), ("ED 40",310), ("D3 03",320), ("ED 41",321), ("FF",306), ("ED B0",146)
+        }) Check("manuale Z80: " + D(hex).Mnemonic + " → " + page, D(hex).ManualUrl == InstructionDecoder.Z80Manual + "#page=" + page);
+        foreach (var (hex, adl, page) in new[] {
+            ("3C",false,168), ("03",false,170), ("33",false,171), ("DD 23",false,166), ("DD 24",false,165),
+            ("C3 01 00",false,194), ("C2 01 00",false,189), ("DD E9",false,192),
+            ("21 56 34 12",true,239), ("40 21 34 12",true,239), ("31 56 34 12",true,245), ("DD 21 56 34 12",true,217),
+            ("ED 38 03",false,162), ("ED 4C",false,255), ("ED 7C",false,256), ("A0",false,113), ("FE 03",false,130),
+            ("ED 64 03",false,373), ("ED 04",false,374), ("ED 34",false,372), ("00",false,258), ("ED 44",false,257), ("ED B0",false,250)
+        }) Check("manuale eZ80: " + D(hex,true,adl).Mnemonic + " → " + page, D(hex,true,adl).ManualUrl == Ez80Timing.Manual + "#page=" + page);
+        Check("pulsante indica la pagina PDF", D("C3 01 00").ManualButtonText == "Apri manuale · pagina PDF 276");
+        Check("opcode non documentati e byte incompleti non inventano una pagina", D("CB 30").ManualUrl == InstructionDecoder.Z80Manual && D("DD").ManualUrl == InstructionDecoder.Z80Manual);
+
         var trace = new ClockTraceTracker();
         LogElement L(uint clock, byte control, byte flags, ushort pc = 0x2000) => new(pc, 0x3C,
             (control & 32)!=0,(control &16)!=0,(control&8)!=0,(control&4)!=0,(control&2)!=0,(control&1)!=0,"",

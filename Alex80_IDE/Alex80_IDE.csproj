@@ -12,6 +12,7 @@
     <ItemGroup>
         <AvaloniaResource Include="Assets\**" />
         <EmbeddedResource Include="InstructionReference/Ez80Timings.tsv" />
+        <EmbeddedResource Include="InstructionReference/ManualPages.tsv" />
     </ItemGroup>
 
     <ItemGroup>

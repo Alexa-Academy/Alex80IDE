@@ -29,7 +29,7 @@
                             <TextBlock Text="{Binding CurrentInstruction.Description}" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding CurrentInstruction.Flags}" TextWrapping="Wrap" />
                             <TextBlock Text="{Binding CurrentInstruction.TimingNote}" Classes="caption" TextWrapping="Wrap" />
-                            <Button Content="Apri manuale" Command="{Binding OpenInstructionManualCommand}" HorizontalAlignment="Left" />
+                            <Button Content="{Binding CurrentInstruction.ManualButtonText}" Command="{Binding OpenInstructionManualCommand}" HorizontalAlignment="Left" />
                         </StackPanel>
                     </Expander>
                 </StackPanel>

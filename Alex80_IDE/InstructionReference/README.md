@@ -56,6 +56,21 @@ for their detailed flag behavior. INC/DEC on 8-bit registers additionally show
 a predicted result from the last register snapshot. This prediction changes no
 register. The expandable details include a link to the appropriate manual.
 
+**Apri manuale** opens the first page of the instruction's description and
+shows its one-based PDF page number on the button. `ManualPages.tsv` records
+the destinations from the official Z80/eZ80 PDF bookmarks; printed page labels
+are not used as PDF indices. For example, Z80 `JP nn` is printed page 262 but
+PDF page 276. Indexed, conditional, 8/16-bit and eZ80 mode-suffix variants are
+matched to the corresponding instruction heading, independently of whether a
+nominal timing is available. Undocumented/unmatched or incomplete instructions
+retain the general manual link instead of inventing a page. The browser's PDF
+viewer receives the standard `#page=N` fragment.
+
+`extract_manual_pages.py` regenerates this small catalog from the official
+Z80 UM008011-0816 and eZ80 UM007715-0415 PDFs using pypdf. It extracts only
+instruction headings and page destinations; neither PDFs nor an extraction
+dependency are required in the installed IDE.
+
 Z80 nominal T-states come from the opcode encoding, with separate conditional
 and repeated/terminal cases. Machine-cycle counts are shown when the path is
 fixed. The ideal millisecond value uses the configured Arduino clock frequency;

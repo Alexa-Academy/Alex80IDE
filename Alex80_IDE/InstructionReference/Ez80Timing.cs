@@ -68,7 +68,7 @@ public static class Ez80Timing
     }
     public static Entry? Find(string mnemonic, byte[] bytes, bool adl)
     {
-        if (mnemonic == "NOP") return new("1", Manual + "#search=NOP");
+        if (mnemonic == "NOP") return new("1", InstructionManual.UrlFor(mnemonic, true));
         var split = mnemonic.Split(' ', 2); var name = split[0];
         string operand = split.Length > 1 ? split[1].Replace(" ", "").Replace("(C)", "(BC)").Replace("'", "").Replace("’", "") : "";
         if (name == "TST" && !operand.StartsWith("A,")) operand = "A," + operand;
@@ -85,7 +85,7 @@ public static class Ez80Timing
             string cycles = row.Cycles;
             if (row.Mode == "0/1" && cycles.Contains('/')) cycles = cycles.Split('/')[adl ? 1 : 0];
             if (row.Opcodes.Contains('*') || row.Opcodes.Contains('+')) cycles += " (base; totale dipendente dalle ripetizioni)";
-            return new(cycles, Manual + "#page=" + (row.Page + 9));
+            return new(cycles, InstructionManual.UrlFor(mnemonic, true));
         }
         return null;
     }

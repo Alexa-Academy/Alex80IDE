@@ -96,14 +96,13 @@ public static class InstructionDecoder
             string note = "Tempi Z80 senza WAIT. La stima usa la frequenza impostata; il log può allungare i periodi. Clock osservati e cicli del debugger sono conteggiati separatamente.";
             string machineText = machines > 0 && alternate == 0 ? $"{machines} {(machines == 1 ? "ciclo" : "cicli")} macchina" : "Dipende dal percorso eseguito";
             int? nominal = known && alternate == 0 ? t : null;
-            string manual = Z80Manual;
+            string manual = InstructionManual.UrlFor(mnemonic, ez80);
             if (ez80)
             {
                 var entry = Ez80Timing.Find(mnemonic, bytes, adl);
                 timing = entry is null ? "Cicli bus: dato non disponibile" : $"{entry.Cycles} {(entry.Cycles == "1" ? "ciclo bus nominale" : "cicli bus nominali")}";
                 machineText = "eZ80 · " + (adl ? "modo ADL" : "modo Z80"); nominal = null;
                 note = "I cicli bus del manuale eZ80 non sono i T-state dello Z80. Clock effettivi dipendono da memoria, WAIT e pipeline; ZDI non fornisce una misura dei clock.";
-                manual = entry?.Url ?? Ez80Timing.Manual;
             }
             if (!known) { timing = "Non disponibile"; machineText = "—"; nominal = null; }
             return new(address, mnemonic, bytes, semantics.Operation, semantics.Description, semantics.Flags,
