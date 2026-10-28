@@ -11,7 +11,7 @@
     <StackPanel Spacing="12">
         <Border Classes="registerChip" Padding="12">
             <StackPanel Spacing="8">
-                <TextBlock Text="ISTRUZIONE AL PC" Classes="caption" />
+                <TextBlock Text="{Binding InstructionTitle}" Classes="caption" />
                 <TextBlock Text="{Binding InstructionStatus}" Classes="caption" TextWrapping="Wrap" />
                 <StackPanel Spacing="8" IsVisible="{Binding HasInstruction}">
                     <TextBlock Text="{Binding CurrentInstruction.Header}" FontWeight="SemiBold" FontSize="17" TextWrapping="Wrap" />

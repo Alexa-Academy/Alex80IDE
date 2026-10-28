@@ -144,6 +144,7 @@ public partial class MainViewModel : ObservableObject
         // Clear the previous session before the new board's !INFO arrives.
         LogEnabled = false;
         HasLogModeSupport = false;
+        HasClockPulseSupport = false;
         FullLogEnabled = false;
         DebugEnabled = false;
         MonitorEnabled = null;
@@ -194,6 +195,8 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsClockActiveChanged(bool value)
     {
+        if (value) InvalidateInstruction();
+        NotifyManualClockAvailability();
         OnPropertyChanged(nameof(ClockToggleText));
         NotifyDumpAvailabilityChanged();
     }
@@ -651,6 +654,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanConfigureLogMode));
         DebugCommand.NotifyCanExecuteChanged();
         StepCommand.NotifyCanExecuteChanged();
+        NotifyManualClockAvailability();
         EnableDisableLogsCommand.NotifyCanExecuteChanged();
         BusLogTool.IsAvailable = IsBusLogToolAvailable;
         NotifyDumpAvailabilityChanged();
@@ -939,6 +943,7 @@ public partial class MainViewModel : ObservableObject
     {
         NotifyDumpAvailabilityChanged();
         if (!value && !IsEz80) InvalidateInstruction();
+        NotifyManualClockAvailability();
     }
 
     [ObservableProperty]
@@ -999,7 +1004,7 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     private bool CanReachBoard()
     {
-        return IsBoardConnected && !_serialManager.IsReadPending;
+        return IsBoardConnected && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending;
     }
 
     /// <summary>
@@ -1074,7 +1079,7 @@ public partial class MainViewModel : ObservableObject
     /// apposta quando la si cambia, cosi' i due comandi restano separati come i due
     /// comandi del firmware, e cambiare frequenza a clock fermo non lo fa partire.
     /// </summary>
-    [RelayCommand(CanExecute = nameof(CanControlClock))]
+    [RelayCommand(CanExecute = nameof(CanToggleBoardClock))]
     private void StartStopBoard()
     {
         if (IsClockActive)
@@ -1199,6 +1204,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanControlClock));
         StartStopBoardCommand.NotifyCanExecuteChanged();
         NotifyDumpAvailabilityChanged();
+        NotifyManualClockAvailability();
 
         if (_isApplyingCardConfig)
             return;
@@ -1357,6 +1363,7 @@ public partial class MainViewModel : ObservableObject
                 IsClockActive = cardConfig.ClockActive;
                 if (cardConfig.LogEnabled is { } logEnabled) LogEnabled = logEnabled;
                 HasLogModeSupport = cardConfig.FullLogEnabled.HasValue;
+                HasClockPulseSupport = cardConfig.ClockPulseSupported == true;
                 FullLogEnabled = cardConfig.FullLogEnabled ?? false;
                 if (cardConfig.DebugEnabled is { } debugEnabled) DebugEnabled = debugEnabled;
                 MonitorEnabled = cardConfig.MonitorEnabled;

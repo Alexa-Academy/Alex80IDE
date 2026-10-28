@@ -16,6 +16,7 @@ public class CardConfig
     public bool? FullLogEnabled { get; set; }
     public bool? DebugEnabled { get; set; }
     public bool? MonitorEnabled { get; set; }
+    public bool? ClockPulseSupported { get; set; }
 
     /// <summary>
     /// Nome con cui la scheda di test eZ80 si presenta nel messaggio !INFO.
@@ -88,6 +89,9 @@ public class CardConfig
                     break;
                 case "MONITOR":
                     result.MonitorEnabled = ParseSwitch(value);
+                    break;
+                case "CLKPULSE":
+                    result.ClockPulseSupported = ParseSwitch(value);
                     break;
             }
         }

@@ -116,6 +116,43 @@ internal static class InstructionReferenceTests
             Rx("!STATUS2;"); check("risposta peek dopo reset ignorata", memoryEvents==0);
             Rx("!STATUS1;"); Rx("!DATAqg==;"); Rx("!STATUS2;");
             check("lettura seriale legacy conserva la destinazione memoria", memoryEvents==1);
+            Rx("!INFO:CARD:ALEX80µ,SCLK:A,FCLK:500,ECLK:0,SMEM:A,LOG:OFF,DEBUG:OFF;");
+            check("clock manuale disabilitato con firmware precedente", !vm.PulseClockCommand.CanExecute(null));
+            Rx("!INFO:CARD:ALEX80µ,SCLK:A,FCLK:500,ECLK:0,SMEM:A,LOG:OFF,DEBUG:OFF,CLKPULSE:ON;");
+            check("clock manuale disponibile a clock fermo e Debug off", vm.PulseClockCommand.CanExecute(null));
+            vm.IsClockActive=true; check("clock manuale escluso con clock automatico", !vm.PulseClockCommand.CanExecute(null));
+            vm.IsClockActive=false; vm.DebugEnabled=true;
+            check("clock manuale escluso con WAIT debugger", !vm.PulseClockCommand.CanExecute(null));
+            vm.DebugEnabled=false;
+            Set("clockPulsePending",true);
+            check("impulso pendente blocca duplicati, Step e lettura memoria", !vm.PulseClockCommand.CanExecute(null) && !vm.StepCommand.CanExecute(null) && !vm.ReadMemoryCommand.CanExecute(null));
+            int beforePulses=vm.LogTable.Count;
+            void Pulse(ushort address,byte control,byte trace,uint clock)
+            {
+                byte[] sample={(byte)(address>>8),(byte)address,0x3C,control,trace,(byte)(clock>>24),(byte)(clock>>16),(byte)(clock>>8),(byte)clock};
+                Rx("!PULSE"+Convert.ToBase64String(sample)+";");
+            }
+            Pulse(0x2000,0x3E,4,100); // T1, before MREQ/RD; explicit first M1 marker
+            check("impulso confermato alimenta il log anche con LOG off", !manager.IsClockPulsePending && !vm.LogEnabled && vm.LogTable.Count==beforePulses+1);
+            check("fetch manuale identifica istruzione senza WAIT", (uint?)typeof(MainViewModel).GetField("_instructionPc",flags)!.GetValue(vm)==0x2000u && vm.InstructionTitle=="ISTRUZIONE SUL BUS");
+            // Feed the dedicated rb response, just as a real stopped board does.
+            purpose.SetValue(manager,Enum.Parse(purpose.FieldType,"Instruction"));
+            Set("instructionAddress",0x2000u); Set("instructionChunkAddress",0x2000u); Set("instructionWrapMask",0xFFFFu); Set("instructionChunkLength",16);
+            ((List<byte>)typeof(SerialManager).GetField("instructionBytes",flags)!.GetValue(manager)!).Clear();
+            typeof(MainViewModel).GetField("_instructionNeedsRead",flags)!.SetValue(vm,false);
+            byte[] instruction=new byte[16]; instruction[0]=0x3C;
+            Rx("!STATUS1;"); Rx("!DATA"+Convert.ToBase64String(instruction)+";"); Rx("!STATUS2;");
+            check("scheda manuale descrive INC e non predice con registri obsoleti", vm.CurrentInstruction?.Mnemonic=="INC A" && vm.InstructionPrediction=="" && vm.InstructionStatus.Contains("registri non riletti") && memoryEvents==1);
+            Pulse(0x2000,0x1A,4,101); Pulse(0x0043,0x3D,0,102);
+            check("cicli dello stesso fetch e refresh mantengono la scheda", vm.CurrentInstruction?.Address==0x2000u && !(bool)typeof(MainViewModel).GetField("_instructionNeedsRead",flags)!.GetValue(vm)!);
+            Pulse(0x2001,0x3E,4,104);
+            check("nuovo fetch manuale aggiorna l'indirizzo e invalida la scheda", (uint?)typeof(MainViewModel).GetField("_instructionPc",flags)!.GetValue(vm)==0x2001u && vm.CurrentInstruction is null);
+            Set("clockPulsePending",true); Rx("!ERROR:STOP CLOCK AND DISABLE DEBUG FIRST;");
+            check("errore impulso sblocca il comando e cancella lo stato incerto", !manager.IsClockPulsePending && vm.CurrentInstruction is null && vm.InstructionStatus.Contains("STOP CLOCK"));
+            Set("clockPulsePending",true); Rx("!PULSEbad!;");
+            check("impulso malformato sblocca il comando", !manager.IsClockPulsePending);
+            Rx("!INFO:CARD:eZ80Test,SCLK:E,FCLK:0,ECLK:1,SMEM:E,CLKPULSE:ON;");
+            check("nessun clock manuale sulla scheda eZ80", !vm.PulseClockCommand.CanExecute(null));
         } finally {
             ((System.Timers.Timer)typeof(MainViewModel).GetField("_serialPortCheckTimer",flags)!.GetValue(vm)!).Dispose();
             manager.SerialPort.Dispose();

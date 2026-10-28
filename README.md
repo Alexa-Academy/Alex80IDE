@@ -154,10 +154,14 @@ MBASE addressing, without replacing the Memory pane. The Z80 card distinguishes
 nominal T-states from observed clocks; eZ80 uses its own bus-cycle catalog.
 Unavailable or unverified variants are clearly indicated.
 
-The log adds **Clock #** and **T / WAIT** columns. With the updated library
-manager, the first is the board's real falling-edge counter, and the second
-separates instruction T-states from WAIT extensions. **T?**, **Tw?** and **—**
+The log's **T / WAIT** column separates instruction T-states from WAIT extensions.
+The board's falling-edge counter stays internal to detect missing samples.
+**T?**, **Tw?** and **—**
 prevent incomplete/legacy traces from being mistaken for measured timings.
+With the updated library manager, **Un colpo di clock** sends one complete pulse
+while the automatic clock is stopped and Debug is off. The instruction card
+updates from the bus fetch without WAIT or extra injected clock cycles, even
+with logging off. Registers retain their last snapshot.
 See [the instruction-reference guide](Alex80_IDE/InstructionReference/README.md)
 for timing sources, supported metadata and validation.
 

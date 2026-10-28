@@ -40,7 +40,9 @@
                           ToolTip.Tip="Include WAIT ripetuti, lettura dei registri e reset. La tabella cresce anche mentre la CPU è in pausa. Richiede un firmware che supporti questa opzione." />
             </WrapPanel>
             <TextBlock Text="{Binding ClockSummary}" Classes="caption" TextWrapping="Wrap" />
-            <TextBlock Text="Clock #: contatore della scheda. T: posizione nell'istruzione; Tw: attesa. T?/Tw?: intervallo incompleto. —: dato assente o ciclo interno. In modalità compatta possono mancare campioni."
+            <Button Content="Un colpo di clock" Command="{Binding PulseClockCommand}" HorizontalAlignment="Left"
+                    ToolTip.Tip="{Binding ClockPulseToolTip}" />
+            <TextBlock Text="T: posizione nell'istruzione; Tw: attesa. T?/Tw?: intervallo incompleto. —: dato assente o ciclo interno. In modalità compatta possono mancare campioni."
                        Classes="caption" TextWrapping="Wrap" />
         </StackPanel>
 
@@ -57,8 +59,7 @@
                 <global:AutoScrollBehavior IsAutoScrollEnabled="{Binding IsAutoScrollEnabled}" />
             </Interaction.Behaviors>
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Clock #" Binding="{Binding ClockText}" Width="85" />
-                <DataGridTextColumn Header="T / WAIT" Binding="{Binding TStateText}" Width="75" />
+                <DataGridTextColumn Header="T / WAIT" Binding="{Binding TStateText}" Width="110" />
                 <DataGridTextColumn Header="ADDR" Binding="{Binding AddressHex}" Width="90" />
                 <DataGridTextColumn Header="DATA" Binding="{Binding DataHex}" Width="76" />
                 <DataGridTemplateColumn Header="RD" Width="54">

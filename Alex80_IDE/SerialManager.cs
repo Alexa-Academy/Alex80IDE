@@ -88,10 +88,48 @@ public class SerialManager {
     public event Action? ReadStateChanged;
     public event Action<uint, byte[]>? InstructionBytesReceived;
     public event Action<uint, string>? InstructionReadFailed;
+    private bool clockPulsePending;
+    private CancellationTokenSource? clockPulseTimeout;
+    public bool IsClockPulsePending => clockPulsePending;
+    public event Action<LogElement>? ClockPulseReceived;
+    public event Action<string>? ClockPulseFailed;
+
+    public bool PulseClock()
+    {
+        if (!_serialPort.IsOpen || IsReadPending || clockPulsePending) return false;
+        clockPulsePending = true;
+        ReadStateChanged?.Invoke();
+        clockPulseTimeout?.Cancel();
+        clockPulseTimeout = new CancellationTokenSource();
+        _ = AwaitClockPulseAsync(clockPulseTimeout.Token);
+        SendSerialText("clk pulse\r");
+        return true;
+    }
+    private async Task AwaitClockPulseAsync(CancellationToken token)
+    {
+        try
+        {
+            for (int elapsed = 0; elapsed < 5000; elapsed += 100)
+            {
+                await Task.Delay(100, token);
+                if (token.IsCancellationRequested || !clockPulsePending || !_serialPort.IsOpen) return;
+                ReadAvailableSerialData();
+            }
+        }
+        catch (OperationCanceledException) { return; }
+        if (!token.IsCancellationRequested && clockPulsePending)
+            CompleteClockPulse("Timeout: impulso di clock non confermato dalla scheda.");
+    }
+    private void CompleteClockPulse(string? error = null)
+    {
+        clockPulsePending = false; clockPulseTimeout?.Cancel();
+        ReadStateChanged?.Invoke();
+        if (error is not null) ClockPulseFailed?.Invoke(error);
+    }
 
     public bool ReadInstruction(uint address, bool ez80, bool adl)
     {
-        if (!_serialPort.IsOpen || IsReadPending) return false;
+        if (!_serialPort.IsOpen || IsReadPending || clockPulsePending) return false;
         discardLateInstructionResponse = false;
         instructionAddress = instructionChunkAddress = address;
         instructionEz80 = ez80;
@@ -155,6 +193,7 @@ public class SerialManager {
     }
     public void CancelReadForReset()
     {
+        CompleteClockPulse();
         bool hadRead = IsReadPending;
         readPurpose = ReadPurpose.None; instructionTimeout?.Cancel();
         discardLateInstructionResponse = hadRead;
@@ -162,6 +201,7 @@ public class SerialManager {
     }
     private void ClearPendingRead()
     {
+        CompleteClockPulse();
         readPurpose = ReadPurpose.None; instructionTimeout?.Cancel(); dataArray.Clear(); discardLateInstructionResponse = false;
         ReadStateChanged?.Invoke();
     }
@@ -338,15 +378,18 @@ public class SerialManager {
                 }
             }
         }
-        else if (message.StartsWith("!LOG") && message.EndsWith(';'))
+        else if ((message.StartsWith("!LOG") || message.StartsWith("!PULSE")) && message.EndsWith(';'))
         {
-            string payload = message.Substring(4, message.Length - 5);
+            bool manualPulse = message.StartsWith("!PULSE");
+            int headerLength = manualPulse ? 6 : 4;
+            string payload = message.Substring(headerLength, message.Length - headerLength - 1);
             if (!string.IsNullOrEmpty(payload))
             {
                 try
                 {
                     byte[] recBytes = Convert.FromBase64String(payload);
                     
+                    if (manualPulse && recBytes.Length != 9) { CompleteClockPulse("Risposta clock manuale non valida."); return; }
                     if (recBytes.Length < 4) return;
                     var add = (ushort)((recBytes[0] << 8) + recBytes[1]);
                     var data = recBytes[2];
@@ -367,6 +410,7 @@ public class SerialManager {
                     if (log.IsInstructionFetch) instructionStartLog = log;
 
                     LogReceived?.Invoke(log);
+                    if (manualPulse) { CompleteClockPulse(); ClockPulseReceived?.Invoke(log); }
                         
                     if (!injected && !reset && rfsh && !mreq && !rd)
                     {
@@ -381,6 +425,7 @@ public class SerialManager {
                 catch (FormatException ex)
                 {
                     Console.WriteLine("Errore nella decodifica Base64: " + ex.Message);
+                    if (manualPulse) CompleteClockPulse("Risposta clock manuale non valida.");
                 }
             }
         }
@@ -451,6 +496,7 @@ public class SerialManager {
         {
             string payload = message.Substring(7, message.Length - 8);
             MessageReceived?.Invoke(payload);
+            if (clockPulsePending) CompleteClockPulse(payload);
             if (readPurpose == ReadPurpose.Instruction) FailInstructionRead(payload);
             else if (readPurpose == ReadPurpose.Memory) { readPurpose = ReadPurpose.None; ReadStateChanged?.Invoke(); }
             //Console.WriteLine(payload);
@@ -525,7 +571,7 @@ public class SerialManager {
     /// RAM dell'eZ80 sta a 0xFFF000, fuori dai 64 KB indirizzabili da uno Z80.
     /// </summary>
     public void ReadData(uint start, uint size) {
-        if (IsReadPending) { MessageReceived?.Invoke("Una lettura è già in corso."); return; }
+        if (IsReadPending || clockPulsePending) { MessageReceived?.Invoke("Attendere l'operazione in corso."); return; }
         discardLateInstructionResponse = false;
         readPurpose = ReadPurpose.Memory; length = 0; ReadStateChanged?.Invoke();
         totalLength = (int)size;   // il contatore di avanzamento resta int
@@ -540,7 +586,7 @@ public class SerialManager {
         
     public async void WriteData(byte[] data, uint startAddress)
     {
-        if (IsReadPending) { MessageReceived?.Invoke("Attendere la lettura in corso."); return; }
+        if (IsReadPending || clockPulsePending) { MessageReceived?.Invoke("Attendere l'operazione in corso."); return; }
         var startHex = FormatMemoryAddress(startAddress, mainViewModel.IsEz80);
         
         writeDataArray = new List<byte>(data);

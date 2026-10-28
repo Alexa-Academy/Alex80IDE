@@ -15,6 +15,31 @@ mode comes from the register snapshot, not from the editor's assembly target.
 The read can temporarily stop the manager clock but does not execute user code.
 On eZ80, `rb` uses the existing ZDI routine, which restores PC afterwards.
 
+## Manual clock
+
+**Un colpo di clock** is available in Board Settings and the bus log when the
+manager advertises `CLKPULSE:ON`. Stop the automatic Arduino clock and disable
+Debug first. Each click sends `clk pulse`, generates exactly one LOW–HIGH–LOW
+cycle using the normal memory service, and leaves CLK low. No WAIT or automatic
+register injection is used. The configured frequency determines pulse width;
+the interval between clicks determines how slowly the program advances.
+
+The manager replies with one `!PULSE<base64>;` frame, carrying the same nine-byte
+sample as `!LOG`. This is also the sole table row for that pulse, even with
+logging disabled; ordinary logging does not duplicate it. The IDE blocks another
+pulse until the reply and any instruction-byte read finish, and handles errors
+or a missing reply with a five-second timeout.
+
+The card becomes **Istruzione sul bus**: the first recognizable M1 identifies
+the current instruction, and a short `rb` updates its bytes without generating
+more clock edges. Intermediate operand, refresh and prefix cycles keep the same
+card until the next instruction fetch. If no boundary has been observed yet,
+the card asks to advance to a fetch. Registers are not reread and INC/DEC result
+predictions are suppressed, since the old register snapshot may be obsolete.
+Starting the automatic clock, reset, or disconnect invalidates the card.
+This capability is currently implemented by the library's ALEX80µ manager; the
+legacy managers and the eZ80 ZDI bridge do not advertise manual clock support.
+
 ## Reference information
 
 `InstructionDecoder` is stateless and decodes documented Z80 opcode groups and
@@ -60,11 +85,12 @@ The library manager extends `!LOG<base64>;` from four to nine decoded bytes:
 | 4 bit 3 | CPU HALT signal active |
 | 5..8 | Big-endian 32-bit physical falling-edge counter since manager boot |
 
-The counter advances even if logging is disabled or compact mode suppresses a
+The counter stays internal to the protocol (there is no Clock # column). It
+advances even if logging is disabled or compact mode suppresses a
 row, and includes reset pulses and injected instructions. It does not advance
 while serial output holds the clock level. Older IDEs still read the first four
 bytes; this IDE also accepts the old four-byte records, displaying **—** for
-clock numbers and T-states that were never supplied.
+T-states that were never supplied.
 
 `ClockTraceTracker` reconstructs instruction-relative T-states only after a
 recognizable instruction boundary and with consecutive numbered samples.

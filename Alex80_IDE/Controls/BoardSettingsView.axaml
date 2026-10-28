@@ -59,6 +59,8 @@
                         <TextBlock Text="{Binding ClockToggleText}" VerticalAlignment="Center" />
                     </StackPanel>
                 </Button>
+                <Button Classes="tool" Content="Un colpo di clock" HorizontalAlignment="Left"
+                        Command="{Binding PulseClockCommand}" ToolTip.Tip="{Binding ClockPulseToolTip}" />
             </StackPanel>
         </StackPanel>
 
