@@ -42,7 +42,7 @@ public readonly record struct Ez80Registers(
     public bool IsHalted => (Stat & 0x80) != 0;
 }
 
-public class SerialManager {
+public partial class SerialManager {
     private readonly SerialPort _serialPort;
     public SerialPort SerialPort => _serialPort;
     
@@ -89,27 +89,30 @@ public class SerialManager {
     public event Action<uint, byte[]>? InstructionBytesReceived;
     public event Action<uint, string>? InstructionReadFailed;
     private bool clockPulsePending;
+    private bool clockPulseRegisters;
     private CancellationTokenSource? clockPulseTimeout;
     public bool IsClockPulsePending => clockPulsePending;
     public event Action<LogElement>? ClockPulseReceived;
     public event Action<string>? ClockPulseFailed;
 
-    public bool PulseClock()
+    public bool PulseClock(bool readRegisters = false)
     {
-        if (!_serialPort.IsOpen || IsReadPending || clockPulsePending) return false;
+        if (!_serialPort.IsOpen || IsReadPending || clockPulsePending || registerRequestPending) return false;
         clockPulsePending = true;
+        clockPulseRegisters = readRegisters;
         ReadStateChanged?.Invoke();
         clockPulseTimeout?.Cancel();
         clockPulseTimeout = new CancellationTokenSource();
         _ = AwaitClockPulseAsync(clockPulseTimeout.Token);
-        SendSerialText("clk pulse\r");
+        SendSerialText(readRegisters ? "clk pulse regs\r" : "clk pulse\r");
         return true;
     }
     private async Task AwaitClockPulseAsync(CancellationToken token)
     {
         try
         {
-            for (int elapsed = 0; elapsed < 5000; elapsed += 100)
+            int timeout = clockPulseRegisters ? RegisterResponseTimeoutMs : 5000;
+            for (int elapsed = 0; elapsed < timeout; elapsed += 100)
             {
                 await Task.Delay(100, token);
                 if (token.IsCancellationRequested || !clockPulsePending || !_serialPort.IsOpen) return;
@@ -129,7 +132,7 @@ public class SerialManager {
 
     public bool ReadInstruction(uint address, bool ez80, bool adl)
     {
-        if (!_serialPort.IsOpen || IsReadPending || clockPulsePending) return false;
+        if (!_serialPort.IsOpen || IsReadPending || clockPulsePending || registerRequestPending) return false;
         discardLateInstructionResponse = false;
         instructionAddress = instructionChunkAddress = address;
         instructionEz80 = ez80;
@@ -193,6 +196,7 @@ public class SerialManager {
     }
     public void CancelReadForReset()
     {
+        CompleteRegisterRequest();
         CompleteClockPulse();
         bool hadRead = IsReadPending;
         readPurpose = ReadPurpose.None; instructionTimeout?.Cancel();
@@ -201,6 +205,7 @@ public class SerialManager {
     }
     private void ClearPendingRead()
     {
+        CompleteRegisterRequest();
         CompleteClockPulse();
         readPurpose = ReadPurpose.None; instructionTimeout?.Cancel(); dataArray.Clear(); discardLateInstructionResponse = false;
         ReadStateChanged?.Invoke();
@@ -378,6 +383,11 @@ public class SerialManager {
                 }
             }
         }
+        else if (message == "!PULSEEND;")
+        {
+            if (clockPulsePending && clockPulseRegisters) CompleteClockPulse();
+        }
+        else if (message == "!STEP;") CompleteRegisterRequest();
         else if ((message.StartsWith("!LOG") || message.StartsWith("!PULSE")) && message.EndsWith(';'))
         {
             bool manualPulse = message.StartsWith("!PULSE");
@@ -410,7 +420,7 @@ public class SerialManager {
                     if (log.IsInstructionFetch) instructionStartLog = log;
 
                     LogReceived?.Invoke(log);
-                    if (manualPulse) { CompleteClockPulse(); ClockPulseReceived?.Invoke(log); }
+                    if (manualPulse) { if (!clockPulseRegisters) CompleteClockPulse(); ClockPulseReceived?.Invoke(log); }
                         
                     if (!injected && !reset && rfsh && !mreq && !rd)
                     {
@@ -441,7 +451,7 @@ public class SerialManager {
                     byte[] b = Convert.FromBase64String(payload);
                     if (b.Length < 30)
                     {
-                        MessageReceived?.Invoke($"!DUMP24 troppo corto: {b.Length} byte");
+                        CompleteRegisterRequest($"!DUMP24 troppo corto: {b.Length} byte");
                         return;
                     }
 
@@ -457,10 +467,12 @@ public class SerialManager {
                         I: b[27], R: b[28], Iff2: b[29] != 0);
 
                     Dump24Received?.Invoke(registers);
+                    CompleteRegisterRequest();
                 }
                 catch (FormatException ex)
                 {
                     Console.WriteLine("Errore nella decodifica Base64: " + ex.Message);
+                    CompleteRegisterRequest("Risposta registri eZ80 non valida.");
                 }
             }
         }
@@ -469,7 +481,19 @@ public class SerialManager {
             string payload = message.Substring(5, message.Length - 6);
             if (!string.IsNullOrEmpty(payload))
             {
-                byte[] recBytes = Convert.FromBase64String(payload);
+                byte[] recBytes;
+                try { recBytes = Convert.FromBase64String(payload); }
+                catch (FormatException) {
+                    CompleteRegisterRequest("Risposta registri Z80 non valida.");
+                    if (clockPulsePending) CompleteClockPulse("Risposta registri Z80 non valida.");
+                    return;
+                }
+
+                if (recBytes.Length != 16) {
+                    CompleteRegisterRequest("Risposta registri Z80 non valida.");
+                    if (clockPulsePending) CompleteClockPulse("Risposta registri Z80 non valida.");
+                    return;
+                }
 
                 var a_reg = recBytes[0];
                 var b_reg = recBytes[1];
@@ -485,6 +509,7 @@ public class SerialManager {
                 var pc_reg = (ushort)(recBytes[14]<<8 | recBytes[15]);
 
                 DumpReceived?.Invoke(a_reg, b_reg, c_reg, d_reg, e_reg, h_reg, l_reg, ix_reg, iy_reg, sp_reg, pc_reg, f_reg);
+                CompleteRegisterRequest();
             }
         }
         else if (message == "!OK;") 
@@ -497,6 +522,7 @@ public class SerialManager {
             string payload = message.Substring(7, message.Length - 8);
             MessageReceived?.Invoke(payload);
             if (clockPulsePending) CompleteClockPulse(payload);
+            if (registerRequestPending) CompleteRegisterRequest(payload);
             if (readPurpose == ReadPurpose.Instruction) FailInstructionRead(payload);
             else if (readPurpose == ReadPurpose.Memory) { readPurpose = ReadPurpose.None; ReadStateChanged?.Invoke(); }
             //Console.WriteLine(payload);
@@ -571,7 +597,7 @@ public class SerialManager {
     /// RAM dell'eZ80 sta a 0xFFF000, fuori dai 64 KB indirizzabili da uno Z80.
     /// </summary>
     public void ReadData(uint start, uint size) {
-        if (IsReadPending || clockPulsePending) { MessageReceived?.Invoke("Attendere l'operazione in corso."); return; }
+        if (IsReadPending || clockPulsePending || registerRequestPending) { MessageReceived?.Invoke("Attendere l'operazione in corso."); return; }
         discardLateInstructionResponse = false;
         readPurpose = ReadPurpose.Memory; length = 0; ReadStateChanged?.Invoke();
         totalLength = (int)size;   // il contatore di avanzamento resta int

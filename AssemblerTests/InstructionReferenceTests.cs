@@ -90,6 +90,7 @@ internal static class InstructionReferenceTests
         void Rx(string s) { receive.Invoke(manager,new object[]{s}); Dispatcher.UIThread.RunJobs(); }
         void Set(string name,object value) => typeof(SerialManager).GetField(name,flags)!.SetValue(manager,value);
         try {
+            typeof(MainViewModel).GetField("_autoRefreshRegisters",flags)!.SetValue(vm,true);
             vm.IsSerialOpened=true;
             Rx("!INFO:CARD:ALEX80µ,SCLK:A,FCLK:500,ECLK:1,SMEM:A,LOG:OFF,DEBUG:ON,MONITOR:OFF;");
             typeof(MainViewModel).GetField("_instructionPc",flags)!.SetValue(vm,(uint?)0xFFFFu);
@@ -107,6 +108,7 @@ internal static class InstructionReferenceTests
             check("peek non sovrascrive la vista memoria", memoryEvents==0 && vm.DataTable.Count==0 && !manager.IsReadPending);
             vm.CurrentInstruction = InstructionDecoder.Decode(0x2000,new byte[]{0x3C}); vm.AReg=0x28;
             typeof(MainViewModel).GetField("_hasRegisterSnapshot",flags)!.SetValue(vm,true);
+            typeof(MainViewModel).GetField("_registersAreCurrent",flags)!.SetValue(vm,true);
             check("previsione INC dai registri della scheda", vm.InstructionPrediction.Contains("28h → 29h"));
             vm.StepCommand.Execute(null);
             check("Step invalida la scheda precedente", vm.CurrentInstruction is null);

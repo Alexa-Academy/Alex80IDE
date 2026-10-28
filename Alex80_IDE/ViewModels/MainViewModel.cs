@@ -150,6 +150,8 @@ public partial class MainViewModel : ObservableObject
         LogEnabled = false;
         HasLogModeSupport = false;
         HasClockPulseSupport = false;
+        HasRegisterUpdateSupport = false;
+        _manualRegisterRefreshRequested = false;
         FullLogEnabled = false;
         DebugEnabled = false;
         MonitorEnabled = null;
@@ -167,6 +169,7 @@ public partial class MainViewModel : ObservableObject
         // Aprendo o chiudendo la porta il confronto riparte da zero: i registri di
         // prima appartengono a una sessione che non c'e' piu'.
         ResetRegisterComparison();
+        MarkRegistersStale();
 
         ReadMemoryCommand.NotifyCanExecuteChanged();
         WriteMemoryCommand.NotifyCanExecuteChanged();
@@ -200,7 +203,7 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsClockActiveChanged(bool value)
     {
-        if (value) InvalidateInstruction();
+        if (value) { InvalidateInstruction(); MarkRegistersStale(); }
         NotifyManualClockAvailability();
         OnPropertyChanged(nameof(ClockToggleText));
         NotifyDumpAvailabilityChanged();
@@ -413,7 +416,7 @@ public partial class MainViewModel : ObservableObject
         {
             _serialManager.BreakCpu();
             IsCpuHalted = true;
-            _serialManager.SendSerialText("d\r");
+            RequestManualRegisterRefresh();
         }
     }
 
@@ -497,6 +500,7 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public bool CanDumpRegisters =>
         IsBoardConnected &&
+        !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending &&
         (IsEz80 ||
          (IsAlex80Micro && IsMemoryFromArduino && DebugEnabled && (!IsClockFromArduino || IsClockActive)));
 
@@ -538,12 +542,15 @@ public partial class MainViewModel : ObservableObject
                 return "Collega una scheda per leggere i registri.";
             }
 
+            if (_serialManager.IsReadPending || _serialManager.IsClockPulsePending || _serialManager.IsRegisterRequestPending)
+                return "Attendi il completamento dell'operazione in corso.";
+
             if (IsAlex80Full)
             {
                 return "Su ALEX80 la lettura dei registri passa dal modo monitor, che carica in RAM un programma suo: cancellerebbe il tuo. Non è disponibile da qui.";
             }
 
-            return "Servono la memoria servita dall'Arduino, il debug attivo e il clock in moto.";
+            return "Per la lettura manuale servono la memoria servita dall'Arduino, il debug attivo e il clock in moto. Nel singolo clock, abilita l'aggiornamento automatico con il firmware aggiornato.";
         }
     }
 
@@ -859,6 +866,8 @@ public partial class MainViewModel : ObservableObject
     {
         RefreshRegisterCells(highlight: _hasRegisterSnapshot);
         _hasRegisterSnapshot = true;
+        _registersAreCurrent = true;
+        RegisterRefreshStatus = "Registri aggiornati all'ultima lettura dalla scheda.";
         OnPropertyChanged(nameof(InstructionPrediction));
     }
 
@@ -947,7 +956,7 @@ public partial class MainViewModel : ObservableObject
     partial void OnDebugEnabledChanged(bool value)
     {
         NotifyDumpAvailabilityChanged();
-        if (!value && !IsEz80) InvalidateInstruction();
+        if (!value && !IsEz80) { InvalidateInstruction(); MarkRegistersStale(); }
         NotifyManualClockAvailability();
     }
 
@@ -1009,7 +1018,7 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     private bool CanReachBoard()
     {
-        return IsBoardConnected && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending;
+        return IsBoardConnected && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
     }
 
     /// <summary>
@@ -1051,6 +1060,8 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
+        _manualRegisterRefreshRequested = false;
+        MarkRegistersStale();
         ResetListingExecution();
         InvalidateInstruction();
         _serialManager.CancelReadForReset();
@@ -1070,13 +1081,15 @@ public partial class MainViewModel : ObservableObject
     private void Step()
     {
         InvalidateInstruction();
-        _serialManager.SendSerialText("s\r");
+        MarkRegistersStale();
+        if (CanDumpRegisters) _serialManager.RequestRegisters(step: true, readAfterStep: AutoRefreshRegisters);
+        else _serialManager.SendSerialText("s\r");
     }
     
     [RelayCommand(CanExecute = nameof(CanDumpRegisters))]
     private void Dump()
     {
-        _serialManager.SendSerialText("d\r");
+        RequestManualRegisterRefresh();
     }
     
     /// <summary>
@@ -1164,7 +1177,9 @@ public partial class MainViewModel : ObservableObject
         // anche da qui, e le celle devono gia' esserci.
         InitializeRegisterCells();
 
-        var savedBaudRate = UserSettings.Load().BaudRate;
+        var savedSettings = UserSettings.Load();
+        _autoRefreshRegisters = savedSettings.AutoRefreshRegisters;
+        var savedBaudRate = savedSettings.BaudRate;
         if (BaudRates.Contains(savedBaudRate)) _selectedBaudRate = savedBaudRate;
 
         _dialogService = dialogService;
@@ -1178,6 +1193,12 @@ public partial class MainViewModel : ObservableObject
         _serialManager.Dump24Received += OnDump24Received;
         _serialManager.MessageReceived += OnMessageReceived;
         _serialManager.ConfigReceived += OnConfigReceived;
+        _serialManager.RegisterRequestFailed += error => Dispatcher.UIThread.Post(() =>
+        {
+            _manualRegisterRefreshRequested = false;
+            MarkRegistersStale();
+            RegisterRefreshStatus = error;
+        });
         InitializeInstructionView();
         
         DataTable = [];
@@ -1266,6 +1287,11 @@ public partial class MainViewModel : ObservableObject
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {
+            if (!ShouldApplyRegisterDump()) {
+                MarkRegistersStale();
+                if (DebugEnabled && !IsEz80) RefreshStoppedInstruction(pcReg, force: true);
+                return;
+            }
             AReg = aReg;
             BReg = bReg;
             CReg = cReg;
@@ -1280,7 +1306,8 @@ public partial class MainViewModel : ObservableObject
             FReg = fReg;
 
             ApplyRegisterDump();
-            if (DebugEnabled && !IsEz80) RefreshStoppedInstruction(PcReg, force: true);
+            if (!IsEz80 && (DebugEnabled || _instructionFromManualClock))
+                RefreshStoppedInstruction(PcReg, force: true, manualClock: _instructionFromManualClock);
         });
     }
     
@@ -1289,6 +1316,13 @@ public partial class MainViewModel : ObservableObject
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             IsEz80 = true;
+            IsCpuHalted = registers.IsHalted;
+            IsAdl = registers.IsAdl;
+            if (!ShouldApplyRegisterDump()) {
+                MarkRegistersStale();
+                if (IsCpuHalted) RefreshStoppedInstruction(registers.IsAdl ? registers.Pc : ((uint)registers.Mbase << 16) | (registers.Pc & 0xFFFF), force: true);
+                return;
+            }
 
             AReg = registers.A;
             FReg = registers.F;
@@ -1372,6 +1406,7 @@ public partial class MainViewModel : ObservableObject
                 if (cardConfig.LogEnabled is { } logEnabled) LogEnabled = logEnabled;
                 HasLogModeSupport = cardConfig.FullLogEnabled.HasValue;
                 HasClockPulseSupport = cardConfig.ClockPulseSupported == true;
+                HasRegisterUpdateSupport = cardConfig.RegisterUpdateSupported == true;
                 FullLogEnabled = cardConfig.FullLogEnabled ?? false;
                 if (cardConfig.DebugEnabled is { } debugEnabled) DebugEnabled = debugEnabled;
                 MonitorEnabled = cardConfig.MonitorEnabled;

@@ -161,7 +161,29 @@ prevent incomplete/legacy traces from being mistaken for measured timings.
 With the updated library manager, **Un colpo di clock** sends one complete pulse
 while the automatic clock is stopped and Debug is off. The instruction card
 updates from the bus fetch without WAIT or extra injected clock cycles, even
-with logging off. Registers retain their last snapshot.
+with logging off.
+
+In the Registers pane, **Aggiorna automaticamente i registri** (enabled by
+default and saved between sessions) applies register snapshots after each step.
+With the updated library manager (`REGUPDATE:ON`), it also requests snapshots
+during manual clocking: when a pulse reaches the held read of a complete
+instruction's first opcode, the manager executes additional debugger clocks to
+read the registers, restores PC/SP and stops CLK low again. Pulses within an
+instruction keep the last snapshot, marked as needing an update. It does not
+advance the program to search for a boundary. Full logging marks the added
+cycles as register reads and excludes them from program disassembly/timing.
+
+With the flag off, the updated manager steps without injection and manual
+clocking uses exactly one complete pulse. **Rileggi dalla scheda** remains
+available independently of this flag when the board permits a manual read.
+Older firmware keeps its existing commands and may still inject after steps;
+the IDE leaves those automatic snapshots unapplied when the flag is off.
+Manual-clock snapshots require uploading the updated
+`ALEX80ArduinoLibrary/ALEX80u/examples/ALEX80u_manager_terminal` sketch.
+The modular ALEX80's destructive monitor dump remains unavailable. eZ80 keeps
+the existing ZDI step/dump protocol. Serial polling runs while a step/register
+request is pending, including on USB ports with delayed receive notifications;
+conflicting reads/steps are disabled until completion, error, reset or timeout.
 See [the instruction-reference guide](Alex80_IDE/InstructionReference/README.md)
 for timing sources, supported metadata and validation.
 

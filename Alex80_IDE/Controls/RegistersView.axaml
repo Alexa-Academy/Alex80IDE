@@ -40,6 +40,11 @@
              compare, e qui puo' spegnersi con la spiegazione accanto quando la scheda
              collegata non e' in grado di darli. -->
         <StackPanel Spacing="7">
+            <CheckBox Content="Aggiorna automaticamente i registri"
+                      IsChecked="{Binding AutoRefreshRegisters}"
+                      ToolTip.Tip="{Binding RegisterRefreshToolTip}" />
+            <TextBlock Text="{Binding RegisterRefreshToolTip}" Classes="caption" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding RegisterRefreshStatus}" Classes="caption" TextWrapping="Wrap" />
             <Button Classes="tool"
                     HorizontalAlignment="Left"
                     Command="{Binding DumpCommand}"

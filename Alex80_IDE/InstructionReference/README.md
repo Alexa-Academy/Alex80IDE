@@ -19,23 +19,36 @@ On eZ80, `rb` uses the existing ZDI routine, which restores PC afterwards.
 
 **Un colpo di clock** is available in Board Settings and the bus log when the
 manager advertises `CLKPULSE:ON`. Stop the automatic Arduino clock and disable
-Debug first. Each click sends `clk pulse`, generates exactly one LOW–HIGH–LOW
-cycle using the normal memory service, and leaves CLK low. No WAIT or automatic
-register injection is used. The configured frequency determines pulse width;
+Debug first. With **Aggiorna automaticamente i registri** off, each click sends
+`clk pulse`, generates exactly one LOW–HIGH–LOW cycle using the normal memory
+service, and leaves CLK low, without WAIT or register injection.
+The configured frequency determines pulse width;
 the interval between clicks determines how slowly the program advances.
 
 The manager replies with one `!PULSE<base64>;` frame, carrying the same nine-byte
 sample as `!LOG`. This is also the sole table row for that pulse, even with
 logging disabled; ordinary logging does not duplicate it. The IDE blocks another
 pulse until the reply and any instruction-byte read finish, and handles errors
-or a missing reply with a five-second timeout.
+or a missing reply with a five-second timeout for this basic pulse.
+
+With the automatic register flag on (the saved default) and `REGUPDATE:ON`
+advertised, the IDE sends `clk pulse regs`. A pulse reaching a held first-opcode
+read adds the debugger's register-read clocks, restores PC/SP and stops CLK low
+again. It returns the original `!PULSE`, an optional `!DUMP`, then `!PULSEEND`.
+Pulses inside an instruction do not seek ahead to obtain registers. The IDE
+waits for the final marker; the timeout allows for injection at the configured
+frequency. Full logging identifies all additional clocks as register reads.
+After a step, the same flag selects the normal step/dump or `s noregs` (`!STEP`
+completion). Older managers keep their original commands; manual snapshots
+require the updated library manager sketch.
 
 The card becomes **Istruzione sul bus**: the first recognizable M1 identifies
 the current instruction, and a short `rb` updates its bytes without generating
 more clock edges. Intermediate operand, refresh and prefix cycles keep the same
 card until the next instruction fetch. If no boundary has been observed yet,
-the card asks to advance to a fetch. Registers are not reread and INC/DEC result
-predictions are suppressed, since the old register snapshot may be obsolete.
+the card asks to advance to a fetch. Between register snapshots the Registers
+pane marks its values stale. INC/DEC result predictions are suppressed during
+manual clocking, where the observed instruction can already be in progress.
 Starting the automatic clock, reset, or disconnect invalidates the card.
 This capability is currently implemented by the library's ALEX80µ manager; the
 legacy managers and the eZ80 ZDI bridge do not advertise manual clock support.
