@@ -30,10 +30,15 @@
 
                 <Button Content="Cancella log" Classes="tool" Command="{Binding ClearLogsCommand}" />
             </StackPanel>
-            <CheckBox Content="Tutti i clock"
-                      IsChecked="{Binding FullLogEnabled, Mode=TwoWay}"
-                      IsEnabled="{Binding CanConfigureLogMode}"
-                      ToolTip.Tip="Include WAIT ripetuti, lettura dei registri e reset. La tabella cresce anche mentre la CPU è in pausa. Richiede un firmware che supporti questa opzione." />
+            <WrapPanel Orientation="Horizontal">
+                <CheckBox Content="Segui esecuzione nel listing" Margin="0,0,18,0"
+                          IsChecked="{Binding FollowListingExecution, Mode=TwoWay}"
+                          ToolTip.Tip="Evidenzia l'ultimo fetch nel listing assemblato. Selezionando un log il seguito si sospende; riattiva questa opzione per riprenderlo." />
+                <CheckBox Content="Tutti i clock"
+                          IsChecked="{Binding FullLogEnabled, Mode=TwoWay}"
+                          IsEnabled="{Binding CanConfigureLogMode}"
+                          ToolTip.Tip="Include WAIT ripetuti, lettura dei registri e reset. La tabella cresce anche mentre la CPU è in pausa. Richiede un firmware che supporti questa opzione." />
+            </WrapPanel>
         </StackPanel>
 
         <DataGrid Grid.Row="1"
@@ -42,6 +47,7 @@
                   AutoGenerateColumns="False"
                   IsReadOnly="True"
                   ItemsSource="{Binding LogTable}"
+                  SelectedItem="{Binding SelectedLog, Mode=TwoWay}"
                   ScrollViewer.VerticalScrollBarVisibility="Auto"
                   HeadersVisibility="Column">
             <Interaction.Behaviors>

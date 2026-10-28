@@ -1,6 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:edit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
         xmlns:global="clr-namespace:"
         xmlns:views="clr-namespace:Alex80_IDE"
         xmlns:controls="clr-namespace:Alex80_IDE.Controls"
@@ -290,7 +289,9 @@
 
                             <TabControl.ContentTemplate>
                                 <DataTemplate x:DataType="global:DocumentViewModel">
-                                    <edit:TextEditor Document="{Binding EditorDocument}"
+                                    <controls:ExecutionListingEditor Document="{Binding EditorDocument}"
+                                                     ExecutionLine="{Binding ExecutionLine}"
+                                                     ExecutionBrush="{DynamicResource WarningBrush}"
                                                      FontFamily="{DynamicResource MonoFontFamily}"
                                                      FontSize="15"
                                                      Background="{DynamicResource SurfaceInputBrush}"

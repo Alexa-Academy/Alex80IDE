@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using Alex80_IDE.Models;
+using Alex80_IDE.Services;
 using AvaloniaEdit.Document;
 using CommunityToolkit.Mvvm.ComponentModel;
 
@@ -7,11 +9,18 @@ public partial class DocumentViewModel : ObservableObject
 {
     private bool _isSyncingText;
     private bool _isInitializingText;
+    private IReadOnlyDictionary<uint, int>? _executionLines;
+
+    [ObservableProperty]
+    private int _executionLine;
 
     public DocumentViewModel()
     {
         EditorDocument.TextChanged += (_, _) =>
         {
+            // Gli offset del listing valgono soltanto per il testo appena assemblato.
+            _executionLines = null;
+            ExecutionLine = 0;
             if (_isSyncingText)
             {
                 return;
@@ -76,6 +85,17 @@ public partial class DocumentViewModel : ObservableObject
         _isInitializingText = false;
         IsDirty = false;
     }
+
+    public void LoadExecutionListing(string text)
+    {
+        ReloadFromDisk(text);
+        ExecutionLine = 0;
+        _executionLines = ListingAddressMap.Create(text);
+    }
+
+    public void HighlightExecutionAddress(uint? address) =>
+        ExecutionLine = address is { } value && _executionLines is not null &&
+                        _executionLines.TryGetValue(value, out var line) ? line : 0;
     
     public ObservableCollection<ListingLine> ListingLines { get; } = new();
     

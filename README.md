@@ -129,6 +129,22 @@ the IDE and the library's manager sketch together to use full logging.
 synchronization tests in addition to assembler regressions. These tests simulate
 INFO messages without opening or reconfiguring physical hardware.
 
+Execution in the listing
+
+After assembling, **Segui esecuzione nel listing** in the bus-log panel highlights
+the last instruction fetch received from the board and scrolls its listing line
+into view. Enable bus logging to receive these updates. Data accesses, refresh
+cycles and injected register reads do not move the highlight; reset clears it.
+The highlight follows received logs, so serial buffering can delay it at high
+clock rates.
+
+Select a log row to inspect its instruction in the latest assembled listing;
+operand and data-access rows refer to the preceding instruction fetch. Selecting
+a row suspends following. Re-enable **Segui esecuzione nel listing** to return to
+the latest fetch. Only logs received after that assembly can navigate its listing.
+Editing or reloading the listing invalidates its address map until the next
+assembly. The highlight also works in the separate editor window.
+
 Contributing
 
 Contributions, bug reports, feature requests, and suggestions are welcome.

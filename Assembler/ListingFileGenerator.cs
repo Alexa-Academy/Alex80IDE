@@ -97,10 +97,11 @@ namespace Konamiman.Nestor80.Assembler
                 currentSdccArea = "_CODE";
             }
             currentLocationArea = isAbsoluteBuild ? AddressType.ASEG : AddressType.CSEG;
+            // A separate project unit without ORG starts after the previous unit.
             locationCounters = new Dictionary<AddressType, uint>() {
                 { AddressType.CSEG, 0 },
                 { AddressType.DSEG, 0 },
-                { AddressType.ASEG, 0 },
+                { AddressType.ASEG, isAbsoluteBuild ? assemblyResult.StartAddress : 0 },
                 { AddressType.COMMON, 0 }
             };
 

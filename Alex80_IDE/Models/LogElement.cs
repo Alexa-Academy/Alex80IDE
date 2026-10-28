@@ -15,6 +15,9 @@ public partial class LogElement : ObservableObject
     public bool Z80_M1 { get; set; }
     public bool IsInjected { get; }
     public bool IsReset { get; }
+    // I segnali del bus sono attivi bassi. RFSH alto esclude il refresh.
+    public bool IsInstructionFetch => !IsInjected && !IsReset && !Z80_M1 &&
+                                      !Z80_MREQ && !Z80_RD && Z80_RFSH;
     public string TracePhase => IsReset ? "Reset" : IsInjected ? "Lettura registri" : string.Empty;
 
     [ObservableProperty] 

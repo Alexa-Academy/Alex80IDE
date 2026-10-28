@@ -56,8 +56,7 @@ public class SerialManager {
  //   private int currentAddress;
     private int chunkNum;
 
-    private int logId;
-    private int idxM1Start;
+    private LogElement? instructionStartLog;
     private bool dataFinished;
 
     private byte command;
@@ -68,7 +67,7 @@ public class SerialManager {
     public event Action<byte[]>? DataReceived;
     public event Action<LogElement>? LogReceived; 
     public event Action<int>? LogProgress;
-    public event Action<int, string>? LogMnemonicReceived; 
+    public event Action<LogElement, string>? LogMnemonicReceived;
     public event Action<byte, byte, byte, byte, byte, byte, byte, ushort, ushort, ushort, ushort, byte>? DumpReceived; 
     public event Action<Ez80Registers>? Dump24Received; 
     public event Action<string>? MessageReceived;
@@ -271,20 +270,18 @@ public class SerialManager {
 
                     var injected = (control & 0x40) != 0;
                     var reset = (control & 0x80) != 0;
-                    if (!injected && !reset && !m1 && !mreq && !rd) {
-                        idxM1Start = logId;
-                    }
-                        
-                    LogReceived?.Invoke(new LogElement(add, data, rd, wr, iorq, mreq, rfsh, m1, "", injected, reset));
-                        
-                    logId++;
+                    var log = new LogElement(add, data, rd, wr, iorq, mreq, rfsh, m1, "", injected, reset);
+                    if (log.IsInstructionFetch) instructionStartLog = log;
+
+                    LogReceived?.Invoke(log);
                         
                     if (!injected && !reset && rfsh && !mreq && !rd)
                     {
                         string mnem = disassembler.Disassemble(add, data);
-                        if (mnem != "")
+                        if (mnem != "" && instructionStartLog is not null)
                         { 
-                            LogMnemonicReceived?.Invoke(idxM1Start, mnem);
+                            LogMnemonicReceived?.Invoke(instructionStartLog, mnem);
+                            instructionStartLog = null;
                         } 
                     }
                 }
@@ -589,8 +586,7 @@ public class SerialManager {
     public void RestartBoard()
     {
         disassembler.Restart();
-        idxM1Start = 0;
-        logId = 0;
+        instructionStartLog = null;
     }
     
     private void SetComputerConnected()

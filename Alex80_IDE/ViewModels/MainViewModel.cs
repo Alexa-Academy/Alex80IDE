@@ -138,6 +138,7 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsSerialOpenedChanged(bool value)
     {
+        ResetListingExecution();
         // Clear the previous session before the new board's !INFO arrives.
         LogEnabled = false;
         HasLogModeSupport = false;
@@ -1027,6 +1028,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
+        ResetListingExecution();
         _serialManager.SendSerialText("reset\r");
     }
     
@@ -1088,6 +1090,7 @@ public partial class MainViewModel : ObservableObject
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             LogTable.Clear();
+            ResetListingExecution();
         });
     }
     
@@ -1096,6 +1099,7 @@ public partial class MainViewModel : ObservableObject
     {
         if (tabToClose != null && OpenDocuments.Contains(tabToClose))
         {
+            if (tabToClose == _executionListing) ResetListingExecution(discardListing: true);
             StopWatchingDocument(tabToClose);
             OpenDocuments.Remove(tabToClose);
 
@@ -1219,6 +1223,7 @@ public partial class MainViewModel : ObservableObject
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             LogTable.Add(logElement);
+            TrackListingExecution(logElement);
         });
     }
     
@@ -1295,11 +1300,13 @@ public partial class MainViewModel : ObservableObject
         });
     }*/
     
-    private void OnLogMnemonicReceived(int idx, string mnemonic)
+    private void OnLogMnemonicReceived(LogElement log, string mnemonic)
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {
-            LogTable[idx].Mnemonic = mnemonic;
+            // Il riferimento resta valido anche se nel frattempo la tabella viene
+            // cancellata o il disassemblatore riparte con il clock.
+            log.Mnemonic = mnemonic;
         });
     }
     

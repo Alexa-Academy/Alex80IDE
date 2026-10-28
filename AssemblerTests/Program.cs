@@ -299,6 +299,7 @@ foreach (var (address, ez80, expected) in new (uint, bool, string)[]
 }
 
 failures += BoardConnectionTests.Run();
+failures += ListingExecutionTests.Run();
 
 Console.WriteLine(failures == 0 ? "\nTUTTI I TEST PASSATI" : $"\n{failures} TEST FALLITI");
 return failures;

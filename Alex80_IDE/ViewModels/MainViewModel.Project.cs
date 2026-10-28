@@ -36,6 +36,7 @@ public partial class MainViewModel
         get => _currentProject;
         private set
         {
+            ResetListingExecution(discardListing: true);
             _currentProject = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasProject));
@@ -512,6 +513,8 @@ public partial class MainViewModel
             return;
         }
 
+        ResetListingExecution(discardListing: true);
+
         BuildResult result;
         try
         {
@@ -753,7 +756,9 @@ public partial class MainViewModel
             }
         }
 
-        listingTab.ReloadFromDisk(listingText);
+        listingTab.LoadExecutionListing(listingText);
+        _executionListing = listingTab;
+        _listingLogStartIndex = LogTable.Count;
         SelectedDocument = listingTab;
     }
 
