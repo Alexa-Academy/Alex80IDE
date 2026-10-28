@@ -76,6 +76,96 @@ public class SerialManager {
     private string _serialBuffer = "";
     private readonly object _serialReadLock = new();
 
+    private enum ReadPurpose { None, Memory, Instruction }
+    private ReadPurpose readPurpose;
+    private bool discardLateInstructionResponse;
+    private uint instructionAddress, instructionChunkAddress, instructionWrapMask;
+    private int instructionChunkLength;
+    private bool instructionEz80;
+    private readonly List<byte> instructionBytes = new();
+    private CancellationTokenSource? instructionTimeout;
+    public bool IsReadPending => readPurpose != ReadPurpose.None;
+    public event Action? ReadStateChanged;
+    public event Action<uint, byte[]>? InstructionBytesReceived;
+    public event Action<uint, string>? InstructionReadFailed;
+
+    public bool ReadInstruction(uint address, bool ez80, bool adl)
+    {
+        if (!_serialPort.IsOpen || IsReadPending) return false;
+        discardLateInstructionResponse = false;
+        instructionAddress = instructionChunkAddress = address;
+        instructionEz80 = ez80;
+        instructionWrapMask = ez80 && adl ? 0xFFFFFFu : 0xFFFFu;
+        instructionBytes.Clear(); readPurpose = ReadPurpose.Instruction;
+        ReadStateChanged?.Invoke();
+        instructionTimeout?.Cancel();
+        instructionTimeout = new CancellationTokenSource();
+        _ = ExpireInstructionReadAsync(instructionTimeout.Token);
+        SendInstructionChunk();
+        return true;
+    }
+    private async Task ExpireInstructionReadAsync(CancellationToken token)
+    {
+        // Native USB ports may not notify DataReceived promptly. Poll the same
+        // locked receive path while a short PC read is pending.
+        try
+        {
+            for (int elapsed = 0; elapsed < 5000; elapsed += 100)
+            {
+                await Task.Delay(100, token);
+                if (token.IsCancellationRequested || readPurpose != ReadPurpose.Instruction || !_serialPort.IsOpen) return;
+                ReadAvailableSerialData();
+            }
+        }
+        catch (OperationCanceledException) { return; }
+        if (!token.IsCancellationRequested && readPurpose == ReadPurpose.Instruction)
+            FailInstructionRead("Timeout nella lettura dei byte al PC.");
+    }
+    private void SendInstructionChunk()
+    {
+        instructionChunkLength = (int)Math.Min((uint)(16 - instructionBytes.Count),
+            instructionWrapMask - (instructionChunkAddress & instructionWrapMask) + 1);
+        totalLength = instructionChunkLength; length = 0;
+        SendSerialText($"rb {FormatMemoryAddress(instructionChunkAddress, instructionEz80)} {instructionChunkLength}\r");
+    }
+    private void FinishRead()
+    {
+        var purpose = readPurpose;
+        if (purpose == ReadPurpose.Instruction)
+        {
+            if (dataArray.Count != instructionChunkLength) { FailInstructionRead("Risposta memoria incompleta."); return; }
+            instructionBytes.AddRange(dataArray);
+            if (instructionBytes.Count < 16)
+            {
+                instructionChunkAddress = (instructionAddress & ~instructionWrapMask) |
+                    ((instructionChunkAddress + (uint)instructionChunkLength) & instructionWrapMask);
+                SendInstructionChunk(); return;
+            }
+        }
+        readPurpose = ReadPurpose.None;
+        instructionTimeout?.Cancel(); ReadStateChanged?.Invoke();
+        if (purpose == ReadPurpose.Instruction) InstructionBytesReceived?.Invoke(instructionAddress, instructionBytes.ToArray());
+        else if (purpose == ReadPurpose.Memory || !discardLateInstructionResponse) DataReceived?.Invoke(dataArray.ToArray());
+        discardLateInstructionResponse = false;
+    }
+    private void FailInstructionRead(string message)
+    {
+        readPurpose = ReadPurpose.None; instructionTimeout?.Cancel(); discardLateInstructionResponse = true;
+        ReadStateChanged?.Invoke(); InstructionReadFailed?.Invoke(instructionAddress, message);
+    }
+    public void CancelReadForReset()
+    {
+        bool hadRead = IsReadPending;
+        readPurpose = ReadPurpose.None; instructionTimeout?.Cancel();
+        discardLateInstructionResponse = hadRead;
+        ReadStateChanged?.Invoke();
+    }
+    private void ClearPendingRead()
+    {
+        readPurpose = ReadPurpose.None; instructionTimeout?.Cancel(); dataArray.Clear(); discardLateInstructionResponse = false;
+        ReadStateChanged?.Invoke();
+    }
+
     private int totalLength;
     private int length;
     
@@ -209,7 +299,7 @@ public class SerialManager {
                         break;
                     case 2:
                         LogProgress?.Invoke(100);
-                        DataReceived?.Invoke(dataArray.ToArray());
+                        FinishRead();
                         break;
                     case 3:
                         //LogProgress?.Invoke(0);
@@ -220,7 +310,7 @@ public class SerialManager {
                         break;
                     case 5:
                         length += 60;
-                        LogProgress?.Invoke(length * 100 / totalLength);
+                        if (readPurpose != ReadPurpose.Instruction && totalLength > 0) LogProgress?.Invoke(length * 100 / totalLength);
                         break;
                     default:
                         Console.WriteLine("Stato sconosciuto");
@@ -238,7 +328,7 @@ public class SerialManager {
                     byte[] recBytes = Convert.FromBase64String(payload);
 
                     length += recBytes.Length;
-                    LogProgress?.Invoke(length * 100 / totalLength);
+                    if (readPurpose != ReadPurpose.Instruction && totalLength > 0) LogProgress?.Invoke(length * 100 / totalLength);
 
                     dataArray.AddRange(recBytes); // dataArray è List<byte>
                 }
@@ -257,6 +347,7 @@ public class SerialManager {
                 {
                     byte[] recBytes = Convert.FromBase64String(payload);
                     
+                    if (recBytes.Length < 4) return;
                     var add = (ushort)((recBytes[0] << 8) + recBytes[1]);
                     var data = recBytes[2];
                     var control = recBytes[3];
@@ -270,7 +361,9 @@ public class SerialManager {
 
                     var injected = (control & 0x40) != 0;
                     var reset = (control & 0x80) != 0;
-                    var log = new LogElement(add, data, rd, wr, iorq, mreq, rfsh, m1, "", injected, reset);
+                    uint? clockNumber = recBytes.Length >= 9 ? ((uint)recBytes[5] << 24) | ((uint)recBytes[6] << 16) | ((uint)recBytes[7] << 8) | recBytes[8] : null;
+                    byte? traceFlags = recBytes.Length >= 9 ? recBytes[4] : null;
+                    var log = new LogElement(add, data, rd, wr, iorq, mreq, rfsh, m1, "", injected, reset, clockNumber, traceFlags);
                     if (log.IsInstructionFetch) instructionStartLog = log;
 
                     LogReceived?.Invoke(log);
@@ -358,6 +451,8 @@ public class SerialManager {
         {
             string payload = message.Substring(7, message.Length - 8);
             MessageReceived?.Invoke(payload);
+            if (readPurpose == ReadPurpose.Instruction) FailInstructionRead(payload);
+            else if (readPurpose == ReadPurpose.Memory) { readPurpose = ReadPurpose.None; ReadStateChanged?.Invoke(); }
             //Console.WriteLine(payload);
         } else if (message.StartsWith("!INFO") && message.EndsWith(';'))
         {
@@ -374,6 +469,7 @@ public class SerialManager {
     public async Task<bool> OpenCloseSerialPortAsync(string portName, int baudRate) {
           if (_serialPort.IsOpen) {
               _serialPort.Close();
+              ClearPendingRead();
               mainViewModel.IsSerialOpened = false;
           } else {
               _serialPort.PortName = portName;
@@ -409,6 +505,7 @@ public class SerialManager {
     public bool CloseSerialPort()
     {
         _serialPort.Close();
+        ClearPendingRead();
         mainViewModel.IsSerialOpened = false;
         return _serialPort.IsOpen;
     }
@@ -428,6 +525,9 @@ public class SerialManager {
     /// RAM dell'eZ80 sta a 0xFFF000, fuori dai 64 KB indirizzabili da uno Z80.
     /// </summary>
     public void ReadData(uint start, uint size) {
+        if (IsReadPending) { MessageReceived?.Invoke("Una lettura è già in corso."); return; }
+        discardLateInstructionResponse = false;
+        readPurpose = ReadPurpose.Memory; length = 0; ReadStateChanged?.Invoke();
         totalLength = (int)size;   // il contatore di avanzamento resta int
         
         SendSerialText($"rb {FormatMemoryAddress(start, mainViewModel.IsEz80)} {size}\r");
@@ -440,6 +540,7 @@ public class SerialManager {
         
     public async void WriteData(byte[] data, uint startAddress)
     {
+        if (IsReadPending) { MessageReceived?.Invoke("Attendere la lettura in corso."); return; }
         var startHex = FormatMemoryAddress(startAddress, mainViewModel.IsEz80);
         
         writeDataArray = new List<byte>(data);

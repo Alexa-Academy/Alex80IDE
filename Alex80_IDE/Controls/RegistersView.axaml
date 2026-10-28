@@ -9,6 +9,33 @@
          La spaziatura fra i riquadri sta nello stile registerChip: cosi' togliere
          o aggiungere un registro non costringe a rifare i margini a mano. -->
     <StackPanel Spacing="12">
+        <Border Classes="registerChip" Padding="12">
+            <StackPanel Spacing="8">
+                <TextBlock Text="ISTRUZIONE AL PC" Classes="caption" />
+                <TextBlock Text="{Binding InstructionStatus}" Classes="caption" TextWrapping="Wrap" />
+                <StackPanel Spacing="8" IsVisible="{Binding HasInstruction}">
+                    <TextBlock Text="{Binding CurrentInstruction.Header}" FontWeight="SemiBold" FontSize="17" TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                        <TextBlock Text="{Binding CurrentInstruction.OpcodeText}" Classes="mono" />
+                        <TextBlock Text="{Binding CurrentInstruction.SizeText}" Classes="caption" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding CurrentInstruction.Operation}" Classes="mono" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding CurrentInstruction.Timing}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding CurrentInstruction.MachineCycles}" Classes="caption" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding InstructionIdealTime}" Classes="caption" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding InstructionPrediction}" TextWrapping="Wrap" />
+                    <Expander Header="Funzione, flag e riferimento">
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="{Binding CurrentInstruction.Description}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding CurrentInstruction.Flags}" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding CurrentInstruction.TimingNote}" Classes="caption" TextWrapping="Wrap" />
+                            <Button Content="Apri manuale" Command="{Binding OpenInstructionManualCommand}" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </Expander>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
         <!-- La rilettura sta qui e non nella barra in alto: e' qui che il risultato
              compare, e qui puo' spegnersi con la spiegazione accanto quando la scheda
              collegata non e' in grado di darli. -->

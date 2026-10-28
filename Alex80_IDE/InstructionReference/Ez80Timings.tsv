@@ -1,0 +1,760 @@
+# Numeric instruction facts from Zilog UM007715-0415 Attributes tables.
+# https://www.zilog.com/docs/UM0077.pdf
+# Regenerate with extract_ez80_timings.py; descriptions are authored separately.
+# mnemonic	operands	ADL mode	bus cycles	printed page	opcode pattern
+ADC	A,(HL)	X	2	79	8E
+ADC.S	A,(HL)	1	3	79	52, 8E
+ADC.L	A,(HL)	0	3	79	49, 8E
+ADC	A,IXH	X	2	80	DD, 8C
+ADC	A,IXL	X	2	80	DD, 8D
+ADC	A,IYH	X	2	80	FD, 8C
+ADC	A,IYL	X	2	80	FD, 8D
+ADC	A,(IX+d)	X	4	81	DD, 8E, dd
+ADC.S	A,(IX+d)	1	5	81	52, DD, 8E, dd
+ADC.L	A,(IX+d)	0	5	81	49, DD, 8E, dd
+ADC	A,(IY+d)	X	4	81	FD, 8E, dd
+ADC.S	A,(IY+d)	1	5	81	52, FD, 8E, dd
+ADC.L	A,(IY+d)	0	5	81	49, FD, 8E, dd
+ADC	A,n	X	2	82	CE, nn
+ADC	A,r	X	1	83	jj
+ADC	HL,ss	X	2	85	ED, kk
+ADC.S	HL,ss	1	3	85	52, ED, kk
+ADC.L	HL,ss	0	3	85	49, ED, kk
+ADC	HL,SP	X	2	87	ED, 7A
+ADC.S	HL,SP	1	3	87	52, ED, 7A
+ADC.L	HL,SP	0	3	87	49, ED, 7A
+ADD	A,(HL)	X	2	88	86
+ADD.S	A,(HL)	1	3	88	52, 86
+ADD.L	A,(HL)	0	3	88	49, 86
+ADD	A,IXH	X	2	89	DD, 84
+ADD	A,IXL	X	2	89	DD, 85
+ADD	A,IYH	X	2	89	FD, 84
+ADD	A,IYL	X	2	89	FD, 85
+ADD	A,(IX+d)	X	4	90	DD, 86, dd
+ADD.S	A,(IX+d)	1	5	90	52, DD, 86, dd
+ADD.L	A,(IX+d)	0	5	90	49, DD, 86, dd
+ADD	A,(IY+d)	X	4	90	FD, 86, dd
+ADD.S	A,(IY+d)	1	5	90	52, FD, 86, dd
+ADD.L	A,(IY+d)	0	5	90	49, FD, 86, dd
+ADD	A,n	X	2	91	C6, nn
+ADD	A,r	X	1	92	jj
+ADD	HL,rr	X	1	94	kk
+ADD.S	HL,rr	1	2	94	52, kk
+ADD.L	HL,rr	0	2	94	49, kk
+ADD	HL,SP	X	1	96	39
+ADD.S	HL,SP	1	2	96	52, 39
+ADD.L	HL,SP	0	2	96	49, 39
+ADD	IX,rxy	X	2	97	DD, kk
+ADD.S	IX,rxy	1	3	97	52, DD, kk
+ADD.L	IX,rxy	0	3	97	49, DD, kk
+ADD	IY,rxy	X	2	97	FD, kk
+ADD.S	IY,rxy	1	3	97	52, FD, kk
+ADD.L	IY,rxy	0	3	97	49, FD, kk
+ADD	IX,SP	X	2	99	DD, 39
+ADD.S	IX,SP	1	3	99	52, DD, 39
+ADD.L	IX,SP	0	3	99	49, DD, 39
+ADD	IY,SP	X	2	99	FD, 39
+ADD.S	IY,SP	1	3	99	52, FD, 39
+ADD.L	IY,SP	0	3	99	49, FD, 39
+AND	A,(HL)	X	2	100	A6
+AND.S	A,(HL)	1	3	100	52, A6
+AND.L	A,(HL)	0	3	100	49, A6
+AND	A,IXH	X	2	101	DD, A4
+AND	A,IXL	X	2	101	DD, A5
+AND	A,IYH	X	2	101	FD, A4
+AND	A,IYL	X	2	101	FD, A5
+AND	A,(IX+d)	X	4	102	DD, A6, dd
+AND.S	A,(IX+d)	1	5	102	52, DD, A6, dd
+AND.L	A,(IX+d)	0	5	102	49, DD, A6, dd
+AND	A,(IY+d)	X	4	102	FD, A6, dd
+AND.S	A,(IY+d)	1	5	102	52, FD, A6, dd
+AND.L	A,(IY+d)	0	5	102	49, FD, A6, dd
+AND	A,n	X	2	103	E6, nn
+AND	A,r	X	1	104	jj
+BIT	b,(HL)	X	3	106	CB, kk
+BIT.S	b,(HL)	1	4	106	52, CB, kk
+BIT.L	b,(HL)	0	4	106	49, CB, kk
+BIT	b,(IX+d)	X	5	108	DD, CB, dd, kk
+BIT.S	b,(IX+d)	1	6	108	52, DD, CB, dd, kk
+BIT.L	b,(IX+d)	0	6	108	49, DD, CB, dd, kk
+BIT	b,(IY+d)	X	5	108	FD, CB, dd, kk
+BIT.S	b,(IY+d)	1	6	108	52, FD, CB, dd, kk
+BIT.L	b,(IY+d)	0	6	108	49, FD, CB, dd, kk
+BIT	b,r	X	2	110	CB, jj
+CALL	cc,mn	0	3/6	113	kk, nn, mm
+CALL	cc,Mmn	1	4/7	113	kk, nn, mm, MM
+CALL.IS	cc,mn	0	4/7	113	40, kk, nn, mm
+CALL.IS	cc,mn	1	4/8	113	49, kk, nn, mm
+CALL.IL	cc,Mmn	0	5/8	113	52, kk, nn, mm, MM
+CALL.IL	cc,Mmn	1	5/9	113	5B, kk, nn, mm, MM
+CALL	mn	0	5	116	CD, nn, mm
+CALL	Mmn	1	7	116	CD, nn, mm, MM
+CALL.IS	mn	0	7	116	40, CD, nn, mm
+CALL.IS	mn	1	8	116	49, CD, nn, mm
+CALL.IL	Mmn	0	8	116	52, CD, nn, mm, MM
+CALL.IL	Mmn	1	9	116	5B, CD, nn, mm, MM
+CCF	—	X	1	117	3F
+CP	A,(HL)	X	2	118	BE
+CP.S	A,(HL)	1	3	118	52, BE
+CP.L	A,(HL)	0	3	118	49, BE
+CP	A,IXH	X	2	119	DD, BC
+CP	A,IXL	X	2	119	DD, BD
+CP	A,IYH	X	2	119	FD, BC
+CP	A,IYL	X	2	119	FD, BD
+CP	A,(IX+d)	X	4	120	DD, BE, dd
+CP.S	A,(IX+d)	1	5	120	52, DD, BE, dd
+CP.L	A,(IX+d)	0	5	120	49, DD, BE, dd
+CP	A,(IY+d)	X	4	120	FD, BE, dd
+CP.S	A,(IY+d)	1	5	120	52, FD, BE, dd
+CP.L	A,(IY+d)	0	5	120	49, FD, BE, dd
+CP	A,n	X	2	121	FE nn
+CP	A,r	X	1	122	jj
+CPD	—	X	3	124	ED, A9
+CPD.S	—	1	4	124	52, ED, A9
+CPD.L	—	0	4	124	49, ED, A9
+CPDR	—	X	1	125	* C +ED3, BB9
+CPDR.S	—	1	2	125	* C +523, BED, B9
+CPDR.L	—	0	2	125	* C +493, BED, B9
+CPI	—	X	3	126	ED, A1
+CPI.S	—	1	4	126	52, ED, A1
+CPI.L	—	0	4	126	49, ED, A1
+CPIR	—	X	1	127	* C +ED3, BB1
+CPIR.S	—	1	2	127	* C +523, BED, B1
+CPIR.L	—	0	2	127	* C +493, BED, B1
+CPL	—	X	1	128	2F
+DAA	—	X	1	130	27
+DEC	(HL)	X	4	132	35
+DEC.S	(HL)	1	5	132	52, 35
+DEC.L	(HL)	0	5	132	49, 35
+DEC	IXH	X	2	133	DD, 25
+DEC	IXL	X	2	133	DD, 2D
+DEC	IXH	X	2	133	FD, 25
+DEC	IXL	X	2	133	FD, 2D
+DEC	IX	X	2	134	DD, 2B
+DEC.S	IX	1	3	134	52, DD, 2B
+DEC.L	IX	0	3	134	49, DD, 2B
+DEC	IY	X	2	134	FD, 2B
+DEC.S	IY	1	3	134	52, FD, 2B
+DEC.L	IY	0	3	134	49, FD, 2B
+DEC	(IX+d)	X	6	135	DD, 35, dd
+DEC.S	(IX+d)	1	7	135	52, DD, 35, dd
+DEC.L	(IX+d)	0	7	135	49, DD, 35, dd
+DEC	(IY+d)	X	6	135	FD, 35, dd
+DEC.S	(IY+d)	1	7	135	52, FD, 35, dd
+DEC.L	(IY+d)	0	7	135	49, FD, 35, dd
+DEC	r	X	1	136	jj
+DEC	rr	X	1	138	kk
+DEC.S	rr	1	2	138	52, kk
+DEC.L	rr	0	2	138	49, kk
+DEC	SP	X	1	139	3B
+DEC.S	SP	1	2	139	52, 3B
+DEC.L	SP	0	2	139	49, 3B
+DI	—	X	1	140	F3
+DJNZ	d	X	2/4	141	10, dd
+EI	—	X	1	142	FB
+EX	AF,AF’	X	1	143	08
+EX	DE,HL	X	1	144	EB
+EX	(SP),HL	0/1	5/7	145	E3
+EX.S	(SP),HL	1	6	145	52, E3
+EX.L	(SP),HL	0	8	145	49, E3
+EX	(SP),IX	0/1	6/8	146	DD, E3
+EX.S	(SP),IX	1	7	146	52, DD, E3
+EX.L	(SP),IX	0	9	146	49, DD, E3
+EX	(SP),IY	0/1	6/8	146	FD, E3
+EX.S	(SP),IY	1	7	146	52, FD, E3
+EX.L	(SP),IY	0	9	146	49, FD, E3
+EXX	—	X	1	147	D9
+HALT	—	X	1	148	76
+IM	0	X	2	149	ED, 46
+IM	1	X	2	149	ED, 56
+IM	2	X	2	149	ED, 5E
+IN	(n)	X	3	150	DB, nn
+IN	r, (BC)	X	3	151	ED, jj
+IN0	r,(n)	X	4	153	ED, jj, nn
+INC	(HL)	X	4	155	34
+INC.S	(HL)	1	5	155	52, 34
+INC.L	(HL)	0	5	155	49, 34
+INC	IXH	X	2	156	DD, 24
+INC	IXL	X	2	156	DD, 2C
+INC	IYH	X	2	156	FD, 24
+INC	IYL	X	2	156	FD, 2C
+INC	IX	X	2	157	DD, 23
+INC.S	IX	1	3	157	52, DD, 23
+INC.L	IX	0	3	157	49, DD, 23
+INC	IY	X	2	157	FD, 23
+INC.S	IY	1	3	157	52, FD, 23
+INC.L	IY	0	3	157	49, FD, 23
+INC	(IX+d)	X	6	158	DD, 34, dd
+INC.S	(IX+d)	1	7	158	52, DD, 34, dd
+INC.L	(IX+d)	0	7	158	49, DD, 34, dd
+INC	(IY+d)	X	6	158	FD, 34, dd
+INC.S	(IY+d)	1	7	158	52, FD, 34, dd
+INC.L	(IY+d)	0	7	158	49, FD, 34, dd
+INC	r	X	1	159	jj
+INC	rr	X	1	161	kk
+INC.S	rr	1	2	161	52, kk
+INC.L	rr	0	2	161	49, kk
+INC	SP	X	1	162	33
+INC.S	SP	1	2	162	52, 33
+INC.L	SP	0	2	162	49, 33
+IND	—	X	5	163	ED, AA
+IND.S	—	1	6	163	52, ED, AA
+IND.L	—	0	6	163	49, ED, AA
+IND2.S	—	1	6	164	52, ED, 8C
+IND2.L	—	0	6	164	49, ED, 8C
+IND2R	—	X	2	165	* ED+,3 9C
+IND2R.S	—	1	3	165	* 52+,3 ED, 9C
+IND2R.L	—	0	3	165	* 49+,3 ED, 9C
+INDM	—	X	5	167	ED, 8A
+INDM.S	—	1	6	167	52, ED, 8A
+INDM.L	—	0	6	167	49, ED, 8A
+INDMR	—	X	2	168	* ED+,3 9AB
+INDMR.S	—	1	3	168	* 52+,3 EDB, 9A
+INDMR.L	—	0	3	168	* 49+,3 EDB, 9A
+INDR	—	X	2	169	* ED+,3 BAB
+INDR.S	—	1	3	169	* 52+,3 EDB, BA
+INDR.L	—	0	3	169	* 49+,3 EDB, BA
+INDRX	—	X	2	170	* ED+,3 CA
+INDRX.S	—	1	3	170	* 52+,3 ED, CA
+INDRX.L	—	0	3	170	* 49+,3 ED, CA
+INI	—	X	5	171	ED, A2
+INI.S	—	1	6	171	52, ED, A2
+INI.L	—	0	6	171	49, ED, A2
+INI2R	—	X	2	173	* ED+,3 94
+INI2R.S	—	1	3	173	* 52+,3 ED, 94
+INI2R.L	—	0	3	173	* 49+,3 ED, 94
+INIM	—	X	5	175	ED, 82
+INIM.S	—	1	6	175	52, ED, 82
+INIM.L	—	0	6	175	49, ED, 82
+INIMR	—	X	2	176	* ED+,3 92B
+INIMR.S	—	1	3	176	* 52+,3 EDB, 92
+INIMR.L	—	0	3	176	* 49+,3 EDB, 92
+INIR	—	X	2	177	* ED+,3 B2B
+INIR.S	—	1	3	177	* 52+,3 EDB, B2
+INIR.L	—	0	3	177	* 49+,3 EDB, B2
+INIRX	—	X	2	178	* ED+,3 C2
+INIRX.S	—	1	3	178	* 52+,3 ED, C2
+INIRX.L	—	0	3	178	* 49+,3 ED, C2
+JP	cc,mn	0	3/4	181	kk, nn, mm
+JP	cc,Mmn	1	4/5	181	kk, nn, mm, MM
+JP.SIS	cc,mn	X	4/5	181	40, kk, nn, mm
+JP.LIL	cc,Mmn	X	5/6	181	5B, kk, nn, mm, MM
+JP	(HL)	0/1	3	182	E9
+JP.S	(HL)	1	4	182	52, E9
+JP.L	(HL)	0	4	182	49, E9
+JP	(IX)	1	4	183	DD, E9
+JP.S	(IX)	X	5	183	40, DD, E9
+JP.L	(IX)	X	5	183	5B, DD, E9
+JP	(IY)	1	4	183	FD, E9
+JP.S	(IY)	X	5	184	40, FD, E9
+JP.L	(IY)	X	5	184	5B, FD, E9
+JP	mn	0	4	185	C3, nn, mm
+JP	Mmn	1	5	185	C3, nn, mm, MM
+JP.SIS	mn	X	5	186	40, C3, nn, mm
+JP.LIL	Mmn	X	6	186	5B, C3, nn, mm, MM
+JR	cc’,d	X	2/3	187	kk, dd
+JR	d	X	3	188	18, dd
+LD	A, I	X	2	189	ED, 57
+LD	A,(IX+d)	X	4	190	DD, 7E, dd
+LD.S	A,(IX+d)	1	5	190	52, DD, 7E, dd
+LD.L	A,(IX+d)	0	5	190	49, DD, 7E, dd
+LD	A,(IY+d)	X	4	190	FD, 7E, dd
+LD.S	A,(IY+d)	1	5	190	52, FD, 7E, dd
+LD.L	A,(IY+d)	0	5	190	49, FD, 7E, dd
+LD	A,MB	1	2	191	ED, 6E
+LD	A,(mn)	0	4	192	3A, nn, mm
+LD	A,(Mmn)	1	5	192	3A, nn, mm, MM
+LD.LIL	A,(Mmn)	0	6	192	5B, 3A, nn, mm, MM
+LD.SIS	A,(mn)	1	5	192	40, 3A, nn, mm
+LD	A,R	X	2	193	ED, 5F
+LD	A,(BC)	X	2	194	0A
+LD.S	A,(BC)	1	3	194	52, 0A
+LD.L	A,(BC)	0	3	194	49, 0A
+LD	A,(DE)	X	2	194	1A
+LD.S	A,(DE)	1	3	194	52, 1A
+LD.L	A,(DE)	0	3	194	49, 1A
+LD	A,(HL)	X	2	194	7E
+LD.S	A,(HL)	1	3	194	52, 7E
+LD.L	A,(HL)	0	3	194	40, 7E
+LD	HL, I	X	2	195	ED, D7
+LD	(HL),IX	0/1	4/5	196	ED, 3F
+LD.S	(HL),IX	1	5	196	52, ED, 3F
+LD.L	(HL),IX	0	6	196	49, ED, 3F
+LD	(HL),IY	0/1	4/5	196	ED, 3E
+LD.S	(HL),IY	1	5	196	52, ED, 3E
+LD.L	(HL),IY	0	6	196	49, ED, 3E
+LD	(HL),n	X	3	197	36, nn
+LD.S	(HL),n	1	4	197	52, 36, nn
+LD.L	(HL),n	0	4	197	49, 36, nn
+LD	(HL),r	X	2	198	jj
+LD.S	(HL),r	1	3	198	52, jj
+LD.L	(HL),r	0	3	198	49, jj
+LD	(HL),BC	0/1	4/5	199	ED, 0F
+LD.S	(HL),BC	1	5	199	52, ED, 0F
+LD.L	(HL),BC	0	6	199	49, ED, 0F
+LD	(HL),DE	0/1	4/5	199	ED, 1F,
+LD.S	(HL),DE	1	5	199	52, ED, 1F
+LD.L	(HL),DE	0	6	199	49, ED, 1F
+LD	(HL),HL	0/1	4/5	199	ED, 2F
+LD.S	(HL),HL	1	5	199	52, ED, 2F
+LD.L	(HL),HL	0	6	199	49, ED, 2F
+LD	I,HL	X	2	200	ED, C7
+LD	I,A	X	2	201	ED, 47
+LD	IXH,IXH	X	2	202	DD, 64
+LD	IXH,IXL	X	2	202	DD, 65
+LD	IXL,IXH	X	2	202	DD, 6C
+LD	IXL,IXL	X	2	202	DD, 6D
+LD	IYH,IYH	X	2	202	FD, 64
+LD	IYH,IYL	X	2	202	FD, 65
+LD	IYL,IYH	X	2	202	FD, 6C
+LD	IYL,IYL	X	2	202	FD, 6D
+LD	IXH,n	X	2	203	DD, 26
+LD	IXL,n	X	2	203	DD, 2E
+LD	IYH,n	X	2	203	FD, 26
+LD	IYL,n	X	2	203	FD, 2E
+LD	IXH,r	X	2	204	DD, jj
+LD	IXL,r	X	2	204	DD, kk
+LD	IYH,r	X	2	204	FD, jj
+LD	IYL,r	X	2	204	FD, kk
+LD	IX,(HL)	0/1	4/5	206	ED, 37
+LD.S	IX,(HL)	1	5	206	52, ED, 37
+LD.L	IX,(HL)	0	6	206	49, ED, 37
+LD	IY,(HL)	0/1	4/5	206	ED, 31
+LD.S	IY,(HL)	1	5	206	52, ED, 31
+LD.L	IY,(HL)	0	6	206	49, ED, 31
+LD	IX,(IX+d)	0/1	5/6	207	DD, 37, dd
+LD.S	IX,(IX+d)	1	6	207	52, DD, 37, dd
+LD.L	IX,(IX+d)	0	7	207	49, DD, 37, dd
+LD	IY,(IX+d)	0/1	5/6	207	DD, 31, dd
+LD.S	IY,(IX+d)	1	6	207	52, DD, 31, dd
+LD.L	IY,(IX+d)	0	7	207	49, DD, 31, dd
+LD	IX,(IY+d)	0/1	5/6	207	FD, 31, dd
+LD.S	IX,(IY+d)	1	6	207	52, FD, 31, dd
+LD.L	IX,(IY+d)	0	7	207	49, FD, 31, dd
+LD	IY,(IY+d)	0/1	5/6	207	FD, 37, dd
+LD.S	IY,(IY+d)	1	6	207	52, FD, 37, dd
+LD.L	IY,(IY+d)	0	7	207	49, FD, 37, dd
+LD	(IX+d),IX	0/1	5/6	210	DD, 3F, dd
+LD.S	(IX+d),IX	1	6	210	52, DD, 3F, dd
+LD.L	(IX+d),IX	0	7	210	49, DD, 3F, dd
+LD	(IX+d),IY	0/1	5/6	210	DD, 3E, dd
+LD.S	(IX+d),IY	1	6	210	52, DD, 3E, dd
+LD.L	(IX+d),IY	0	7	210	49, DD, 3E, dd
+LD	(IY+d),IX	0/1	5/6	210	FD, 3E, dd
+LD.S	(IY+d),IX	1	6	210	52, FD, 3E, dd
+LD.L	(IY+d),IX	0	7	210	49, FD, 3E, dd
+LD	(IY+d),IY	0/1	5/6	210	FD, 3F, dd
+LD.S	(IY+d),IY	1	6	210	52, FD, 3F, dd
+LD.L	(IY+d),IY	0	7	210	49, FD, 3F, dd
+LD	(IX+d),n	X	5	211	DD, 36, dd, nn
+LD.S	(IX+d),n	1	6	211	52, DD, 36, dd, nn
+LD.L	(IX+d),n	0	6	211	49, DD, 36, dd, nn
+LD	(IY+d),n	X	5	211	FD, 36, dd, nn
+LD.S	(IY+d),n	1	6	211	52, FD, 36, dd, nn
+LD.L	(IY+d),n	0	6	211	49, FD, 36, dd, nn
+LD	(IX+d),r	X	4	212	DD, jj, dd
+LD.S	(IX+d),r	1	5	212	52, DD, jj, dd
+LD.L	(IX+d),r	0	5	212	49, DD, jj, dd
+LD	(IY+d),r	X	4	212	FD, jj, dd
+LD.S	(IY+d),r	1	5	212	52, FD, jj, dd
+LD.L	(IY+d),r	0	5	212	49, FD, jj, dd
+LD	(IX+d),BC	0/1	5/6	214	DD, 0F, dd
+LD.S	(IX+d),BC	1	6	214	52, DD, 0F, dd
+LD.L	(IX+d),BC	0	7	214	49, DD, 0F, dd
+LD	(IX+d),DE	0/1	5/6	214	DD, 1F, dd
+LD.S	(IX+d),DE	1	6	214	52, DD, 1F, dd
+LD.L	(IX+d),DE	0	7	214	49, DD, 1F, dd
+LD	(IX+d),HL	0/1	5/6	214	DD, 2F, dd
+LD.S	(IX+d),HL	1	6	214	52, DD, 2F, dd
+LD.L	(IX+d),HL	0	7	214	49, DD, 2F, dd
+LD	(IY+d),BC	0/1	5/6	214	FD, 0F, dd
+LD.S	(IY+d),BC	1	6	214	52, FD, 0F, dd
+LD.L	(IY+d),BC	0	7	214	49, FD, 0F, dd
+LD	(IY+d),DE	0/1	5/6	214	FD, 1F, dd
+LD.S	(IY+d),DE	1	6	214	52, FD, 1F, dd
+LD.L	(IY+d),DE	0	7	214	49, FD, 1F, dd
+LD	(IY+d),HL	0/1	5/6	214	FD, 2F, dd
+LD.S	(IY+d),HL	1	6	214	52, FD, 2F, dd
+LD.L	(IY+d),HL	0	7	214	49, FD, 2F, dd
+LD	MB,A	X	2	215	ED, 6D
+LD	(mn),A	0	4	216	32, nn, mm
+LD	(Mmn),A	1	5	216	32, nn, mm, MM
+LD.IS	(mn),A	1	5	216	40, 32, nn, mm
+LD.IL	(Mmn),A	0	5	216	5B, 32, nn, mm, MM
+LD	R, A	X	2	220	ED, 4F
+LD	r,(HL)	X	2	221	jj
+LD.S	r,(HL)	1	3	221	52, jj
+LD.L	r,(HL)	0	3	221	49, jj
+LD	A,IXH	X	2	222	DD, 7C
+LD	A,IXL	X	2	222	DD, 7D
+LD	A,IYH	X	2	222	FD, 7C
+LD	A,IYL	X	2	222	FD, 7D
+LD	B,IXH	X	2	222	DD, 44
+LD	B,IXL	X	2	222	DD, 45
+LD	B,IYH	X	2	222	FD, 44
+LD	B,IYL	X	2	222	FD, 45
+LD	C,IXH	X	2	222	DD, 4C
+LD	C,IXL	X	2	222	DD, 4D
+LD	C,IYH	X	2	222	FD, 4C
+LD	C,IYL	X	2	222	FD, 4D
+LD	D,IXH	X	2	222	DD, 54
+LD	D,IXL	X	2	222	DD, 55
+LD	D,IYH	X	2	222	FD, 54
+LD	D,IYL	X	2	222	FD, 55
+LD	E,IXH	X	2	222	DD, 5C
+LD	E,IXL	X	2	222	DD, 5D
+LD	E,IYH	X	2	223	FD, 5C
+LD	E,IYL	X	2	223	FD, 5D
+LD	r,(IX+d)	X	4	224	DD, jj, dd
+LD.S	r,(IX+d)	1	5	224	52, DD, jj, dd
+LD.L	r,(IX+d)	0	5	224	49, DD, jj, dd
+LD	r,(IY+d)	X	4	224	FD, jj, dd
+LD.S	r,(IY+d)	1	5	224	52, FD, jj, dd
+LD.L	r,(IY+d)	0	5	224	49, FD, jj, dd
+LD	r,n	X	2	226	jj, nn
+LD	r,r’	X	1	227	jj
+LD	BC,(HL)	0/1	4/5	228	ED, 07
+LD.S	BC,(HL)	1	5	228	52, ED, 07
+LD.L	BC,(HL)	0	6	228	49, ED, 07
+LD	DE,(HL)	0/1	4/5	228	ED, 17
+LD.S	DE,(HL)	1	5	228	52, ED, 17
+LD.L	DE,(HL)	0	6	228	49, ED, 17
+LD	HL,(HL)	0/1	4/5	228	ED, 27
+LD.S	HL,(HL)	1	5	228	52, ED, 27
+LD.L	HL,(HL)	0	6	228	49, ED, 27
+LD	BC,(IX+d)	0/1	5/6	229	DD, 07, dd
+LD.S	BC,(IX+d)	1	6	229	52, DD, 07, dd
+LD.L	BC,(IX+d)	0	7	229	49, DD, 07, dd
+LD	DE,(IX+d)	0/1	5/6	229	DD, 17, dd
+LD.S	DE,(IX+d)	1	6	229	52, DD, 17, dd
+LD.L	DE,(IX+d)	0	7	229	49, DD, 17, dd
+LD	HL,(IX+d)	0/1	5/6	229	DD, 27, dd
+LD.S	HL,(IX+d)	1	6	229	52, DD, 27, dd
+LD.L	HL,(IX+d)	0	7	229	49, DD, 27, dd
+LD	BC,(IY+d)	0/1	5/6	229	FD, 07, dd
+LD.S	BC,(IY+d)	1	6	229	52, FD, 07, dd
+LD.L	BC,(IY+d)	0	7	229	49, FD, 07, dd
+LD	DE,(IY+d)	0/1	4/5	229	FD, 17, dd
+LD.S	DE,(IY+d)	1	5	229	52, FD, 17, dd
+LD.L	DE,(IY+d)	0	6	229	49, FD, 17, dd
+LD	HL,(IY+d)	0/1	4/5	229	FD, 27, dd
+LD.S	HL,(IY+d)	1	5	229	52, FD, 27, dd
+LD.L	HL,(IY+d)	0	6	229	49, FD, 27, dd
+LD	ss,mn	0	3	230	kk, nn, mm
+LD	ss,Mmn	1	4	230	kk, nn, mm, MM
+LD.LIL	ss,Mmn	0	5	230	5B, kk, nn, mm, MM
+LD.SIS	ss,mn	1	4	230	40, kk, nn, mm
+LD	(BC),A	X	2	233	02
+LD.S	(BC),A	1	3	233	52, 02
+LD.L	(BC),A	0	3	233	49, 02
+LD	(DE),A	X	2	233	12
+LD.S	(DE),A	1	3	233	52, 12
+LD.L	(DE),A	0	3	233	49, 12
+LD	(HL),A	X	2	233	77
+LD.S	(HL),A	1	3	233	52, 77
+LD.L	(HL),A	0	3	233	49, 77
+LD.S	SP,HL	1	2	234	52, F9
+LD.L	SP,HL	0	2	234	49, F9
+LD	SP,IX	X	2	235	DD, F9
+LD.S	SP,IX	1	3	235	52, DD, F9
+LD.L	SP,IX	0	3	235	49, DD, F9
+LD	SP,IY	X	2	235	FD, F9
+LD.S	SP,IY	1	3	235	52, FD, F9
+LD.L	SP,IY	0	3	235	49, FD, F9
+LD	SP,mn	0	3	236	31, nn, mm
+LD	SP,Mmn	1	4	236	31, nn, mm, MM
+LD.LIL	SP,Mmn	0	5	236	5B, 31, nn, mm, MM
+LD.SIS	SP,mn	1	4	236	40, 31, nn, mm
+LDD	—	X	5	238	ED, A8
+LDD.S	—	1	6	238	52, ED, A8
+LDD.L	—	0	6	238	49, ED, A8
+LDDR	—	X	2	239	* ED+,3 B8
+LDDR.S	—	1	3	239	* 52+,3 ED, B8
+LDDR.L	—	0	3	239	* 49+,3 ED, B8
+LDI	—	X	5	240	ED, A0
+LDI.S	—	1	6	240	52, ED, A0
+LDI.L	—	0	6	240	49, ED, A0
+LDIR	—	X	2	241	* ED+,3 B0
+LDIR.S	—	1	3	241	* 52+,3 ED, B0
+LDIR.L	—	0	3	241	* 49+,3 ED, B0
+LEA	IX,IX+d	X	3	242	ED, 32, dd
+LEA.S	IX,IX+d	1	4	242	52, ED, 32, dd
+LEA.L	IX,IX+d	0	4	242	49, ED, 32, dd
+LEA	IY,IX+d	X	3	242	ED, 55, dd
+LEA.S	IY,IX+d	1	4	242	52, ED, 55, dd
+LEA.L	IY,IX+d	0	4	242	49, ED, 55, dd
+LEA	IX,IY+d	X	3	243	ED, 54, dd
+LEA.S	IX,IY+d	1	4	243	52, ED, 54, dd
+LEA.L	IX,IY+d	0	4	243	49, ED, 54, dd
+LEA	IY,IY+d	X	3	243	ED, 33, dd
+LEA.S	IY,IY+d	1	4	243	52, ED, 33, dd
+LEA.L	IY,IY+d	0	4	243	49, ED, 33, dd
+LEA	rr,IX+d	X	3	244	ED, kk, dd
+LEA.S	rr,IX+d	1	4	244	52, ED, kk, dd
+LEA.L	rr,IX+d	0	4	244	49, ED, kk, dd
+LEA	rr,IY+d	X	3	245	ED, kk, dd
+LEA.S	rr,IY+d	1	4	245	52, ED, kk, dd
+LEA.L	rr,IY+d	0	4	245	49, ED, kk, dd
+MLT	BC	X	6	246	ED 4C
+MLT	DE	X	6	246	ED 5C
+MLT	HL	X	6	246	ED 6C
+MLT	SP	X	6	247	ED 7C
+MLT.L	SP	0	6	247	49 ED 7C
+MLT.S	SP	1	6	247	52 ED 7C
+NEG		X	2	248	EE, 44
+NOP		X	1	249	00
+OR	A, (HL)	X	2	250	B6
+OR.S	A, (HL)	1	3	250	52, B6
+OR.L	A, (HL)	0	3	250	49, B6
+OR	A, IXH	X	2	251	DD B4
+OR	A, IXL	X	2	251	DD B5
+OR	A, IYH	X	2	251	FD B4
+OR	A, IYL	X	2	251	FD B5
+OR	A, (IX+d)	X	4	252	DD, B6, dd
+OR.S	A, (IX+d)	1	5	252	52, DD, B6, dd
+OR.L	A, (IX+d)	0	5	252	49, DD, B6, dd
+OR	A, (IY+d)	X	4	252	FD, B6, dd
+OR.S	A, (IY+d)	1	5	252	52, FD, B6, dd
+OR.L	A, (IY+d)	0	5	252	49, FD, B6, dd
+OR	A, n	X	2	253	F6, nn
+OR	A, r	X	1	254	jj
+OTD2R	—	X	2	256	* ED+,3 BCB
+OTD2R.S	—	1	3	256	* 52+,3 EDB, BC
+OTD2R.L	—	0	3	256	* 49+,3 EDB, BC
+OTDM	—	X	5	258	ED, 8B
+OTDM.S	—	1	6	258	52, ED, 8B
+OTDM.L	—	0	6	258	49, ED, 8B
+OTDMR	—	X	2	259	* ED+,3 9BB
+OTDMR.S	—	1	3	259	* 52+,3 EDB, 9B
+OTDMR.L	—	0	3	259	* 49+,3 EDB, 9B
+OTDR	—	X	2	260	* ED+,3 BBB
+OTDR.S	—	1	3	260	* 52+,3 EDB, BB
+OTDR.L	—	0	3	260	* 49+,3 EDB, BB
+OTDRX	—	X	2	261	* ED+,3 CB
+OTDRX.S	—	1	3	261	* 52+,3 ED, CB
+OTDRX.L	—	0	3	261	* 49+,3 ED, CB
+OTI2R	—	X	2	262	* ED+,3 B4B
+OTI2R.S	—	1	3	262	* 52+,3 EDB, B4
+OTI2R.L	—	0	3	262	* 49+,3 EDB, B4
+OTIM	—	X	5	264	ED, 83
+OTIM.S	—	1	6	264	52, ED, 83
+OTIM.L	—	0	6	264	49, ED, 83
+OTIMR	—	X	2	265	* ED+,3 93B
+OTIMR.S	—	1	3	265	* 52+,3 EDB, 93
+OTIMR.L	—	0	3	265	* 49+,3 EDB, 93
+OTIR	—	X	2	266	* ED+,3 B3B
+OTIR.S	—	1	3	266	* 52+,3 EDB, B3
+OTIR.L	—	0	3	266	* 49+,3 EDB, B3
+OTIRX	—	X	2	267	* ED+,3 C3
+OTIRX.S	—	1	3	267	* 52+,3 ED, C3
+OTIRX.L	—	0	3	267	* 49+,3 ED, C3
+OUT	(BC),r	X	3	268	ED, jj
+OUT	(n),A	X	3	269	D3, nn
+OUT0	(n),r	X	4	270	ED, jj, nn
+OUTD	—	X	5	271	ED, AB
+OUTD.S	—	1	6	271	52, ED, AB
+OUTD.L	—	0	6	271	49, ED, AB
+OUTD2	—	X	5	272	ED, AC
+OUTD2.S	—	1	6	272	52, ED, AC
+OUTD2.L	—	0	6	272	49, ED, AC
+OUTI	—	X	5	273	ED, A3
+OUTI.S	—	1	6	273	52, ED, A3
+OUTI.L	—	0	6	273	49, ED, A3
+OUTI2	—	X	5	274	ED, A4
+OUTI2.S	—	1	6	274	52, ED, A4
+OUTI2.L	—	0	6	274	49, ED, A4
+PEA	IX+d	0/1	5/6	275	ED, 65, dd
+PEA.S	IX+d	1	6	275	52, ED, 65, dd
+PEA.L	IX+d	0	7	275	49, ED, 65, dd
+PEA	IY+d	0/1	5/6	276	ED, 66, dd
+PEA.S	IY+d	1	6	276	52, ED, 66, dd
+PEA.L	IY+d	0	7	276	49, ED, 66, dd
+POP	AF	0/1	3/4	277	F1
+POP.S	AF	1	4	277	52, F1
+POP.L	AF	0	5	277	49, F1
+POP	IX	0/1	4/5	278	DD, E1
+POP.S	IX	1	5	278	52, DD, E1
+POP.L	IX	0	6	278	49, DD, E1
+POP	IY	0/1	4/5	278	FD, E1
+POP.S	IY	1	5	279	52, FD, E1
+POP.L	IY	0	6	279	49, FD, E1
+POP	rr	0/1	3/4	280	kk
+POP.S	rr	1	4	280	52, kk
+POP.L	rr	0	5	280	49, kk
+PUSH	AF	0/1	3/4	283	F5
+PUSH.S	AF	1	4	283	52, F5
+PUSH.L	AF	0	5	283	49, F5
+PUSH	IX	0/1	4/5	285	DD, E5
+PUSH.S	IX	1	5	285	52, DD, E5
+PUSH.L	IX	0	6	285	49, DD, E5
+PUSH	IY	0/1	4/5	285	FD, E5
+PUSH.S	IY	1	5	285	52, FD, E5
+PUSH.L	IY	0	6	285	49, FD, E5
+PUSH	rr	0/1	3/4	287	kk
+PUSH.S	rr	1	4	287	52, kk
+PUSH.L	rr	0	5	287	49, kk
+RES	b,(HL)	X	3	288	CB, kk
+RES.S	b,(HL)	1	4	288	52, CB, kk
+RES.L	b,(HL)	0	4	288	49, CB, kk
+RES	b,(IX+d)	X	5	289	DD, CB, dd, kk
+RES.S	b,(IX+d)	1	6	289	52, DD, CB, dd, kk
+RES.L	b,(IX+d)	0	6	289	49, DD, CB, dd, kk
+RES	b,(IY+d)	X	5	289	FD, CB, dd, kk
+RES.S	b,(IY+d)	1	6	289	52, FD, CB, dd, kk
+RES.L	b,(IY+d)	0	6	289	49, FD, CB, dd, kk
+RES	b,r	X	2	291	CB, jj
+RET	—	0/1	5/6	293	C9
+RET.L	—	0	6	293	49, C9
+RET.L	—	1	7	293	5B, C9
+RL	(HL)	X	5	303	CB, 16
+RL.S	(HL)	1	6	303	52, CB, 16
+RL.L	(HL)	0	6	303	49, CB, 16
+RL	(IX+d)	X	7	304	DD, CB, dd, 16
+RL.S	(IX+d)	1	8	304	52, DD, CB, dd, 16
+RL.L	(IX+d)	0	8	304	49, DD, CB, dd, 16
+RL	(IY+d)	X	7	304	FD, CB, dd, 16
+RL.S	(IY+d)	1	8	304	52, FD, CB, dd, 16
+RL.L	(IY+d)	0	8	304	49, FD, CB, dd, 16
+RL	r	X	2	305	CB, jj
+RLA	—	X	1	307	17
+RLC	(HL)	X	5	308	CB, 06
+RLC.S	(HL)	1	6	308	52, CB, 06
+RLC.L	(HL)	0	6	308	49, CB, 06
+RLC	(IX+d)	X	7	309	DD, CB, dd, 06
+RLC.S	(IX+d)	1	8	309	52, DD, CB, dd, 06
+RLC.L	(IX+d)	0	8	309	49, DD, CB, dd, 06
+RLC	(IY+d)	X	7	309	FD, CB, dd, 06
+RLC.S	(IY+d)	1	8	309	52, FD, CB, dd, 06
+RLC.L	(IY+d)	0	8	309	49, FD, CB, dd, 06
+RLC	r	X	2	310	CB, jj
+RLCA	—	X	1	312	07
+RLD	—	X	5	313	ED, 6F
+RR	(HL)	X	5	314	CB, 1E
+RR.S	(HL)	1	6	314	52, CB, 1E
+RR.L	(HL)	0	6	314	49, CB, 1E
+RR	(IX+d)	X	7	315	DD, CB, dd, 1E
+RR.S	(IX+d)	1	8	315	52, DD, CB, dd, 1E
+RR.L	(IX+d)	0	8	315	49, DD, CB, dd, 1E
+RR	(IY+d)	X	7	315	FD, CB, dd, 1E
+RR.S	(IY+d)	1	8	315	52, FD, CB, dd, 1E
+RR.L	(IY+d)	0	8	315	49, FD, CB, dd, 1E
+RR	r	X	2	316	CB, kk
+RRA	—	X	1	318	1F
+RRC	(HL)	X	5	319	CB, 0E
+RRC.S	(HL)	1	6	319	52, CB, 0E
+RRC.L	(HL)	0	6	319	49, CB, 0E
+RRC	(IX+d)	X	7	320	DD, CB, dd, 0E
+RRC.S	(IX+d)	1	8	320	52, DD, CB, dd, 0E
+RRC.L	(IX+d)	0	8	320	49, DD, CB, dd, 0E
+RRC	(IY+d)	X	7	320	FD, CB, dd, 0E
+RRC.S	(IY+d)	1	8	320	52, FD, CB, dd, 0E
+RRC.L	(IY+d)	0	8	320	49, FD, CB, dd, 0E
+RRC	r	X	2	321	CB, jj
+RRCA	—	X	1	323	0F
+RRD	—	X	5	324	ED, 67
+RSMIX	—	X	2	325	ED, 7E
+RST	n n	0/1	5/6	327	kk
+RST.S	n n	1	8	327	52, kk
+RST.L	n n	0	7	327	49, kk
+SBC	A,(HL)	X	2	329	9E
+SBC.S	A,(HL)	1	3	329	52, 9E
+SBC.L	A,(HL)	0	3	329	49, 9E
+SBC	A,IXH	X	2	330	DD, 9C
+SBC	A,IXL	X	2	330	DD, 9D
+SBC	A,IYH	X	2	330	FD, 9C
+SBC	A,IYL	X	2	330	FD, 9D
+SBC	A,(IX+d)	X	4	331	DD, 9E, dd
+SBC.S	A,(IX+d)	1	5	331	52, DD, 9E, dd
+SBC.L	A,(IX+d)	0	5	331	49, DD, 9E, dd
+SBC	A,(IY+d)	X	4	331	FD, 9E, dd
+SBC.S	A,(IY+d)	1	5	331	52, FD, 9E, dd
+SBC.L	A,(IY+d)	0	5	331	49, FD, 9E, dd
+SBC	A,n	X	2	332	DE, nn
+SBC	A,r	X	1	333	jj
+SBC	HL,rr	X	2	335	ED, kk
+SBC.S	HL,rr	1	3	335	52, ED, kk
+SBC.L	HL,rr	0	3	335	49, ED, kk
+SBC	HL,SP	X	2	337	ED, 72
+SBC.S	HL,SP	1	3	337	52, ED, 72
+SBC.L	HL,SP	0	3	337	49, ED, 72
+SCF	—	X	1	338	37
+SET	b,(HL)	X	3	339	CB, kk
+SET.S	b,(HL)	1	4	339	52, CB, kk
+SET.L	b,(HL)	0	4	339	49, CB, kk
+SET	b,(IX+d)	X	5	340	DD, CB, dd, kk
+SET.S	b,(IX+d)	1	6	340	52, DD, CB, dd, kk
+SET.L	b,(IX+d)	0	6	340	49, DD, CB, dd, kk
+SET	b,(IY+d)	X	5	340	FD, CB, dd, kk
+SET.S	b,(IY+d)	1	6	340	52, FD, CB, dd, kk
+SET.L	b,(IY+d)	0	6	340	49, FD, CB, dd, kk
+SET	b,r	X	2	342	CB, jj
+SLA	(HL)	X	5	343	CB, 26
+SLA.S	(HL)	1	6	343	52, CB, 26
+SLA.L	(HL)	0	6	343	49, CB, 26
+SLA	(IX+d)	X	7	344	DD, CB, dd, 26
+SLA.S	(IX+d)	1	8	344	52, DD, CB, dd, 26
+SLA.L	(IX+d)	0	8	344	49, DD, CB, dd, 26
+SLA	(IY+d)	X	7	344	FD, CB, dd, 26
+SLA.S	(IY+d)	1	8	344	52, FD, CB, dd, 26
+SLA.L	(IY+d)	0	8	344	49, FD, CB, dd, 26
+SLA	r	X	2	345	CB, jj
+SLP	—	X	2	347	ED, 76
+SRA	(HL)	X	5	348	CB, 2E
+SRA.S	(HL)	1	6	348	52, CB, 2E
+SRA.L	(HL)	0	6	348	49, CB, 2E
+SRA	(IX+d)	X	7	349	DD, CB, dd, 2E
+SRA.S	(IX+d)	1	8	349	52, DD, CB, dd, 2E
+SRA.L	(IX+d)	0	8	349	49, DD, CB, dd, 2E
+SRA	(IY+d)	X	7	349	FD, CB, dd, 2E
+SRA.S	(IY+d)	1	8	349	52, FD, CB, dd, 2E
+SRA.L	(IY+d)	0	8	349	49, FD, CB, dd, 2E
+SRA	r	X	2	350	CB, jj
+SRL	(HL)	X	5	352	CB, 3E
+SRL.S	(HL)	1	6	352	52, CB, 3E
+SRL.L	(HL)	0	6	352	49, CB, 3E
+SRL	(IX+d)	X	7	353	DD, CB, dd, 3E
+SRL.S	(IX+d)	1	8	353	52, DD, CB, dd, 3E
+SRL.L	(IX+d)	0	8	353	49, DD, CB, dd, 3E
+SRL	(IY+d)	X	7	353	FD, CB, dd, 3E
+SRL.S	(IY+d)	1	8	353	52, FD, CB, dd, 3E
+SRL.L	(IY+d)	0	8	353	49, FD, CB, dd, 3E
+SRL	r	X	2	354	CB, jj
+STMIX	—	X	2	356	ED, 7D
+SUB	A,(HL)	X	2	357	96
+SUB.S	A,(HL)	1	3	357	52, 96
+SUB.L	A,(HL)	0	3	357	49, 96
+SUB	A,IXH	X	2	358	DD, 94
+SUB	A,IXL	X	2	358	DD, 95
+SUB	A,IYH	X	2	358	FD, 94
+SUB	A,IYL	X	2	358	FD, 95
+SUB	A,(IX+d)	X	4	359	DD, 96, dd
+SUB.S	A,(IX+d)	1	5	359	52, DD, 96, dd
+SUB.L	A,(IX+d)	0	5	359	49, DD, 96, dd
+SUB	A,(IY+d)	X	4	359	FD, 96, dd
+SUB.S	A,(IY+d)	1	5	359	52, FD, 96, dd
+SUB.L	A,(IY+d)	0	5	359	49, FD, 96, dd
+SUB	A,n	X	2	360	D6, nn
+SUB	A,r	X	1	361	jj
+TST	A,(HL)	X	3	363	ED, 34
+TST.S	A,(HL)	1	4	363	52, ED, 34
+TST.L	A,(HL)	0	4	363	49, ED, 73
+TST	A,n	X	3	364	ED, 64, nn
+TST	A,r	X	2	365	ED, jj
+TSTIO	n	X	4	367	ED, 74, nn
+XOR	A,(HL)	X	2	368	AE
+XOR.S	A,(HL)	1	3	368	52, AE
+XOR.L	A,(HL)	0	3	368	49, AE
+XOR	A,IXH	X	2	369	DD, AC
+XOR	A,IXL	X	2	369	DD, AD
+XOR	A,IYH	X	2	369	FD, AC
+XOR	A,IYL	X	2	369	FD, AD
+XOR	A,(IX+d)	X	4	370	DD, AE, dd
+XOR.S	A,(IX+d)	1	5	370	52, DD, AE, dd
+XOR.L	A,(IX+d)	0	5	370	49, DD, AE, dd
+XOR	A,(IY+d)	X	4	370	FD, AE, dd
+XOR.S	A,(IY+d)	1	5	370	52, FD, AE, dd
+XOR.L	A,(IY+d)	0	5	370	49, FD, AE, dd
+XOR	A,n	X	2	372	EE, nn
+XOR	A,r	X	1	373	jj
+RET	cc	0	2 falsa / 6 vera	295	kk
+RET	cc	1	2 falsa / 7 vera	295	kk

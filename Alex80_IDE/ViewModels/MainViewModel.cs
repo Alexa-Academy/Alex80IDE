@@ -139,6 +139,8 @@ public partial class MainViewModel : ObservableObject
     partial void OnIsSerialOpenedChanged(bool value)
     {
         ResetListingExecution();
+        InvalidateInstruction();
+        _clockTrace.Reset(); ClockSummary = _clockTrace.Summary;
         // Clear the previous session before the new board's !INFO arrives.
         LogEnabled = false;
         HasLogModeSupport = false;
@@ -347,6 +349,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Run()
     {
+        InvalidateInstruction();
         if (IsEz80Context)
         {
             // Stesso campo indirizzo usato da lettura e scrittura, e dopo
@@ -380,6 +383,7 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsCpuHaltedChanged(bool value)
     {
+        if (!value) InvalidateInstruction();
         OnPropertyChanged(nameof(BreakButtonIconKey));
         OnPropertyChanged(nameof(BreakButtonToolTip));
     }
@@ -401,6 +405,7 @@ public partial class MainViewModel : ObservableObject
         {
             _serialManager.BreakCpu();
             IsCpuHalted = true;
+            _serialManager.SendSerialText("d\r");
         }
     }
 
@@ -645,6 +650,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanUseBusLog));
         OnPropertyChanged(nameof(CanConfigureLogMode));
         DebugCommand.NotifyCanExecuteChanged();
+        StepCommand.NotifyCanExecuteChanged();
         EnableDisableLogsCommand.NotifyCanExecuteChanged();
         BusLogTool.IsAvailable = IsBusLogToolAvailable;
         NotifyDumpAvailabilityChanged();
@@ -844,6 +850,7 @@ public partial class MainViewModel : ObservableObject
     {
         RefreshRegisterCells(highlight: _hasRegisterSnapshot);
         _hasRegisterSnapshot = true;
+        OnPropertyChanged(nameof(InstructionPrediction));
     }
 
     /// <summary>Spegne l'evidenza su tutte le celle e ferma il conto alla rovescia.</summary>
@@ -890,6 +897,7 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     partial void OnClockFrequencyChanged(string value)
     {
+        OnPropertyChanged(nameof(InstructionIdealTime));
         // Il valore arrivato con !INFO e' quello che la scheda ha gia': rimandarglielo
         // la farebbe fermare e ripartire appena connessa.
         if (_isApplyingCardConfig || !CanControlClock)
@@ -927,7 +935,11 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _debugEnabled;
 
-    partial void OnDebugEnabledChanged(bool value) => NotifyDumpAvailabilityChanged();
+    partial void OnDebugEnabledChanged(bool value)
+    {
+        NotifyDumpAvailabilityChanged();
+        if (!value && !IsEz80) InvalidateInstruction();
+    }
 
     [ObservableProperty]
     private bool? _monitorEnabled;
@@ -972,6 +984,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanReachBoard))]
     private void WriteMemory()
     {
+        InvalidateInstruction();
         if (_fileBytesToWrite == null) return;
         
         uint writeStart = ParseAddressField(DefaultStartAdd);
@@ -986,7 +999,7 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     private bool CanReachBoard()
     {
-        return IsBoardConnected;
+        return IsBoardConnected && !_serialManager.IsReadPending;
     }
 
     /// <summary>
@@ -1029,6 +1042,9 @@ public partial class MainViewModel : ObservableObject
     private void Reset()
     {
         ResetListingExecution();
+        InvalidateInstruction();
+        _serialManager.CancelReadForReset();
+        _clockTrace.Reset(); ClockSummary = _clockTrace.Summary;
         _serialManager.SendSerialText("reset\r");
     }
     
@@ -1040,9 +1056,10 @@ public partial class MainViewModel : ObservableObject
         _serialManager.RefreshConfiguration();
     }
     
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanStepCpu))]
     private void Step()
     {
+        InvalidateInstruction();
         _serialManager.SendSerialText("s\r");
     }
     
@@ -1090,6 +1107,7 @@ public partial class MainViewModel : ObservableObject
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             LogTable.Clear();
+            _clockTrace.Reset(); ClockSummary = _clockTrace.Summary;
             ResetListingExecution();
         });
     }
@@ -1147,6 +1165,7 @@ public partial class MainViewModel : ObservableObject
         _serialManager.Dump24Received += OnDump24Received;
         _serialManager.MessageReceived += OnMessageReceived;
         _serialManager.ConfigReceived += OnConfigReceived;
+        InitializeInstructionView();
         
         DataTable = [];
         LogTable = [];
@@ -1176,6 +1195,7 @@ public partial class MainViewModel : ObservableObject
     
     partial void OnIsClockFromArduinoChanged(bool value)
     {
+        OnPropertyChanged(nameof(InstructionIdealTime));
         OnPropertyChanged(nameof(CanControlClock));
         StartStopBoardCommand.NotifyCanExecuteChanged();
         NotifyDumpAvailabilityChanged();
@@ -1222,6 +1242,7 @@ public partial class MainViewModel : ObservableObject
     {
         Dispatcher.UIThread.InvokeAsync(() =>
         {
+            ObserveInstructionLog(logElement);
             LogTable.Add(logElement);
             TrackListingExecution(logElement);
         });
@@ -1245,6 +1266,7 @@ public partial class MainViewModel : ObservableObject
             FReg = fReg;
 
             ApplyRegisterDump();
+            if (DebugEnabled && !IsEz80) RefreshStoppedInstruction(PcReg, force: true);
         });
     }
     
@@ -1284,6 +1306,7 @@ public partial class MainViewModel : ObservableObject
             Iff2 = registers.Iff2;
 
             ApplyRegisterDump();
+            if (IsCpuHalted) RefreshStoppedInstruction(IsAdl ? Pc24 : ((uint)MbReg << 16) | (Pc24 & 0xFFFF), force: true);
         });
     }
 

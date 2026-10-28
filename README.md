@@ -145,6 +145,22 @@ the latest fetch. Only logs received after that assembly can navigate its listin
 Editing or reloading the listing invalidates its address map until the next
 assembly. The highlight also works in the separate editor window.
 
+Instruction reference while stopped
+
+The Registers pane now starts with **Istruzione al PC**: opcode bytes, operation,
+nominal timing, flag effects and a manual link for the next instruction. It reads
+the bytes from the connected board at a confirmed stop, including eZ80 ADL and
+MBASE addressing, without replacing the Memory pane. The Z80 card distinguishes
+nominal T-states from observed clocks; eZ80 uses its own bus-cycle catalog.
+Unavailable or unverified variants are clearly indicated.
+
+The log adds **Clock #** and **T / WAIT** columns. With the updated library
+manager, the first is the board's real falling-edge counter, and the second
+separates instruction T-states from WAIT extensions. **T?**, **Tw?** and **—**
+prevent incomplete/legacy traces from being mistaken for measured timings.
+See [the instruction-reference guide](Alex80_IDE/InstructionReference/README.md)
+for timing sources, supported metadata and validation.
+
 Contributing
 
 Contributions, bug reports, feature requests, and suggestions are welcome.
