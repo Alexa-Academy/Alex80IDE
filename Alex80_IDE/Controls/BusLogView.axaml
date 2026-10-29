@@ -201,8 +201,8 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="FASE" Binding="{Binding TracePhase}" Width="108" />
-                    <DataGridTextColumn Header="MNEMONICO" Binding="{Binding Mnemonic}" Width="*" MinWidth="110" />
+                    <DataGridTextColumn Header="FASE" Binding="{Binding TracePhase}" Width="Auto" MinWidth="170" />
+                    <DataGridTextColumn Header="MNEMONICO" Binding="{Binding Mnemonic}" Width="*" MinWidth="220" />
                 </DataGrid.Columns>
             </DataGrid>
             <GridSplitter Grid.Column="1" Width="5" ResizeDirection="Columns"
