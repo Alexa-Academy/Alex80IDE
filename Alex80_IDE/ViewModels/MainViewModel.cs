@@ -133,7 +133,7 @@ public partial class MainViewModel : ObservableObject
     private int _selectedIdx = -1;
     
     [ObservableProperty]
-    private string _toggleButtonContent = "Apri";
+    private string _toggleButtonContent = "Connetti";
     
     private readonly SerialManager _serialManager;
     
@@ -1452,7 +1452,7 @@ public partial class MainViewModel : ObservableObject
                 if (openPortName != null && !availablePorts.Contains(openPortName))
                 {
                     _serialManager.CloseSerialPort();
-                    ToggleButtonContent = "Apri";
+                    ToggleButtonContent = "Connetti";
                 }
 
                 PortsList.Clear();
@@ -1809,7 +1809,7 @@ public partial class MainViewModel : ObservableObject
         {
             SerialMessageText = string.Empty;
             bool isOpen = await _serialManager.OpenCloseSerialPortAsync(PortsList[SelectedIdx], SelectedBaudRate);
-            ToggleButtonContent = isOpen ? "Chiudi" : "Apri";
+            ToggleButtonContent = isOpen ? "Disconnetti" : "Connetti";
 
     
         }
