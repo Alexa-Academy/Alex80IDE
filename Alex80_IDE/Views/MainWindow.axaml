@@ -385,7 +385,7 @@
             </Border>
         </Grid>
 
-        <!-- Status bar: stato della scheda ed esito dell'ultima assemblata. PC e SP stanno
+        <!-- Status bar: stato della scheda e contesto di lavoro. PC e SP stanno
              nella tool window dei registri. -->
         <Border Grid.Row="3" Classes="statusBar">
             <Grid ColumnDefinitions="*,Auto">
@@ -417,7 +417,6 @@
                     <TextBlock Text="{Binding CpuStatusText}"
                                Classes="statusItem"
                                ToolTip.Tip="CPU per cui si assembla, e modo di indirizzamento quando i due non coincidono. La CPU si sceglie nel pannello Assemblatore, il modo nel pannello Scheda." />
-                    <TextBlock Text="{Binding AssemblerStatus}" Classes="statusItem" />
                 </StackPanel>
             </Grid>
         </Border>
