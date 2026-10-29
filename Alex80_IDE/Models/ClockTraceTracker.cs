@@ -27,7 +27,14 @@ public sealed class ClockTraceTracker
     // authorize bridging a gap. An arbitrary dump or a clock gap cannot do so.
     public void ConfirmManualRegisterRead(LogElement pulse)
     {
-        if (registerPause?.Row == pulse) confirmedPause = registerPause;
+        if (registerPause?.Row == pulse)
+        {
+            confirmedPause = registerPause;
+            // FULL injection logs temporarily invalidate synchronization. Expose
+            // the held program position again before the next manual step starts.
+            synced = registerPause.Synced; t = registerPause.T;
+            waits = registerPause.Waits; address = registerPause.Address;
+        }
     }
 
     private bool TryResumeAfterRegisterRead(LogElement row)

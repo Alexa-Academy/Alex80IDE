@@ -69,6 +69,8 @@ internal static class ClockTraceTrackerTests
                 for (uint clock = 3; clock <= 132; ++clock)
                     if (logging == "full" || clock % 2 == 0) trace.Observe(L(clock, 0x5A, 2, manual: false));
             trace.ConfirmManualRegisterRead(pulse);
+            Check("lettura registri " + logging + ": posizione disponibile prima del nuovo step",
+                trace.CurrentTState == 2 && trace.CurrentInstructionAddress == 0x2000);
             var released = L(133, 0x1A, 4); trace.Observe(released);
             var t3 = L(134, 0x3D, 0); trace.Observe(t3);
             var t4 = L(135, 0x39, 0); trace.Observe(t4);

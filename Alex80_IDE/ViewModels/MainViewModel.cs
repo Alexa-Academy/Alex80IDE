@@ -153,6 +153,7 @@ public partial class MainViewModel : ObservableObject
         LogEnabled = false;
         HasClockPulseSupport = false;
         HasRegisterUpdateSupport = false;
+        HasRegisterSnapshotSupport = false;
         _manualRegisterRefreshRequested = false;
         DebugEnabled = false;
         MonitorEnabled = null;
@@ -354,7 +355,7 @@ public partial class MainViewModel : ObservableObject
         ? "Carica il PC con l'indirizzo indicato e avvia la CPU"
         : "Invia NMI: fa saltare lo Z80 al vettore di avvio";
 
-    public bool CanRun => IsBoardConnected && !IsInstructionClockRunning;
+    public bool CanRun => IsBoardConnected && !IsInstructionClockRunning && !_serialManager.IsClockPulsePending;
 
     [RelayCommand]
     private void Run()
@@ -490,6 +491,8 @@ public partial class MainViewModel : ObservableObject
     /// Sull'ALEX80 micro serve la via dell'iniezione, che il firmware concede solo con
     /// memoria servita dall'Arduino, debug attivo e clock che gira: sono le stesse
     /// condizioni che controlla lui prima di provarci.
+    /// Con REGSNAP puo' anche usare un clock temporaneo dopo un'istruzione
+    /// completata o da T1, ripristinando la frequenza prima di rispondere.
     /// </para>
     /// <para>
     /// Sull'ALEX80 modulare mai: li' il dump passa dal modo monitor, che carica in RAM
@@ -501,6 +504,7 @@ public partial class MainViewModel : ObservableObject
         IsBoardConnected && !IsInstructionClockRunning &&
         !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending &&
         (IsEz80 ||
+         CanSnapshotManualRegisters ||
          (IsAlex80Micro && IsMemoryFromArduino && DebugEnabled && (!IsClockFromArduino || IsClockActive)));
 
     /// <summary>
@@ -509,7 +513,7 @@ public partial class MainViewModel : ObservableObject
     /// con break e cont. Tenerlo acceso voleva dire un pulsante che cambiava etichetta
     /// senza che sulla scheda cambiasse nulla.
     /// </summary>
-    public bool CanUseDebug => IsBoardConnected && IsAlex80Board && !IsInstructionClockRunning;
+    public bool CanUseDebug => IsBoardConnected && IsAlex80Board && !IsInstructionClockRunning && !_serialManager.IsClockPulsePending;
 
     /// <summary>
     /// Registrare il log vuole una scheda che sappia mostrare il bus. Sull'eZ80 si passa
@@ -541,7 +545,12 @@ public partial class MainViewModel : ObservableObject
                 return "Su ALEX80 la lettura dei registri passa dal modo monitor, che carica in RAM un programma suo: cancellerebbe il tuo. Non è disponibile da qui.";
             }
 
-            return "Per la lettura manuale servono la memoria servita dall'Arduino, il debug attivo e il clock in moto. Nel singolo clock, abilita l'aggiornamento automatico con il firmware aggiornato.";
+            if (IsClockFromArduino && !IsClockActive && !DebugEnabled)
+                return HasRegisterSnapshotSupport
+                    ? "Completa l'istruzione o raggiungi T1 per leggere i registri con clock temporaneo a 1 kHz."
+                    : "Per leggere i registri con clock manuale serve il manager ALEX80µ aggiornato con supporto REGSNAP. In alternativa usa Debug con WAIT e clock in moto.";
+
+            return "Per la lettura manuale servono la memoria servita dall'Arduino, il debug attivo e il clock in moto.";
         }
     }
 
@@ -1405,6 +1414,7 @@ public partial class MainViewModel : ObservableObject
                 if (cardConfig.LogEnabled is { } logEnabled) LogEnabled = logEnabled;
                 HasClockPulseSupport = cardConfig.ClockPulseSupported == true;
                 HasRegisterUpdateSupport = cardConfig.RegisterUpdateSupported == true;
+                HasRegisterSnapshotSupport = cardConfig.RegisterSnapshotSupported == true;
                 if (cardConfig.DebugEnabled is { } debugEnabled) DebugEnabled = debugEnabled;
                 MonitorEnabled = cardConfig.MonitorEnabled;
                 AppendSerialLine($"UI config: CARD={CardName}, IsSerialOpened={IsSerialOpened}");

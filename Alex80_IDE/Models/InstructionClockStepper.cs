@@ -9,11 +9,13 @@ public sealed class InstructionClockStepper
 {
     private uint? previousClock;
     private int? target;
+    private LogElement? registerPause;
     public int Pulses { get; private set; }
     public int ElapsedTStates { get; private set; }
     public bool NeedsInstruction { get; private set; }
 
-    public InstructionClockStepper(uint? clock = null) => previousClock = clock;
+    public InstructionClockStepper(uint? clock = null, LogElement? registerPause = null)
+    { previousClock = clock; this.registerPause = registerPause; }
 
     public void SetInstruction(InstructionInfo instruction, int elapsed, uint clock,
         byte? flags = null, byte? b = null)
@@ -56,7 +58,12 @@ public sealed class InstructionClockStepper
         if (!sample.IsManualPulse || sample.ClockNumber is not { } clock ||
             sample.Waiting is null || sample.StartsInstruction is null)
             throw new InvalidOperationException("Campione del clock manuale non valido.");
-        if (previousClock is { } previous && unchecked(clock - previous) != 1)
+        bool resume = registerPause is { Waiting: true, StartsInstruction: true, IsInstructionFetch: true } pause && sample.IsInstructionFetch &&
+            sample.Address == pause.Address && sample.Waiting == false &&
+            pause.ClockNumber is { } pausedClock && unchecked(clock - pausedClock) is >= 2 and <= 513;
+        if (registerPause is not null && !resume)
+            throw new InvalidOperationException("Ripresa dopo la lettura dei registri non valida: avanzamento interrotto.");
+        if (!resume && previousClock is { } previous && unchecked(clock - previous) != 1)
             throw new InvalidOperationException("Sequenza di clock incompleta: avanzamento interrotto.");
         previousClock = clock;
         Pulses++;
@@ -66,6 +73,12 @@ public sealed class InstructionClockStepper
             throw new InvalidOperationException("CPU in HALT: avanzamento interrotto.");
         if (sample.IsInjected || sample.Waiting == true || (!sample.Z80_M1 && !sample.Z80_IORQ))
             throw new InvalidOperationException("Intervento del debugger rilevato: avanzamento interrotto.");
+        if (resume)
+        {
+            registerPause = null;
+            // This releases the held T2 (one WAIT), not a new program T-state.
+            return false;
+        }
         if (target is null)
         {
             if (!sample.IsInstructionStartTState)

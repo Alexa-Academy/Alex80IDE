@@ -1,12 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Alex80_IDE.Models;
 
 public partial class MainViewModel
 {
     [ObservableProperty] private bool _autoRefreshRegisters = true;
     [ObservableProperty] private bool _hasRegisterUpdateSupport;
+    [ObservableProperty] private bool _hasRegisterSnapshotSupport;
     [ObservableProperty] private string _registerRefreshStatus = "Nessuna lettura dei registri ricevuta.";
     private bool _manualRegisterRefreshRequested;
     private bool _registersAreCurrent;
+    private LogElement? _confirmedManualRegisterPulse;
 
     partial void OnAutoRefreshRegistersChanged(bool value)
     {
@@ -21,7 +24,21 @@ public partial class MainViewModel
         NotifyManualClockAvailability();
     }
 
-    public string RegisterRefreshToolTip => HasRegisterUpdateSupport
+    partial void OnHasRegisterSnapshotSupportChanged(bool value)
+    {
+        OnPropertyChanged(nameof(RegisterRefreshToolTip));
+        NotifyManualClockAvailability();
+        NotifyDumpAvailabilityChanged();
+    }
+
+    private bool CanSnapshotManualRegisters => IsAlex80Micro && HasRegisterSnapshotSupport &&
+        IsMemoryFromArduino && IsClockFromArduino && !IsClockActive && !DebugEnabled &&
+        _lastManualClockSample is { ClockNumber: { } clock } sample &&
+        (sample.IsInstructionStartTState || clock == _completedManualInstructionClock);
+
+    public string RegisterRefreshToolTip => HasRegisterSnapshotSupport
+        ? "Rilegge i registri dopo gli step. Con clock manuale raggiunge il fetch successivo e usa temporaneamente 1 kHz per la lettura; i T-state del programma restano nella traccia."
+        : HasRegisterUpdateSupport
         ? "Rilegge i registri dopo gli step in modalità Debug con WAIT. Il clock manuale Arduino non legge i registri e non aggiunge WAIT o clock del debugger."
         : "Applica i dump automatici dopo gli step in modalità Debug. Il clock manuale Arduino genera solo gli impulsi richiesti.";
 
@@ -52,7 +69,8 @@ public partial class MainViewModel
 
     private void RequestManualRegisterRefresh()
     {
-        _manualRegisterRefreshRequested = _serialManager.RequestRegisters();
+        _manualRegisterRefreshRequested = CanSnapshotManualRegisters
+            ? _serialManager.SnapshotManualRegisters() : _serialManager.RequestRegisters();
         if (_manualRegisterRefreshRequested) RegisterRefreshStatus = "Lettura dei registri in corso…";
     }
 }

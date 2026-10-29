@@ -12,6 +12,10 @@ internal static class RegisterRefreshTests
         { Console.WriteLine($"{(ok ? "ok  " : "FAIL")} {name}"); if (!ok) failures++; }
         Check("registri automatici: default e salvataggio JSON", JsonSerializer.Deserialize<UserSettings>("{}")!.AutoRefreshRegisters &&
             !JsonSerializer.Deserialize<UserSettings>(JsonSerializer.Serialize(new UserSettings { AutoRefreshRegisters = false }))!.AutoRefreshRegisters);
+        Check("capability snapshot opzionale e distinta dai dump legacy",
+            CardConfig.Parse("REGUPDATE:ON").RegisterSnapshotSupported is null &&
+            CardConfig.Parse("REGSNAP:ON").RegisterSnapshotSupported == true &&
+            CardConfig.Parse("REGSNAP:OFF").RegisterSnapshotSupported == false);
         var vm = new MainViewModel(new NoDialogs());
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
         var manager = (SerialManager)typeof(MainViewModel).GetField("_serialManager", flags)!.GetValue(vm)!;
@@ -101,6 +105,11 @@ internal static class RegisterRefreshTests
             Dump(0x30, 0x3000); Rx("!PULSEEND;"); Pulse(502, 0x1A, 4);
             Check("dump a un altro PC non autorizza la risincronizzazione", confirmedReads == 1 && vm.LogTable[^1].TStateText.Contains('?'));
 
+            Serial("clockPulsePending", true); Serial("clockPulseRegisters", true); Serial("clockRegisterSnapshot", true);
+            Rx("!PULSEEND;");
+            Check("snapshot senza dump confermato fallisce e non lascia richieste pendenti",
+                !manager.IsClockPulsePending && vm.RegisterRefreshStatus.Contains("non confermata") && confirmedReads == 1);
+
             vm.CurrentInstruction = Alex80_IDE.InstructionReference.InstructionDecoder.Decode(0x2000, new byte[] { 0x3C });
             Vm("_instructionFromManualClock", true);
             typeof(MainViewModel).GetMethod("MarkRegistersStale", flags)!.Invoke(vm, null);
@@ -123,7 +132,7 @@ internal static class RegisterRefreshTests
             Serial("registerRequestPending", true); vm.ResetCommand.Execute(null); Dispatcher.UIThread.RunJobs();
             Check("reset cancella la richiesta registri pendente", !manager.IsRegisterRequestPending);
             vm.IsSerialOpened = false;
-            Check("disconnessione azzera capability e stato registri", !vm.HasRegisterUpdateSupport && vm.RegisterRefreshStatus.Contains("Nessuna lettura"));
+            Check("disconnessione azzera capability e stato registri", !vm.HasRegisterUpdateSupport && !vm.HasRegisterSnapshotSupport && vm.RegisterRefreshStatus.Contains("Nessuna lettura"));
         }
         finally
         {

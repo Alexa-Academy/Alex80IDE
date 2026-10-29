@@ -90,6 +90,7 @@ public partial class SerialManager {
     public event Action<uint, string>? InstructionReadFailed;
     private bool clockPulsePending;
     private bool clockPulseRegisters;
+    private bool clockRegisterSnapshot;
     private LogElement? clockPulseSample;
     private ushort? clockPulseDumpPc;
     private CancellationTokenSource? clockPulseTimeout;
@@ -98,18 +99,23 @@ public partial class SerialManager {
     public event Action<string>? ClockPulseFailed;
     public event Action<LogElement>? ManualRegisterReadCompleted;
 
-    public bool PulseClock(bool readRegisters = false)
+    public bool PulseClock(bool readRegisters = false) => BeginManualClock(readRegisters, false);
+
+    public bool SnapshotManualRegisters() => BeginManualClock(true, true);
+
+    private bool BeginManualClock(bool readRegisters, bool snapshot)
     {
         if (!_serialPort.IsOpen || IsReadPending || clockPulsePending || registerRequestPending) return false;
         clockPulsePending = true;
         clockPulseRegisters = readRegisters;
+        clockRegisterSnapshot = snapshot;
         clockPulseSample = null;
         clockPulseDumpPc = null;
         ReadStateChanged?.Invoke();
         clockPulseTimeout?.Cancel();
         clockPulseTimeout = new CancellationTokenSource();
         _ = AwaitClockPulseAsync(clockPulseTimeout.Token);
-        SendSerialText(readRegisters ? "clk pulse regs\r" : "clk pulse\r");
+        SendSerialText(snapshot ? "clk regs\r" : readRegisters ? "clk pulse regs\r" : "clk pulse\r");
         return true;
     }
     private async Task AwaitClockPulseAsync(CancellationToken token)
@@ -132,6 +138,7 @@ public partial class SerialManager {
     {
         clockPulseSample = null;
         clockPulseDumpPc = null;
+        clockRegisterSnapshot = false;
         clockPulsePending = false; clockPulseTimeout?.Cancel();
         ReadStateChanged?.Invoke();
         if (error is not null) ClockPulseFailed?.Invoke(error);
@@ -393,8 +400,13 @@ public partial class SerialManager {
         else if (message == "!PULSEEND;")
         {
             if (clockPulsePending && clockPulseRegisters) {
-                if (clockPulseSample is { } sample && clockPulseDumpPc == sample.Address)
+                if (clockPulseSample is { Waiting: true, StartsInstruction: true, IsInstructionFetch: true } sample && clockPulseDumpPc == sample.Address)
                     ManualRegisterReadCompleted?.Invoke(sample);
+                else if (clockRegisterSnapshot)
+                {
+                    CompleteClockPulse("Lettura dei registri non confermata al fetch atteso.");
+                    return;
+                }
                 CompleteClockPulse();
             }
         }

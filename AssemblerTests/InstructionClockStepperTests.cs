@@ -53,6 +53,32 @@ internal static class InstructionClockStepperTests
         Check("nuova istruzione da sette T: esattamente sette impulsi", ended && next.Pulses == 7);
         var wrapped = new InstructionClockStepper(); wrapped.SetInstruction(Decode(0), 3, uint.MaxValue);
         Check("rollover del contatore fisico", wrapped.Observe(Pulse(0, 0x39)));
+        foreach (var (instruction, duration, flagsValue) in new[] {
+            (Decode(0), 4, (byte?)null), (Decode(0xD3, 0), 11, null),
+            (Decode(0x20, 0xFE), 7, (byte?)0x40), (Decode(0x20, 0xFE), 12, (byte?)0) })
+        {
+            var pause = Pulse(100, 0x1A, 5);
+            var resumed = new InstructionClockStepper(100, pause);
+            resumed.SetInstruction(instruction, 2, 100, flagsValue);
+            bool release = resumed.Observe(Pulse(231, 0x1A, 4));
+            bool early = release, done = false;
+            for (int t = 3; t <= duration; ++t)
+            {
+                done = resumed.Observe(Pulse((uint)(229 + t), t == 3 ? (byte)0x3D : (byte)0x3F));
+                early |= done && t < duration;
+            }
+            Check(instruction.Mnemonic + ": dopo dump esclude 130 clock debugger e WAIT dai T programma",
+                done && !early && resumed.ElapsedTStates == duration && resumed.Pulses == duration - 1);
+        }
+        foreach (var invalid in new[] { Pulse(231, 0x1A, 4, 0x3000), Pulse(700, 0x1A, 4),
+            Pulse(231, 0x1A, 5), Pulse(231, 0x5A, 4), Pulse(231, 0x1A, 12) })
+        {
+            var resumed = new InstructionClockStepper(100, Pulse(100, 0x1A, 5));
+            resumed.SetInstruction(Decode(0), 2, 100);
+            bool rejected = false;
+            try { resumed.Observe(invalid); } catch (InvalidOperationException) { rejected = true; }
+            Check("ripresa registri rifiuta campioni incoerenti", rejected);
+        }
         foreach (var instruction in new[] { Decode(0x20, 0xFE), Decode(0x10, 0xFE), Decode(0xED, 0xB0), Decode(0xDD) })
         {
             bool rejected = false;
@@ -211,6 +237,38 @@ internal static class InstructionClockStepperTests
             check("cambio a clock esterno elimina il conteggio precedente e mantiene Step WAIT",
                 vm.CurrentInstruction is null && !vm.CanPulseClock && vm.StepCommand.CanExecute(null) && vm.StepToolTip.Contains("WAIT"));
             Info();
+            Info("CLKPULSE:ON,REGSNAP:ON,REGUPDATE:ON,ECLK:0,DEBUG:OFF,SCLK:A");
+            Prepare(800, 0); Begin();
+            ReceivePulse(801, 0x1A, 4); ReceivePulse(802, 0x3D, 0); ReceivePulse(803, 0x39, 0);
+            check("fine istruzione tenta la lettura automatica con REGSNAP e segnala porta di test chiusa",
+                vm.HasRegisterSnapshotSupport && !vm.IsInstructionClockRunning &&
+                vm.InstructionClockStatus.Contains("impossibile richiedere i registri") && vm.DumpCommand.CanExecute(null));
+
+            // The snapshot reaches T1/T2 of the next opcode, then injects. Feed
+            // the actual serial parser, including its final stopped-clock marker.
+            Serial("clockPulsePending", true); Serial("clockPulseRegisters", true);
+            ReceivePulse(804, 0x3E, 4, 0x2001); ReceivePulse(805, 0x1A, 5, 0x2001);
+            check("durante snapshot blocca esecuzione, debug e nuovi impulsi",
+                !vm.CanRun && !vm.DebugCommand.CanExecute(null) && !vm.CanPulseClock);
+            byte[] snapshot = { 0x31, 1, 2, 3, 4, 5, 6, 0x12, 0x34, 0x56, 0x78, 0x80, 0, 0x40, 0x20, 1 };
+            Rx("!DUMP" + Convert.ToBase64String(snapshot) + ";"); Rx("!PULSEEND;");
+            check("snapshot aggiorna i registri e conserva T1/T2 del nuovo fetch",
+                vm.AReg == 0x31 && vm.PcReg == 0x2001 && !manager.IsClockPulsePending &&
+                vm.LogTable[^2].TStateText == "T1" && vm.LogTable[^1].TStateText == "T2");
+            before = sent; Begin();
+            check("dopo snapshot senza byte decodificati non invia clock alla cieca",
+                sent == before && !vm.IsInstructionClockRunning && vm.InstructionClockStatus.Contains("Posizione T-state"));
+            vm.CurrentInstruction = InstructionDecoder.Decode(0x2001, new byte[] { 0 });
+            Vm("_instructionNeedsRead", false); Vm("_autoRefreshRegisters", false);
+            before = sent; Begin();
+            ReceivePulse(936, 0x1A, 4, 0x2001); ReceivePulse(937, 0x3D, 0, 0x2001); ReceivePulse(938, 0x39, 0, 0x2001);
+            check("step successivo riprende con WAIT/T3/T4 senza duplicare T1 o contare l'iniezione",
+                !vm.IsInstructionClockRunning && sent == before + 3 &&
+                vm.LogTable.TakeLast(3).Select(row => row.TStateText).SequenceEqual(new[] { "Tw1", "T3", "T4" }) &&
+                vm.InstructionClockStatus.Contains("prima del prossimo T1") && vm.DumpCommand.CanExecute(null));
+            Info();
+            check("firmware precedente non abilita snapshot o comandi nuovi", !vm.HasRegisterSnapshotSupport && !vm.DumpCommand.CanExecute(null));
+            Vm("_autoRefreshRegisters", true);
             Prepare(700, 0); Begin(); vm.IsSerialOpened = false; before = sent;
             ReceivePulse(701, 0x3E, 4);
             check("disconnessione impedisce riprese tardive", !vm.IsInstructionClockRunning && sent == before);

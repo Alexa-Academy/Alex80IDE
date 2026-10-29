@@ -84,6 +84,9 @@ public partial class MainViewModel
         });
         _serialManager.ReadStateChanged += () => Dispatcher.UIThread.Post(() =>
         {
+            OnPropertyChanged(nameof(CanRun));
+            OnPropertyChanged(nameof(CanUseDebug));
+            DebugCommand.NotifyCanExecuteChanged();
             ReadMemoryCommand.NotifyCanExecuteChanged(); WriteMemoryCommand.NotifyCanExecuteChanged();
             StepCommand.NotifyCanExecuteChanged();
             StartStopBoardCommand.NotifyCanExecuteChanged();
@@ -97,9 +100,23 @@ public partial class MainViewModel
             ObserveInstructionClockPulse(log);
         });
         _serialManager.ManualRegisterReadCompleted += log => Dispatcher.UIThread.Post(() =>
-            _clockTrace.ConfirmManualRegisterRead(log));
+        {
+            _clockTrace.ConfirmManualRegisterRead(log);
+            _confirmedManualRegisterPulse = log;
+            if (_instructionClockBeforeSnapshot is { } completed)
+            {
+                InstructionClockStatus = completed + " · registri aggiornati · clock fermo al fetch successivo.";
+                _instructionClockBeforeSnapshot = null;
+            }
+        });
         _serialManager.ClockPulseFailed += error => Dispatcher.UIThread.Post(() =>
         {
+            _manualRegisterRefreshRequested = false;
+            if (_instructionClockBeforeSnapshot is { } completed)
+                InstructionClockStatus = completed + " · " + error;
+            _instructionClockBeforeSnapshot = null;
+            MarkRegistersStale();
+            RegisterRefreshStatus = error;
             _clockTrace.InvalidateSynchronization(); InvalidateInstruction(); InstructionStatus = error;
             if (IsInstructionClockRunning) FinishInstructionClock(error);
         });
@@ -134,6 +151,7 @@ public partial class MainViewModel
         _instructionFromManualClock = _manualFetchActive = false;
         _lastManualClockSample = null;
         _completedManualInstructionClock = null;
+        _confirmedManualRegisterPulse = null;
         OnPropertyChanged(nameof(InstructionTitle)); OnPropertyChanged(nameof(InstructionPrediction));
         InstructionStatus = "Ferma la CPU e rileggi i registri per vedere l'istruzione al PC.";
     }
@@ -148,10 +166,12 @@ public partial class MainViewModel
     {
         if (!IsBoardConnected || IsEz80 || IsClockActive || DebugEnabled || log.IsReset || log.HardwareHalt == true) return;
         _lastManualClockSample = log;
+        _confirmedManualRegisterPulse = null;
         bool firstFetch = log.StartsInstruction == true && !log.Z80_M1 && log.Z80_IORQ && log.Z80_RFSH && !log.IsInjected;
         if (firstFetch && !_manualFetchActive) RefreshStoppedInstruction(log.Address, force: true, manualClock: true);
         _manualFetchActive = firstFetch;
         if (_instructionPc is null) InstructionStatus = "Clock inviato · avanza fino al prossimo fetch per identificare l'istruzione.";
+        NotifyDumpAvailabilityChanged();
     }
     private bool CanStepCpu() => IsBoardConnected && !IsInstructionClockRunning &&
         !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending &&

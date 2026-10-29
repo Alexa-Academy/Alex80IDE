@@ -15,6 +15,21 @@ Features
 * Assembly listing view
 * Designed for educational use and experimentation
 
+Registers with manual clock
+
+On ALEX80µ with manager firmware 1.1.0 (`REGSNAP:ON`), **Aggiorna automaticamente
+i registri** also reads registers after a counted instruction step. The manager
+temporarily uses 1 kHz, reaches the next opcode fetch, reads the registers and
+stops the clock again. The next instruction's T1/T2 remain visible; injection
+clocks and the WAIT release are kept separate from program T-states, so the next
+step continues at the correct position. The configured clock frequency is preserved.
+
+With automatic refresh off, the instruction step stops before the next T1.
+**Rileggi dalla scheda** can request the temporary-clock read at that boundary
+or at T1. Single-clock pulses still generate one pulse each. Older firmware
+keeps its previous behavior; manual-clock snapshots require updating the
+`ALEX80u_manager_terminal` example from the ALEX80u library.
+
 Projects
 
 When no document is open, the center of the IDE offers **Apri un file**,
