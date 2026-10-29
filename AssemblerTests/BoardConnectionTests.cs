@@ -53,7 +53,7 @@ internal static class BoardConnectionTests
                 vm.FullLogEnabled && vm.CanConfigureLogMode);
             Check("configurazione ricevuta non invia comandi alla scheda",
                 !receivedOutput.ToString().Contains("Porta seriale non aperta."));
-            Check("etichette log/debug aggiornate", vm.BusLogToggleText == "Disabilita log" && vm.CanDumpRegisters);
+            Check("etichette log/debug aggiornate", vm.BusLogToggleText == "Disabilita log continuo" && vm.CanDumpRegisters);
             Check("micro senza versione: requisito visibile senza bloccare la scheda",
                 vm.IsFirmwareVersionUnknown && vm.HasFirmwareWarning && !vm.IsFirmwareUpdateRequired &&
                 vm.CardConnectionText.Contains("versione da verificare") &&

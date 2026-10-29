@@ -2,8 +2,8 @@ using System;
 
 namespace Alex80_IDE.Models;
 
-// Interpret consecutive, clock-numbered samples, bridging only a confirmed
-// manual register read. Compact traces can omit arbitrary stretches of WAIT.
+// Interpret clock-numbered samples, anchoring at an observed first T-state
+// and bridging only a confirmed manual register read. Compact traces can omit WAIT.
 public sealed class ClockTraceTracker
 {
     private LogElement? previous;
@@ -77,8 +77,16 @@ public sealed class ClockTraceTracker
             if (previous is { Z80_M1: false }) { previous.TStateText = "—"; previous.ObservedPhase = "Acknowledge interrupt"; }
             previous = row; return;
         }
-        bool newInstruction = consecutive && previous is { Z80_M1: true } &&
-                              !row.Z80_M1 && row.Z80_IORQ && row.StartsInstruction == true;
+        // Before T1's falling edge M1 is already low, while RD/MREQ are still
+        // high (Zilog UM0080, figure 5). This identifies T1 even if recording
+        // starts here or earlier samples were omitted. StartsInstruction alone
+        // also remains set throughout T2/WAIT and must not restart the counter.
+        bool firstTState = !row.Z80_M1 && row.Z80_IORQ && row.Z80_RFSH &&
+                           row.Z80_RD && row.Z80_WR && row.Z80_MREQ &&
+                           row.Waiting == false && row.StartsInstruction == true;
+        bool newInstruction = firstTState ||
+                              (consecutive && previous is { Z80_M1: true } &&
+                               !row.Z80_M1 && row.Z80_IORQ && row.StartsInstruction == true);
         if (newInstruction)
         {
             if (synced)

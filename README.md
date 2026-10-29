@@ -165,6 +165,9 @@ Unavailable or unverified variants are clearly indicated.
 
 The log's **T / WAIT** column separates instruction T-states from WAIT extensions.
 The board's falling-edge counter stays internal to detect missing samples.
+Continuous logging (**Abilita log continuo**) and manual clock samples use the
+same counter: an observed first T-state synchronizes it even at the start of
+recording or after a gap. Prefix fetches do not restart the instruction count.
 **T?**, **Tw?** and **—**
 prevent incomplete/legacy traces from being mistaken for measured timings.
 With the updated library manager, **Un colpo di clock** sends one complete pulse

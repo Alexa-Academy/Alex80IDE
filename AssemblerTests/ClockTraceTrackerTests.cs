@@ -22,6 +22,46 @@ internal static class ClockTraceTrackerTests
             return (trace, pulse);
         }
 
+        foreach (bool manual in new[] { false, true })
+        {
+            var trace = new ClockTraceTracker();
+            var t1 = L(100, 0x3E, 4, manual: manual);
+            var t2 = L(101, 0x1A, 4, manual: manual);
+            var t3 = L(102, 0x3D, 0, manual: manual);
+            var t4 = L(103, 0x39, 0, manual: manual);
+            foreach (var row in new[] { t1, t2, t3, t4 }) trace.Observe(row);
+            trace.Observe(L(104, 0x3E, 4, 0x2001, manual));
+            string mode = manual ? "manuale senza log continuo" : "continuo";
+            Check("T1 iniziale riconosciuto nel log " + mode,
+                t1.TStateText == "T1" && t2.TStateText == "T2" &&
+                t3.TStateText == "T3" && t4.TStateText == "T4" &&
+                trace.Summary.Contains("4 T programma · 0 WAIT"));
+
+            var recovered = L(200, 0x3E, 4, manual: manual);
+            trace.Observe(recovered);
+            Check("T1 risincronizza dopo campioni omessi nel log " + mode, recovered.TStateText == "T1");
+
+            var partialFetch = L(300, 0x1A, 4, manual: manual);
+            trace.Observe(partialFetch);
+            Check("fetch gia' iniziato resta incerto nel log " + mode, partialFetch.TStateText == "T?");
+            var heldFetch = L(400, 0x1A, 5, manual: manual);
+            trace.Observe(heldFetch);
+            Check("WAIT iniziale resta incerto nel log " + mode, heldFetch.TStateText == "Tw?");
+
+            // M1 also identifies prefix fetches; only the firmware's first-opcode
+            // flag permits starting the instruction counter again.
+            trace.Observe(L(500, 0x3E, 4, manual: manual));
+            trace.Observe(L(501, 0x1A, 4, manual: manual));
+            trace.Observe(L(502, 0x3D, 0, manual: manual));
+            trace.Observe(L(503, 0x39, 0, manual: manual));
+            var prefix = L(504, 0x3E, 0, 0x2001, manual);
+            trace.Observe(prefix);
+            Check("fetch di prefisso continua a T5 nel log " + mode, prefix.TStateText == "T5");
+            var lostPrefix = L(600, 0x3E, 0, 0x2001, manual);
+            trace.Observe(lostPrefix);
+            Check("prefisso isolato non inventa T1 nel log " + mode, lostPrefix.TStateText == "T?");
+        }
+
         foreach (var logging in new[] { "off", "compact", "full", "full con buchi interni" })
         {
             var (trace, pulse) = Pause();

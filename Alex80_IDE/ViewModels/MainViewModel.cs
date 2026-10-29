@@ -224,7 +224,7 @@ public partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Etichetta del comando del log: dice cosa fa il clic.</summary>
-    public string BusLogToggleText => LogEnabled ? "Disabilita log" : "Abilita log";
+    public string BusLogToggleText => LogEnabled ? "Disabilita log continuo" : "Abilita log continuo";
 
     partial void OnLogEnabledChanged(bool value) => OnPropertyChanged(nameof(BusLogToggleText));
     

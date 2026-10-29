@@ -54,7 +54,7 @@ internal static class RegisterRefreshTests
             Check("step senza iniezione termina senza cambiare registri", !manager.IsRegisterRequestPending && vm.AReg == 0x2A);
 
             Vm("_autoRefreshRegisters", true);
-            Rx("!INFO:CARD:ALEX80µ,SCLK:A,FCLK:50,ECLK:0,SMEM:A,DEBUG:OFF,REGUPDATE:ON,CLKPULSE:ON;");
+            Rx("!INFO:CARD:ALEX80µ,SCLK:A,FCLK:50,ECLK:0,SMEM:A,DEBUG:OFF,LOG:OFF,REGUPDATE:ON,CLKPULSE:ON;");
             Serial("clockPulsePending", true); Serial("clockPulseRegisters", true);
             byte[] sample = { 0x20, 0, 0x3C, 0x1A, 5, 0, 0, 0, 20 };
             Rx("!PULSE" + Convert.ToBase64String(sample) + ";");
@@ -82,13 +82,16 @@ internal static class RegisterRefreshTests
             }
             int confirmedReads = 0;
             manager.ManualRegisterReadCompleted += _ => confirmedReads++;
-            Pulse(100, 0x3F, 0); Pulse(101, 0x3E, 4); Pulse(102, 0x1A, 5, regs: true);
+            Pulse(101, 0x3E, 4); Pulse(102, 0x1A, 5, regs: true);
             Dump(0x30); Rx("!PULSEEND;");
             Pulse(233, 0x1A, 4); Pulse(234, 0x3D, 0); Pulse(235, 0x39, 0);
             Pulse(236, 0x3E, 4, pc: 0x2001);
+            Check("seriale/UI: primo impulso T1 senza log continuo", !vm.LogEnabled &&
+                vm.BusLogToggleText == "Abilita log continuo" && vm.LogTable[0].TStateText == "T1" &&
+                vm.LogTable[1].TStateText == "T2");
             Check("seriale/UI: T riprendono dopo iniezione senza log", confirmedReads == 1 &&
-                vm.LogTable[3].TStateText == "Tw1" && vm.LogTable[4].TStateText == "T3" &&
-                vm.LogTable[5].TStateText == "T4" && vm.LogTable[3].IsManualPulse);
+                vm.LogTable[2].TStateText == "Tw1" && vm.LogTable[3].TStateText == "T3" &&
+                vm.LogTable[4].TStateText == "T4" && vm.LogTable[2].IsManualPulse);
             Check("seriale/UI: riepilogo distingue clock programma e debugger",
                 vm.ClockSummary.Contains("4 T programma · 1 WAIT · 130 clock debugger"));
             Pulse(237, 0x1A, 5, regs: true, pc: 0x2001);

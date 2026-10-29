@@ -21,6 +21,7 @@
             <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
                 <Button Content="{Binding BusLogToggleText}"
                         Classes="tool"
+                        ToolTip.Tip="Registra continuamente il bus. Ogni colpo di clock manuale aggiunge un campione anche con il log continuo disabilitato."
                         Command="{Binding EnableDisableLogsCommand}" />
 
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -42,7 +43,7 @@
             <TextBlock Text="{Binding ClockSummary}" Classes="caption" TextWrapping="Wrap" />
             <Button Content="Un colpo di clock" Command="{Binding PulseClockCommand}" HorizontalAlignment="Left"
                     ToolTip.Tip="{Binding ClockPulseToolTip}" />
-            <TextBlock Text="T: posizione nell'istruzione; Tw: attesa. T?/Tw?: intervallo incompleto. —: dato assente o ciclo interno. In modalità compatta possono mancare campioni."
+            <TextBlock Text="T: posizione nell'istruzione; Tw: attesa. Anche il clock manuale usa questo conteggio. T?/Tw?: intervallo incompleto, in attesa del prossimo T1. —: dato assente o ciclo interno. In modalità compatta possono mancare campioni."
                        Classes="caption" TextWrapping="Wrap" />
         </StackPanel>
 
