@@ -37,7 +37,7 @@ public partial class MainViewModel
         (sample.IsInstructionStartTState || clock == _completedManualInstructionClock);
 
     public string RegisterRefreshToolTip => HasRegisterSnapshotSupport
-        ? "Rilegge i registri dopo gli step. Con clock manuale raggiunge il fetch successivo e usa temporaneamente 1 kHz per la lettura; i T-state del programma restano nella traccia."
+        ? "Rilegge i registri dopo gli step in modalità Debug con WAIT. Con clock manuale usa Rileggi dalla scheda: la richiesta esplicita raggiunge T1/T2 del fetch successivo e legge i registri a 1 kHz."
         : HasRegisterUpdateSupport
         ? "Rilegge i registri dopo gli step in modalità Debug con WAIT. Il clock manuale Arduino non legge i registri e non aggiunge WAIT o clock del debugger."
         : "Applica i dump automatici dopo gli step in modalità Debug. Il clock manuale Arduino genera solo gli impulsi richiesti.";

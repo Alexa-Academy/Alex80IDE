@@ -238,14 +238,27 @@ internal static class InstructionClockStepperTests
                 vm.CurrentInstruction is null && !vm.CanPulseClock && vm.StepCommand.CanExecute(null) && vm.StepToolTip.Contains("WAIT"));
             Info();
             Info("CLKPULSE:ON,REGSNAP:ON,REGUPDATE:ON,ECLK:0,DEBUG:OFF,SCLK:A");
+            Vm("_hasRegisterSnapshot", true);
+            Prepare(750, 0xC3, 1, 0); before = sent; Begin();
+            ReceivePulse(751, 0x1A, 4); ReceivePulse(752, 0x3D, 0); ReceivePulse(753, 0x39, 0);
+            ReceivePulse(754, 0x3F, 0); ReceivePulse(755, 0x1B, 0); ReceivePulse(756, 0x1B, 0);
+            ReceivePulse(757, 0x3F, 0); ReceivePulse(758, 0x1B, 0); ReceivePulse(759, 0x1B, 0);
+            check("JP con registri automatici e REGSNAP termina a T10 senza avviare il fetch successivo",
+                vm.AutoRefreshRegisters && vm.HasRegisterSnapshotSupport && sent == before + 9 &&
+                !vm.IsInstructionClockRunning && !manager.IsClockPulsePending &&
+                vm.LogTable[^1].TStateText == "T10" &&
+                vm.InstructionClockStatus.Contains("prima del prossimo T1") &&
+                vm.RegisterRefreshStatus.Contains("da aggiornare"));
             Prepare(800, 0); Begin();
             ReceivePulse(801, 0x1A, 4); ReceivePulse(802, 0x3D, 0); ReceivePulse(803, 0x39, 0);
-            check("fine istruzione tenta la lettura automatica con REGSNAP e segnala porta di test chiusa",
+            check("NOP con REGSNAP si ferma a T4 e lascia la rilettura dei registri esplicita",
                 vm.HasRegisterSnapshotSupport && !vm.IsInstructionClockRunning &&
-                vm.InstructionClockStatus.Contains("impossibile richiedere i registri") && vm.DumpCommand.CanExecute(null));
+                !manager.IsClockPulsePending && !manager.IsRegisterRequestPending &&
+                vm.LogTable[^1].TStateText == "T4" &&
+                vm.InstructionClockStatus.Contains("prima del prossimo T1") && vm.DumpCommand.CanExecute(null));
 
-            // The snapshot reaches T1/T2 of the next opcode, then injects. Feed
-            // the actual serial parser, including its final stopped-clock marker.
+            // An explicitly requested snapshot still reaches T1/T2, then
+            // injects. Feed the actual parser and its stopped-clock marker.
             Serial("clockPulsePending", true); Serial("clockPulseRegisters", true);
             ReceivePulse(804, 0x3E, 4, 0x2001); ReceivePulse(805, 0x1A, 5, 0x2001);
             check("durante snapshot blocca esecuzione, debug e nuovi impulsi",
@@ -258,13 +271,16 @@ internal static class InstructionClockStepperTests
             before = sent; Begin();
             check("dopo snapshot senza byte decodificati non invia clock alla cieca",
                 sent == before && !vm.IsInstructionClockRunning && vm.InstructionClockStatus.Contains("Posizione T-state"));
-            vm.CurrentInstruction = InstructionDecoder.Decode(0x2001, new byte[] { 0 });
-            Vm("_instructionNeedsRead", false); Vm("_autoRefreshRegisters", false);
+            vm.CurrentInstruction = InstructionDecoder.Decode(0x2001, new byte[] { 0xC3, 1, 0 });
+            Vm("_instructionNeedsRead", false);
             before = sent; Begin();
             ReceivePulse(936, 0x1A, 4, 0x2001); ReceivePulse(937, 0x3D, 0, 0x2001); ReceivePulse(938, 0x39, 0, 0x2001);
-            check("step successivo riprende con WAIT/T3/T4 senza duplicare T1 o contare l'iniezione",
-                !vm.IsInstructionClockRunning && sent == before + 3 &&
-                vm.LogTable.TakeLast(3).Select(row => row.TStateText).SequenceEqual(new[] { "Tw1", "T3", "T4" }) &&
+            ReceivePulse(939, 0x3F, 0, 0x2001); ReceivePulse(940, 0x1B, 0, 0x2001); ReceivePulse(941, 0x1B, 0, 0x2001);
+            ReceivePulse(942, 0x3F, 0, 0x2001); ReceivePulse(943, 0x1B, 0, 0x2001); ReceivePulse(944, 0x1B, 0, 0x2001);
+            check("JP dopo snapshot esplicito: nove impulsi da WAIT a T10, senza un nuovo snapshot automatico",
+                vm.AutoRefreshRegisters && !vm.IsInstructionClockRunning && sent == before + 9 &&
+                !manager.IsClockPulsePending && !manager.IsRegisterRequestPending &&
+                vm.LogTable.TakeLast(9).Select(row => row.TStateText).SequenceEqual(new[] { "Tw1", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10" }) &&
                 vm.InstructionClockStatus.Contains("prima del prossimo T1") && vm.DumpCommand.CanExecute(null));
             Info();
             check("firmware precedente non abilita snapshot o comandi nuovi", !vm.HasRegisterSnapshotSupport && !vm.DumpCommand.CanExecute(null));

@@ -10,18 +10,14 @@ public partial class MainViewModel
     private Func<uint, bool>? _instructionClockReader;
     private uint? _completedManualInstructionClock;
     private bool _instructionClockStopRequested;
-    private string? _instructionClockBeforeSnapshot;
     [ObservableProperty] private bool _isInstructionClockRunning;
     [ObservableProperty] private string _instructionClockStatus = string.Empty;
 
     public string InstructionClockToolTip => !IsClockFromArduino
         ? "Clock esterno: usa Debug e Step con WAIT, se supportati dal firmware. Gli impulsi manuali richiedono il clock da Arduino."
-        : "Completa i T-state rimanenti. " +
+        : "Completa i T-state rimanenti e si ferma prima del T1 successivo. " +
         "Richiede clock automatico fermo e Debug disattivato. " +
-        (HasRegisterSnapshotSupport && AutoRefreshRegisters
-            ? "Poi raggiunge il fetch successivo e rilegge i registri a 1 kHz, conservando i T-state nella traccia. "
-            : "Si ferma prima del T1 successivo, senza WAIT o letture dei registri. ") +
-        "Per durate condizionali servono registri aggiornati.";
+        "Senza WAIT o letture dei registri. Per durate condizionali servono registri aggiornati.";
 
     partial void OnIsInstructionClockRunningChanged(bool value)
     {
@@ -103,7 +99,7 @@ public partial class MainViewModel
             else if (complete)
             {
                 _completedManualInstructionClock = sample.ClockNumber;
-                FinishInstructionClock($"Istruzione completata · {count}", refreshRegisters: true);
+                FinishInstructionClock($"Istruzione completata · {count} · clock fermo prima del prossimo T1.");
             }
             else if (stepper.NeedsInstruction)
             {
@@ -146,30 +142,22 @@ public partial class MainViewModel
         InstructionClockStatus = "Arresto al termine dell'impulso in corso…";
     }
 
-    private void FinishInstructionClock(string status, bool refreshRegisters = false)
+    private void FinishInstructionClock(string status)
     {
         _instructionClockStepper = null;
         _instructionClockPulseSender = null;
         _instructionClockReader = null;
         _instructionClockStopRequested = false;
         IsInstructionClockRunning = false;
-        if (refreshRegisters && AutoRefreshRegisters && CanSnapshotManualRegisters)
-        {
-            _instructionClockBeforeSnapshot = status;
-            RequestManualRegisterRefresh();
-            InstructionClockStatus = _manualRegisterRefreshRequested
-                ? status + " · lettura dei registri al fetch successivo…"
-                : status + " · impossibile richiedere i registri.";
-            if (!_manualRegisterRefreshRequested) _instructionClockBeforeSnapshot = null;
-        }
-        else InstructionClockStatus = refreshRegisters
-            ? status + " · clock fermo prima del prossimo T1." : status;
+        // Reading registers would clock the next opcode's T1/T2 and inject a
+        // dump. Leave that to the explicit register command so one instruction
+        // always ends at its final T-state, even with automatic refresh enabled.
+        InstructionClockStatus = status;
         TryReadInstruction();
     }
 
     private void CancelInstructionClock()
     {
-        _instructionClockBeforeSnapshot = null;
         _instructionClockStepper = null;
         _instructionClockPulseSender = null;
         _instructionClockReader = null;

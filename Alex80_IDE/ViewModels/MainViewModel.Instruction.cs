@@ -103,18 +103,10 @@ public partial class MainViewModel
         {
             _clockTrace.ConfirmManualRegisterRead(log);
             _confirmedManualRegisterPulse = log;
-            if (_instructionClockBeforeSnapshot is { } completed)
-            {
-                InstructionClockStatus = completed + " · registri aggiornati · clock fermo al fetch successivo.";
-                _instructionClockBeforeSnapshot = null;
-            }
         });
         _serialManager.ClockPulseFailed += error => Dispatcher.UIThread.Post(() =>
         {
             _manualRegisterRefreshRequested = false;
-            if (_instructionClockBeforeSnapshot is { } completed)
-                InstructionClockStatus = completed + " · " + error;
-            _instructionClockBeforeSnapshot = null;
             MarkRegistersStale();
             RegisterRefreshStatus = error;
             _clockTrace.InvalidateSynchronization(); InvalidateInstruction(); InstructionStatus = error;

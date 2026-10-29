@@ -17,16 +17,17 @@ Features
 
 Registers with manual clock
 
-On ALEX80µ with manager firmware 1.1.0 (`REGSNAP:ON`), **Aggiorna automaticamente
-i registri** also reads registers after a counted instruction step. The manager
-temporarily uses 1 kHz, reaches the next opcode fetch, reads the registers and
-stops the clock again. The next instruction's T1/T2 remain visible; injection
-clocks and the WAIT release are kept separate from program T-states, so the next
-step continues at the correct position. The configured clock frequency is preserved.
+With the Arduino clock stopped, a counted instruction step always stops on
+the instruction's final T-state, before the next T1, including when **Aggiorna
+automaticamente i registri** is enabled. Registers remain marked as needing an
+update; automatic register refresh applies to Debug/WAIT steps.
 
-With automatic refresh off, the instruction step stops before the next T1.
-**Rileggi dalla scheda** can request the temporary-clock read at that boundary
-or at T1. Single-clock pulses still generate one pulse each. Older firmware
+On ALEX80µ with manager firmware 1.1.0 (`REGSNAP:ON`), **Rileggi dalla scheda**
+can explicitly request a register read at that boundary or at T1. This request
+reaches the next opcode fetch's T1/T2, reads registers at a temporary 1 kHz and
+stops the clock again. The trace preserves T1/T2 and separates injection clocks
+and WAIT release from program T-states. The configured frequency is preserved.
+Single-clock pulses generate one pulse each. Older firmware
 keeps its previous behavior; manual-clock snapshots require updating the
 `ALEX80u_manager_terminal` example from the ALEX80u library.
 
