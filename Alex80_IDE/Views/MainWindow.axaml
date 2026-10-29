@@ -260,54 +260,58 @@
                                   IsVisible="{Binding LeftDock.IsPanelVisible}" />
 
                     <Border Grid.Column="2" Classes="panel">
-                        <TabControl Classes="workspaceTabs"
-                                    Margin="6,4,6,0"
-                                    ItemsSource="{Binding OpenDocuments}"
-                                    SelectedItem="{Binding SelectedDocument}">
-                            <TabControl.ItemTemplate>
-                                <DataTemplate x:DataType="global:DocumentViewModel">
-                                    <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding FileName, Converter={StaticResource FileTypeBadgeConverter}}"
-                                                   Classes="fileBadge" />
-                                        <TextBlock Text="{Binding FileName}"
-                                                   VerticalAlignment="Center"
-                                                   Classes="tabTitle"
-                                                   Classes.dirty="{Binding IsDirty}" />
-                                        <Ellipse Classes="dirtyDot"
-                                                 ToolTip.Tip="Modifiche non salvate"
-                                                 IsVisible="{Binding IsDirty}" />
-                                        <Button Content="✕"
-                                                Classes="closeTab"
-                                                FontSize="10"
-                                                ToolTip.Tip="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).CommandModifierName, StringFormat='Chiudi ({0}+W)'}"
-                                                Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).CloseTabCommand}"
-                                                CommandParameter="{Binding}"
-                                                IsVisible="{Binding $parent[TabItem].IsSelected}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </TabControl.ItemTemplate>
+                        <Grid>
+                            <controls:WorkspaceWelcomeView IsVisible="{Binding IsWorkspaceEmpty}" />
+                            <TabControl Classes="workspaceTabs"
+                                        IsVisible="{Binding !IsWorkspaceEmpty}"
+                                        Margin="6,4,6,0"
+                                        ItemsSource="{Binding OpenDocuments}"
+                                        SelectedItem="{Binding SelectedDocument}">
+                                <TabControl.ItemTemplate>
+                                    <DataTemplate x:DataType="global:DocumentViewModel">
+                                        <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding FileName, Converter={StaticResource FileTypeBadgeConverter}}"
+                                                       Classes="fileBadge" />
+                                            <TextBlock Text="{Binding FileName}"
+                                                       VerticalAlignment="Center"
+                                                       Classes="tabTitle"
+                                                       Classes.dirty="{Binding IsDirty}" />
+                                            <Ellipse Classes="dirtyDot"
+                                                     ToolTip.Tip="Modifiche non salvate"
+                                                     IsVisible="{Binding IsDirty}" />
+                                            <Button Content="✕"
+                                                    Classes="closeTab"
+                                                    FontSize="10"
+                                                    ToolTip.Tip="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).CommandModifierName, StringFormat='Chiudi ({0}+W)'}"
+                                                    Command="{Binding $parent[views:MainWindow].((global:MainViewModel)DataContext).CloseTabCommand}"
+                                                    CommandParameter="{Binding}"
+                                                    IsVisible="{Binding $parent[TabItem].IsSelected}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </TabControl.ItemTemplate>
 
-                            <TabControl.ContentTemplate>
-                                <DataTemplate x:DataType="global:DocumentViewModel">
-                                    <controls:ExecutionListingEditor Document="{Binding EditorDocument}"
-                                                     ExecutionLine="{Binding ExecutionLine}"
-                                                     ExecutionBrush="{DynamicResource WarningBrush}"
-                                                     FontFamily="{DynamicResource MonoFontFamily}"
-                                                     FontSize="15"
-                                                     Background="{DynamicResource SurfaceInputBrush}"
-                                                     Foreground="{DynamicResource TextPrimaryBrush}"
-                                                     LineNumbersForeground="{DynamicResource TextSecondaryBrush}"
-                                                     SearchResultsBrush="{DynamicResource EditorSearchResultsBrush}"
-                                                     SyntaxHighlighting="Z80"
-                                                     ShowLineNumbers="True"
-                                                     WordWrap="False"
-                                                     HorizontalScrollBarVisibility="Auto"
-                                                     VerticalScrollBarVisibility="Auto"
-                                                     HorizontalAlignment="Stretch"
-                                                     VerticalAlignment="Stretch" />
-                                </DataTemplate>
-                            </TabControl.ContentTemplate>
-                        </TabControl>
+                                <TabControl.ContentTemplate>
+                                    <DataTemplate x:DataType="global:DocumentViewModel">
+                                        <controls:ExecutionListingEditor Document="{Binding EditorDocument}"
+                                                         ExecutionLine="{Binding ExecutionLine}"
+                                                         ExecutionBrush="{DynamicResource WarningBrush}"
+                                                         FontFamily="{DynamicResource MonoFontFamily}"
+                                                         FontSize="15"
+                                                         Background="{DynamicResource SurfaceInputBrush}"
+                                                         Foreground="{DynamicResource TextPrimaryBrush}"
+                                                         LineNumbersForeground="{DynamicResource TextSecondaryBrush}"
+                                                         SearchResultsBrush="{DynamicResource EditorSearchResultsBrush}"
+                                                         SyntaxHighlighting="Z80"
+                                                         ShowLineNumbers="True"
+                                                         WordWrap="False"
+                                                         HorizontalScrollBarVisibility="Auto"
+                                                         VerticalScrollBarVisibility="Auto"
+                                                         HorizontalAlignment="Stretch"
+                                                         VerticalAlignment="Stretch" />
+                                    </DataTemplate>
+                                </TabControl.ContentTemplate>
+                            </TabControl>
+                        </Grid>
                     </Border>
 
                     <GridSplitter Grid.Column="3"

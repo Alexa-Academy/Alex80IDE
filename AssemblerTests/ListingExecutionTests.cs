@@ -82,11 +82,21 @@ internal static class ListingExecutionTests
         }
         try
         {
+            Check("senza documenti mostra le azioni iniziali e disabilita il seguito", vm.IsWorkspaceEmpty && !vm.CanFollowListingExecution);
+            var availability = new List<bool>();
+            vm.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName == nameof(MainViewModel.CanFollowListingExecution))
+                    availability.Add(vm.CanFollowListingExecution);
+            };
             var document = new DocumentViewModel { FileName = "test.asm", Text = source };
             vm.OpenDocuments.Add(document);
             vm.SelectedDocument = document;
+            Check("un sorgente aperto nasconde le azioni ma non abilita il seguito", !vm.IsWorkspaceEmpty && !vm.CanFollowListingExecution);
             vm.AssembleCommand.Execute(null);
             var listing = vm.SelectedDocument;
+            Check("listing assemblato abilita il seguito e notifica la barra", vm.CanFollowListingExecution &&
+                listing.HasExecutionListing && availability.LastOrDefault());
             var listingMap = ListingAddressMap.Create(listing.Text);
             Log(0x2000, 0x3E);
             Check("segue il fetch prima del completamento del mnemonico",
@@ -143,10 +153,12 @@ internal static class ListingExecutionTests
             Log(0x2000, 0x00);
             listing.EditorDocument.Insert(0, "; modifica\n");
             Log(0x2002, 0x00);
-            Check("listing modificato invalida la mappa", listing.ExecutionLine == 0 && listing.IsDirty);
+            Check("listing modificato invalida la mappa e disabilita la barra", listing.ExecutionLine == 0 &&
+                listing.IsDirty && !listing.HasExecutionListing && !vm.CanFollowListingExecution && !availability.Last());
 
             vm.SelectedDocument = document;
             vm.AssembleCommand.Execute(null);
+            Check("riassemblare ripristina disponibilita' e notifica", vm.CanFollowListingExecution && availability.Last());
             Log(0x2000, 0x00);
             vm.IsSerialOpened = true;
             Check("nuova sessione seriale azzera l'indicatore", listing.ExecutionLine == 0);
@@ -155,7 +167,15 @@ internal static class ListingExecutionTests
             Check("disconnessione azzera l'indicatore", listing.ExecutionLine == 0);
             vm.CloseTabCommand.Execute(listing);
             Log(0x2002, 0x00);
-            Check("listing chiuso non viene piu' aggiornato", listing.ExecutionLine == 0);
+            Check("listing chiuso non viene piu' aggiornato e disabilita la barra", listing.ExecutionLine == 0 &&
+                !vm.CanFollowListingExecution && !availability.Last());
+            vm.CloseTabCommand.Execute(document);
+            Check("chiudere l'ultima scheda ripristina le azioni iniziali", vm.IsWorkspaceEmpty);
+            vm.NewTabCommand.Execute(null);
+            Check("nuovo file dalle azioni iniziali apre un sorgente", !vm.IsWorkspaceEmpty &&
+                vm.SelectedDocument.FileName == "Nuovo.asm" && !vm.CanFollowListingExecution);
+            vm.CloseTabCommand.Execute(vm.SelectedDocument);
+            Check("azioni iniziali disponibili anche dopo chiusure ripetute", vm.IsWorkspaceEmpty);
         }
         finally
         {

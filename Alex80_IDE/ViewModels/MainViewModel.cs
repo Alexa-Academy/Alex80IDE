@@ -34,6 +34,7 @@ public partial class MainViewModel : ObservableObject
     private const int DefaultBytesRead = 80;
     
     public ObservableCollection<DocumentViewModel> OpenDocuments { get; } = new();
+    public bool IsWorkspaceEmpty => OpenDocuments.Count == 0;
     private DocumentViewModel _selectedDocument;
     public ICommand OpenFileCommand { get; }
     public ICommand SaveFileCommand { get; }
@@ -1205,6 +1206,13 @@ public partial class MainViewModel : ObservableObject
         SaveArduinoArrayCommand = new RelayCommand(async _ => await SaveArduinoArrayAsync(), _ => _fileBytesToWrite is { Length: > 0 });
         ToggleAssemblerOutputCommand = new RelayCommand(_ => IsAssemblerOutputVisible = !IsAssemblerOutputVisible);
 
+        OpenDocuments.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(IsWorkspaceEmpty));
+            if (_executionListing is { } listing && !OpenDocuments.Contains(listing))
+                ResetListingExecution(discardListing: true);
+            OnPropertyChanged(nameof(CanFollowListingExecution));
+        };
         InitializeProjectCommands();
         InitializeDocks();
 

@@ -10,6 +10,7 @@ public partial class DocumentViewModel : ObservableObject
     private bool _isSyncingText;
     private bool _isInitializingText;
     private IReadOnlyDictionary<uint, int>? _executionLines;
+    public bool HasExecutionListing => _executionLines is { Count: > 0 };
 
     [ObservableProperty]
     private int _executionLine;
@@ -20,6 +21,7 @@ public partial class DocumentViewModel : ObservableObject
         {
             // Gli offset del listing valgono soltanto per il testo appena assemblato.
             _executionLines = null;
+            OnPropertyChanged(nameof(HasExecutionListing));
             ExecutionLine = 0;
             if (_isSyncingText)
             {
@@ -91,6 +93,7 @@ public partial class DocumentViewModel : ObservableObject
         ReloadFromDisk(text);
         ExecutionLine = 0;
         _executionLines = ListingAddressMap.Create(text);
+        OnPropertyChanged(nameof(HasExecutionListing));
     }
 
     public void HighlightExecutionAddress(uint? address) =>

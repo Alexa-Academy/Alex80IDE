@@ -17,6 +17,12 @@ Features
 
 Projects
 
+When no document is open, the center of the IDE offers **Apri un file**,
+**Nuovo file**, **Crea un progetto** and **Apri un progetto**, including the
+existing platform keyboard shortcuts. With a project already open, it offers
+**Aggiungi file al progetto** and reminds you that sources can also be dragged
+onto the Project file list. Writing and assembling do not require a connected board.
+
 A program made of several files is described by a project (`.a80proj`), managed from the
 panel on the left: add the sources, reorder them with the arrows, and mark one as the main
 file with the star. **Assembla** builds every file and merges the
@@ -127,6 +133,9 @@ so it cannot be recovered from `info`. The board's monitor status is read-only.
 The bus-log panel has a single toolbar for recording, single-clock pulses,
 instruction advance, auto-scroll, following the listing and clearing the log.
 Toggle icons show their current state and each icon has an action tooltip.
+Following execution is enabled only while an assembled listing with a valid
+address map is open; editing or closing that listing disables it immediately,
+and assembling again restores availability.
 The instruction card sits to the right of the table with a resizable divider,
 independent scrolling and expandable details; it is no longer in Registers.
 It remains available for eZ80 instruction inspection even though ZDI does not

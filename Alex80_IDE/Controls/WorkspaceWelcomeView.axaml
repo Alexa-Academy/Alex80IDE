@@ -1,0 +1,68 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:global="clr-namespace:"
+             x:Class="Alex80_IDE.Controls.WorkspaceWelcomeView"
+             x:DataType="global:MainViewModel">
+    <UserControl.Styles>
+        <Style Selector="Button.welcomeAction">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="Button.welcomeAction /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style Selector="Button.welcomeAction:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+        </Style>
+        <Style Selector="TextBlock.welcomeLabel">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.welcomeAction:pointerover TextBlock.welcomeLabel">
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                MaxWidth="420" Margin="24" Spacing="4">
+        <TextBlock Text="Inizia a lavorare" Margin="10,0,10,16" FontSize="18"
+                   FontWeight="SemiBold" Foreground="{DynamicResource TextSecondaryBrush}" />
+        <TextBlock Text="{Binding ProjectTitle, StringFormat='Progetto aperto: {0}'}"
+                   Classes="caption" Margin="10,0,10,10" TextWrapping="Wrap" IsVisible="{Binding HasProject}" />
+        <Button Classes="welcomeAction" Command="{Binding OpenFileCommand}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="28">
+                <TextBlock Text="Apri un file" Classes="welcomeLabel" />
+                <TextBlock Grid.Column="1" Text="{Binding CommandModifierName, StringFormat='{}{0}+O'}"
+                           Classes="caption mono" VerticalAlignment="Center" />
+            </Grid>
+        </Button>
+        <Button Classes="welcomeAction" Command="{Binding NewTabCommand}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="28">
+                <TextBlock Text="Nuovo file" Classes="welcomeLabel" />
+                <TextBlock Grid.Column="1" Text="{Binding CommandModifierName, StringFormat='{}{0}+N'}"
+                           Classes="caption mono" VerticalAlignment="Center" />
+            </Grid>
+        </Button>
+        <Button Classes="welcomeAction" Command="{Binding NewProjectCommand}" IsVisible="{Binding !HasProject}">
+            <TextBlock Text="Crea un progetto" Classes="welcomeLabel" />
+        </Button>
+        <Button Classes="welcomeAction" Command="{Binding AddFilesToProjectCommand}" IsVisible="{Binding HasProject}">
+            <TextBlock Text="Aggiungi file al progetto" Classes="welcomeLabel" />
+        </Button>
+        <Button Classes="welcomeAction" Command="{Binding OpenProjectCommand}">
+            <TextBlock Text="Apri un progetto" Classes="welcomeLabel" />
+        </Button>
+        <Border Height="1" Background="{DynamicResource BorderHairlineBrush}" Margin="10,14,10,10" />
+        <TextBlock Text="Per più sorgenti, crea un progetto e aggiungi i file."
+                   Classes="caption" TextWrapping="Wrap" Margin="10,0" IsVisible="{Binding !HasProject}" />
+        <TextBlock Text="Puoi anche trascinare i sorgenti nell'elenco Progetto."
+                   Classes="caption" TextWrapping="Wrap" Margin="10,0" IsVisible="{Binding HasProject}" />
+        <TextBlock Text="Puoi scrivere e assemblare anche senza collegare la scheda."
+                   Classes="caption" TextWrapping="Wrap" Margin="10,4,10,0" />
+    </StackPanel>
+</UserControl>

@@ -757,7 +757,7 @@ public partial class MainViewModel
         }
 
         listingTab.LoadExecutionListing(listingText);
-        _executionListing = listingTab;
+        SetExecutionListing(listingTab);
         _listingLogStartIndex = LogTable.Count;
         SelectedDocument = listingTab;
     }

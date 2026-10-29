@@ -39,6 +39,15 @@
         <Style Selector="ToggleButton.busToggle:checked PathIcon.btnIcon">
             <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
         </Style>
+        <Style Selector="ToggleButton.busToggle:disabled">
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
+        <Style Selector="ToggleButton.busToggle:disabled /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ToggleButton.busToggle:disabled PathIcon.btnIcon">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
         <Style Selector="Button.toolStripButton:disabled">
             <Setter Property="Opacity" Value="0.4" />
         </Style>
@@ -98,8 +107,9 @@
                         <PathIcon Classes="btnIcon" Data="{DynamicResource AutoScrollIconData}" />
                     </ToggleButton>
                     <ToggleButton Classes="busToggle" IsChecked="{Binding FollowListingExecution, Mode=TwoWay}"
+                                  IsEnabled="{Binding CanFollowListingExecution}"
                                   AutomationProperties.Name="Segui esecuzione nel listing"
-                                  ToolTip.Tip="Segui esecuzione nel listing. Selezionando un log il seguito si sospende; riattiva questo comando per riprenderlo.">
+                                  ToolTip.Tip="Segui esecuzione nel listing. Richiede un listing assemblato aperto e non modificato. Selezionando un log il seguito si sospende; riattiva questo comando per riprenderlo.">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource FollowListingIconData}" />
                     </ToggleButton>
                     <Border Classes="separator" />

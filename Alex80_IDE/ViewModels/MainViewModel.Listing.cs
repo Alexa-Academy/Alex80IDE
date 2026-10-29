@@ -1,4 +1,5 @@
 using Alex80_IDE.Models;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 public partial class MainViewModel
@@ -6,6 +7,22 @@ public partial class MainViewModel
     private DocumentViewModel? _executionListing;
     private uint? _latestExecutionAddress;
     private int _listingLogStartIndex;
+    public bool CanFollowListingExecution =>
+        _executionListing is { HasExecutionListing: true } listing && OpenDocuments.Contains(listing);
+
+    private void SetExecutionListing(DocumentViewModel? listing)
+    {
+        if (_executionListing is not null) _executionListing.PropertyChanged -= OnExecutionListingChanged;
+        _executionListing = listing;
+        if (_executionListing is not null) _executionListing.PropertyChanged += OnExecutionListingChanged;
+        OnPropertyChanged(nameof(CanFollowListingExecution));
+    }
+
+    private void OnExecutionListingChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(DocumentViewModel.HasExecutionListing))
+            OnPropertyChanged(nameof(CanFollowListingExecution));
+    }
 
     [ObservableProperty]
     private bool _followListingExecution = true;
@@ -15,7 +32,7 @@ public partial class MainViewModel
 
     partial void OnFollowListingExecutionChanged(bool value)
     {
-        if (!value) return;
+        if (!value || !CanFollowListingExecution) return;
         SelectedLog = null;
         _executionListing?.HighlightExecutionAddress(_latestExecutionAddress);
     }
@@ -54,7 +71,7 @@ public partial class MainViewModel
     private void ResetListingExecution(bool discardListing = false)
     {
         _executionListing?.HighlightExecutionAddress(null);
-        if (discardListing) _executionListing = null;
+        if (discardListing) SetExecutionListing(null);
         _latestExecutionAddress = null;
         _listingLogStartIndex = LogTable?.Count ?? 0;
         SelectedLog = null;
