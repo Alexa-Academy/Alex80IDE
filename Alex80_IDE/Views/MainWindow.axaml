@@ -357,7 +357,7 @@
                      icone stanno in fondo alla strip di sinistra. -->
                 <Border Grid.Row="2" Classes="panel" IsVisible="{Binding BottomDock.IsPanelVisible}">
                     <Grid RowDefinitions="Auto,*">
-                        <Border Classes="toolPanelHeader">
+                        <Border Classes="toolPanelHeader" IsVisible="{Binding !BusLogTool.IsActive}">
                             <Grid ColumnDefinitions="*,Auto">
                                 <TextBlock Text="{Binding BottomDock.HeaderTitle}" Classes="toolPanelTitle" />
                                 <Button Grid.Column="1" Content="✕" Classes="closeTab"

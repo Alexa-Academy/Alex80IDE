@@ -49,8 +49,7 @@ internal static class BoardConnectionTests
             finally { Console.SetOut(originalOutput); }
             Check("connessione: stato reale completo applicato alla UI", vm.IsBoardConnected &&
                 vm.IsClockFromArduino && vm.IsMemoryFromArduino && vm.ClockFrequency == "32768" &&
-                vm.IsClockActive && vm.LogEnabled && vm.DebugEnabled && vm.MonitorEnabled == false &&
-                vm.FullLogEnabled && vm.CanConfigureLogMode);
+                vm.IsClockActive && vm.LogEnabled && vm.DebugEnabled && vm.MonitorEnabled == false);
             Check("configurazione ricevuta non invia comandi alla scheda",
                 !receivedOutput.ToString().Contains("Porta seriale non aperta."));
             Check("etichette log/debug aggiornate", vm.BusLogToggleText == "Disabilita log continuo" && vm.CanDumpRegisters);
@@ -90,15 +89,14 @@ internal static class BoardConnectionTests
 
             vm.IsSerialOpened = false;
             Check("disconnessione: nessuno stato resta dalla sessione precedente", !vm.IsBoardConnected &&
-                !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && vm.MonitorEnabled is null &&
-                !vm.FullLogEnabled && !vm.CanConfigureLogMode);
+                !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && vm.MonitorEnabled is null);
             Check("disconnessione: versione e avvisi azzerati", vm.FirmwareVersion == "" &&
                 !vm.HasFirmwareWarning && vm.CardConnectionText == "scheda non connessa");
             vm.IsSerialOpened = true;
             Receive("CARD:ALEX80µ,SCLK:E,FCLK:100,ECLK:0,SMEM:E,LOG:OFF,LOGMODE:COMPACT,DEBUG:OFF,MONITOR:OFF");
             Check("riconnessione: nuovi valori OFF e sorgenti esterne", vm.IsBoardConnected &&
                 !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && !vm.IsClockFromArduino &&
-                !vm.IsMemoryFromArduino && vm.ClockFrequency == "100" && !vm.FullLogEnabled && vm.CanConfigureLogMode);
+                !vm.IsMemoryFromArduino && vm.ClockFrequency == "100");
             Check("INFO legacy non eredita la versione precedente", vm.FirmwareVersion == "" && vm.IsFirmwareVersionUnknown);
 
             Receive("CARD:ALEX80,FWVER:0.1.0");
@@ -107,7 +105,7 @@ internal static class BoardConnectionTests
 
             Receive("CARD:eZ80Test,SCLK:E,FCLK:0,ECLK:1,SMEM:E");
             Check("INFO eZ80 esistente resta compatibile", vm.IsEz80 && vm.IsBoardConnected &&
-                !vm.CanUseDebug && !vm.CanUseBusLog && vm.MonitorEnabled is null && !vm.CanConfigureLogMode);
+                !vm.CanUseDebug && !vm.CanUseBusLog && vm.MonitorEnabled is null && vm.BusLogTool.IsAvailable);
             Check("eZ80: versione e requisito micro non ereditati", vm.FirmwareVersion == "" &&
                 !vm.HasFirmwareWarning && vm.RequiredFirmwareVersion == "" && vm.CardConnectionText == "eZ80Test");
 

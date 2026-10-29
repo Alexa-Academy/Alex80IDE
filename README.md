@@ -124,15 +124,16 @@ IDE and upload that updated example to synchronize the log state. Older firmware
 remains accepted; missing fields mean the firmware does not report that state,
 so it cannot be recovered from `info`. The board's monitor status is read-only.
 
-In the bus-log panel, **Tutti i clock** selects `log full`; unchecked selects
-`log compact` (the existing behavior). Full logging includes repeated WAIT rows,
-register-dump injection and reset pulses, yielding one row per generated clock
-while logging is active. The FASE column identifies internal register reads
-and reset; those bytes do not enter the program disassembler. Full logging can
-fill the table quickly while the CPU is held in WAIT. The mode is read from
-`LOGMODE:FULL/COMPACT` on the board, including after reconnection. The checkbox
-is disabled for older firmware that does not report this capability. Update
-the IDE and the library's manager sketch together to use full logging.
+The bus-log panel has a single toolbar for recording, single-clock pulses,
+instruction advance, auto-scroll, following the listing and clearing the log.
+Toggle icons show their current state and each icon has an action tooltip.
+The instruction card sits to the right of the table with a resizable divider,
+independent scrolling and expandable details; it is no longer in Registers.
+It remains available for eZ80 instruction inspection even though ZDI does not
+provide a bus log. There is no **Tutti i clock** selector: the IDE displays the
+samples sent by the firmware and preserves compatibility with existing full
+and compact frames. FASE still identifies debugger/reset rows, whose bytes
+are excluded from program disassembly.
 
 `dotnet run --project AssemblerTests` includes board-state parsing and UI
 synchronization tests in addition to assembler regressions. These tests simulate

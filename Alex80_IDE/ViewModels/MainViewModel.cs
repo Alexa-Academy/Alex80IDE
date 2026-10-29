@@ -150,11 +150,9 @@ public partial class MainViewModel : ObservableObject
         _clockTrace.Reset(); ClockSummary = _clockTrace.Summary;
         // Clear the previous session before the new board's !INFO arrives.
         LogEnabled = false;
-        HasLogModeSupport = false;
         HasClockPulseSupport = false;
         HasRegisterUpdateSupport = false;
         _manualRegisterRefreshRequested = false;
-        FullLogEnabled = false;
         DebugEnabled = false;
         MonitorEnabled = null;
         IsClockActive = false;
@@ -519,14 +517,6 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     public bool CanUseBusLog => IsBoardConnected && IsAlex80Board && !IsInstructionClockRunning;
 
-    /// <summary>
-    /// Lo strumento resta raggiungibile anche a scheda scollegata: le righe gia'
-    /// catturate si rileggono lo stesso, ed e' proprio dopo aver staccato la scheda che
-    /// capita di volerle guardare. Sparisce solo quando c'e' collegato un eZ80, che un
-    /// log del bus non lo produrra' mai.
-    /// </summary>
-    private bool IsBusLogToolAvailable => !(IsBoardConnected && IsEz80);
-
     /// <summary>Perche' la lettura non e' disponibile, quando non lo e'.</summary>
     public string DumpUnavailableText
     {
@@ -663,12 +653,10 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CpuStatusText));
         OnPropertyChanged(nameof(CanUseDebug));
         OnPropertyChanged(nameof(CanUseBusLog));
-        OnPropertyChanged(nameof(CanConfigureLogMode));
         DebugCommand.NotifyCanExecuteChanged();
         StepCommand.NotifyCanExecuteChanged();
         NotifyManualClockAvailability();
         EnableDisableLogsCommand.NotifyCanExecuteChanged();
-        BusLogTool.IsAvailable = IsBusLogToolAvailable;
         NotifyDumpAvailabilityChanged();
         OnPropertyChanged(nameof(IxRegHex));
         OnPropertyChanged(nameof(IyRegHex));
@@ -938,23 +926,6 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _logEnabled;
     
-    [ObservableProperty]
-    private bool _fullLogEnabled;
-
-    [ObservableProperty]
-    private bool _hasLogModeSupport;
-
-    public bool CanConfigureLogMode => IsBoardConnected && IsAlex80Board && HasLogModeSupport && !IsInstructionClockRunning;
-
-    partial void OnHasLogModeSupportChanged(bool value) => OnPropertyChanged(nameof(CanConfigureLogMode));
-
-    partial void OnFullLogEnabledChanged(bool value)
-    {
-        if (_isApplyingCardConfig || !CanConfigureLogMode) return;
-        _serialManager.SendSerialText(value ? "log full\r" : "log compact\r");
-        _serialManager.RefreshConfiguration();
-    }
-
     [ObservableProperty]
     private bool _debugEnabled;
 
@@ -1424,10 +1395,8 @@ public partial class MainViewModel : ObservableObject
                 ClockFrequency = cardConfig.ClockFrequency.ToString();
                 IsClockActive = cardConfig.ClockActive;
                 if (cardConfig.LogEnabled is { } logEnabled) LogEnabled = logEnabled;
-                HasLogModeSupport = cardConfig.FullLogEnabled.HasValue;
                 HasClockPulseSupport = cardConfig.ClockPulseSupported == true;
                 HasRegisterUpdateSupport = cardConfig.RegisterUpdateSupported == true;
-                FullLogEnabled = cardConfig.FullLogEnabled ?? false;
                 if (cardConfig.DebugEnabled is { } debugEnabled) DebugEnabled = debugEnabled;
                 MonitorEnabled = cardConfig.MonitorEnabled;
                 AppendSerialLine($"UI config: CARD={CardName}, IsSerialOpened={IsSerialOpened}");

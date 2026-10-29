@@ -24,7 +24,6 @@ public partial class MainViewModel
         OnPropertyChanged(nameof(CanRun));
         OnPropertyChanged(nameof(CanUseDebug));
         OnPropertyChanged(nameof(CanUseBusLog));
-        OnPropertyChanged(nameof(CanConfigureLogMode));
         DebugCommand.NotifyCanExecuteChanged();
         EnableDisableLogsCommand.NotifyCanExecuteChanged();
         StepCommand.NotifyCanExecuteChanged();

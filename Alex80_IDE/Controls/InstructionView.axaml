@@ -1,0 +1,37 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:global="clr-namespace:"
+             xmlns:adc="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+             x:Class="Alex80_IDE.Controls.InstructionView"
+             x:DataType="global:MainViewModel">
+
+    <StackPanel Spacing="6">
+        <TextBlock Text="{Binding InstructionTitle}" Classes="caption" />
+        <TextBlock Text="eZ80 via ZDI · il log del bus non è disponibile." Classes="caption"
+                   IsVisible="{Binding IsEz80}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding InstructionStatus}" Classes="caption" TextWrapping="Wrap" />
+        <StackPanel Spacing="6" IsVisible="{Binding HasInstruction}">
+            <TextBlock Text="{Binding CurrentInstruction.Header}" FontWeight="SemiBold" FontSize="16" TextWrapping="Wrap" />
+            <WrapPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding CurrentInstruction.OpcodeText}" Classes="mono" Margin="0,0,12,0" />
+                <TextBlock Text="{Binding CurrentInstruction.SizeText}" Classes="caption" />
+            </WrapPanel>
+            <TextBlock Text="{Binding CurrentInstruction.Operation}" Classes="mono" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding CurrentInstruction.Timing}" FontWeight="SemiBold" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding InstructionPrediction}" TextWrapping="Wrap"
+                       IsVisible="{Binding InstructionPrediction, Converter={x:Static adc:StringConverters.IsNotNullOrEmpty}}" />
+            <Expander Header="Dettagli e riferimento" Background="{DynamicResource SurfaceRaisedBrush}"
+                      BorderBrush="{DynamicResource BorderHairlineBrush}">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="{Binding CurrentInstruction.MachineCycles}" Classes="caption" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding InstructionIdealTime}" Classes="caption" TextWrapping="Wrap"
+                               IsVisible="{Binding InstructionIdealTime, Converter={x:Static adc:StringConverters.IsNotNullOrEmpty}}" />
+                    <TextBlock Text="{Binding CurrentInstruction.Description}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding CurrentInstruction.Flags}" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding CurrentInstruction.TimingNote}" Classes="caption" TextWrapping="Wrap" />
+                    <Button Content="{Binding CurrentInstruction.ManualButtonText}" Command="{Binding OpenInstructionManualCommand}" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Expander>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

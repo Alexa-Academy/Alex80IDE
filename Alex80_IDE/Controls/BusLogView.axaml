@@ -1,122 +1,210 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:global="clr-namespace:"
+             xmlns:controls="clr-namespace:Alex80_IDE.Controls"
+             xmlns:adc="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
              xmlns:models="clr-namespace:Alex80_IDE.Models"
              x:Class="Alex80_IDE.Controls.BusLogView"
+             Background="{DynamicResource SurfaceBrush}"
              x:DataType="global:MainViewModel">
 
     <UserControl.Styles>
+        <Style Selector="Border.busToolbar">
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderHairlineBrush}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+        <Style Selector="ToggleButton.busToggle">
+            <Setter Property="Width" Value="30" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="1" />
+            <Setter Property="CornerRadius" Value="7" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="ToggleButton.busToggle /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="7" />
+        </Style>
+        <Style Selector="ToggleButton.busToggle:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+        </Style>
+        <Style Selector="ToggleButton.busToggle:checked /template/ ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource BadgeBackgroundBrush}" />
+        </Style>
+        <Style Selector="ToggleButton.busToggle:checked PathIcon.btnIcon">
+            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+        </Style>
+        <Style Selector="Button.toolStripButton:disabled">
+            <Setter Property="Opacity" Value="0.4" />
+        </Style>
         <Style Selector="TextBlock.busDot">
             <Setter Property="FontSize" Value="22" />
             <Setter Property="HorizontalAlignment" Value="Left" />
             <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+        <Style Selector="DataGridColumnHeader">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+        </Style>
     </UserControl.Styles>
 
-    <Grid RowDefinitions="Auto,*">
-        <!-- I comandi stanno a sinistra, dove comincia la lettura, come nel pannello
-             della memoria. Registrazione, scorrimento e pulizia restano sulla prima
-             riga; la scelta dei campioni sta sotto per restare leggibile anche stretta. -->
-        <StackPanel Margin="14,14,14,10" Spacing="8">
-            <StackPanel Orientation="Horizontal" Spacing="18" VerticalAlignment="Center">
-                <Button Content="{Binding BusLogToggleText}"
-                        Classes="tool"
-                        ToolTip.Tip="Registra continuamente il bus. Ogni colpo di clock manuale aggiunge un campione anche con il log continuo disabilitato."
-                        Command="{Binding EnableDisableLogsCommand}" />
-
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="Scorrimento automatico" Classes="caption" VerticalAlignment="Center" />
-                    <ToggleSwitch IsChecked="{Binding IsAutoScrollEnabled, Mode=TwoWay}"
-                                  ToolTip.Tip="La scelta manuale viene ripristinata all'avvio. Scorrendo la tabella si disattiva solo per la sessione corrente." />
+    <Grid RowDefinitions="Auto,*,Auto">
+        <Border Grid.Row="0" Classes="busToolbar">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock Text="Bus log" Classes="toolPanelTitle" Margin="3,0,10,0" />
+                    <Button Classes="toolStripButton" Classes.active="{Binding LogEnabled}"
+                            Command="{Binding EnableDisableLogsCommand}"
+                            AutomationProperties.Name="{Binding BusLogToggleText}"
+                            ToolTip.Tip="{Binding BusLogToggleText}">
+                        <PathIcon Classes="stripIcon" Data="{DynamicResource RecordLogIconData}" />
+                    </Button>
+                    <Border Classes="separator" />
+                    <Button Classes="toolStripButton" Command="{Binding PulseClockCommand}"
+                            AutomationProperties.Name="Un colpo di clock">
+                        <ToolTip.Tip>
+                            <StackPanel Spacing="4" MaxWidth="320">
+                                <TextBlock Text="Un colpo di clock" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding ClockPulseToolTip}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </ToolTip.Tip>
+                        <PathIcon Classes="stripIcon" Data="{DynamicResource ClockPulseIconData}" />
+                    </Button>
+                    <Button Classes="toolStripButton" Command="{Binding AdvanceInstructionClockCommand}"
+                            AutomationProperties.Name="Avanza un'istruzione">
+                        <ToolTip.Tip>
+                            <StackPanel Spacing="4" MaxWidth="320">
+                                <TextBlock Text="Avanza un'istruzione" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding InstructionClockToolTip}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </ToolTip.Tip>
+                        <PathIcon Classes="stripIcon" Data="{DynamicResource StepIconData}" />
+                    </Button>
+                    <Button Classes="toolStripButton" Command="{Binding StopInstructionClockCommand}"
+                            IsVisible="{Binding IsInstructionClockRunning}"
+                            AutomationProperties.Name="Ferma avanzamento" ToolTip.Tip="Ferma avanzamento">
+                        <PathIcon Classes="stripIcon" Data="{DynamicResource StopIconData}" />
+                    </Button>
+                    <Border Classes="separator" />
+                    <ToggleButton Classes="busToggle" IsChecked="{Binding IsAutoScrollEnabled, Mode=TwoWay}"
+                                  AutomationProperties.Name="Scorrimento automatico"
+                                  ToolTip.Tip="Scorrimento automatico. La scelta manuale viene ripristinata all'avvio; scorrere la tabella lo sospende solo per la sessione corrente.">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource AutoScrollIconData}" />
+                    </ToggleButton>
+                    <ToggleButton Classes="busToggle" IsChecked="{Binding FollowListingExecution, Mode=TwoWay}"
+                                  AutomationProperties.Name="Segui esecuzione nel listing"
+                                  ToolTip.Tip="Segui esecuzione nel listing. Selezionando un log il seguito si sospende; riattiva questo comando per riprenderlo.">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource FollowListingIconData}" />
+                    </ToggleButton>
+                    <Border Classes="separator" />
+                    <Button Classes="toolStripButton" Command="{Binding ClearLogsCommand}"
+                            AutomationProperties.Name="Cancella log" ToolTip.Tip="Cancella log">
+                        <PathIcon Classes="stripIcon" Data="{DynamicResource ClearLogIconData}" />
+                    </Button>
                 </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding ClockSummary}" Classes="caption"
+                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ClockSummary}" />
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                    <Border Padding="6" ToolTip.Tip="T: posizione nell'istruzione; Tw: attesa. T?/Tw?: intervallo incompleto, in attesa del prossimo T1. —: dato assente o ciclo interno. I campioni omessi dal firmware non vengono dedotti.">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource TraceInfoIconData}" />
+                    </Border>
+                    <Button Content="✕" Classes="closeTab" Command="{Binding BottomDock.CloseCommand}"
+                            AutomationProperties.Name="Chiudi Bus log" ToolTip.Tip="Chiudi il pannello" />
+                </StackPanel>
+            </Grid>
+        </Border>
 
-                <Button Content="Cancella log" Classes="tool" Command="{Binding ClearLogsCommand}" />
-            </StackPanel>
-            <WrapPanel Orientation="Horizontal">
-                <CheckBox Content="Segui esecuzione nel listing" Margin="0,0,18,0"
-                          IsChecked="{Binding FollowListingExecution, Mode=TwoWay}"
-                          ToolTip.Tip="Evidenzia l'ultimo fetch nel listing assemblato. Selezionando un log il seguito si sospende; riattiva questa opzione per riprenderlo." />
-                <CheckBox Content="Tutti i clock"
-                          IsChecked="{Binding FullLogEnabled, Mode=TwoWay}"
-                          IsEnabled="{Binding CanConfigureLogMode}"
-                          ToolTip.Tip="Include WAIT ripetuti, lettura dei registri e reset. La tabella cresce anche mentre la CPU è in pausa. Richiede un firmware che supporti questa opzione." />
-            </WrapPanel>
-            <TextBlock Text="{Binding ClockSummary}" Classes="caption" TextWrapping="Wrap" />
-            <WrapPanel Orientation="Horizontal">
-                <Button Content="Un colpo di clock" Command="{Binding PulseClockCommand}" Margin="0,0,8,0"
-                        ToolTip.Tip="{Binding ClockPulseToolTip}" />
-                <Button Content="Avanza un'istruzione" Command="{Binding AdvanceInstructionClockCommand}" Margin="0,0,8,0"
-                        ToolTip.Tip="{Binding InstructionClockToolTip}" />
-                <Button Content="Ferma avanzamento" IsVisible="{Binding IsInstructionClockRunning}"
-                        Command="{Binding StopInstructionClockCommand}" />
-            </WrapPanel>
-            <TextBlock Text="{Binding InstructionClockStatus}" Classes="caption" TextWrapping="Wrap" />
-            <TextBlock Text="T: posizione nell'istruzione; Tw: attesa. Anche il clock manuale usa questo conteggio. T?/Tw?: intervallo incompleto, in attesa del prossimo T1. —: dato assente o ciclo interno. In modalità compatta possono mancare campioni."
-                       Classes="caption" TextWrapping="Wrap" />
-        </StackPanel>
-
-        <DataGrid Grid.Row="1"
-                  Margin="14,0,14,0"
-                  RowHeight="30"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  ItemsSource="{Binding LogTable}"
-                  SelectedItem="{Binding SelectedLog, Mode=TwoWay}"
-                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                  HeadersVisibility="Column">
-            <Interaction.Behaviors>
-                <global:AutoScrollBehavior IsAutoScrollEnabled="{Binding IsAutoScrollEnabled}"
-                                           SuspendAutoScrollCommand="{Binding SuspendBusLogAutoScrollCommand}" />
-            </Interaction.Behaviors>
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="T / WAIT" Binding="{Binding TStateText}" Width="110" />
-                <DataGridTextColumn Header="ADDR" Binding="{Binding AddressHex}" Width="90" />
-                <DataGridTextColumn Header="DATA" Binding="{Binding DataHex}" Width="76" />
-                <DataGridTemplateColumn Header="RD" Width="54">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate x:DataType="models:LogElement">
-                            <TextBlock Text="{Binding Z80_RD, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="WR" Width="54">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate x:DataType="models:LogElement">
-                            <TextBlock Text="{Binding Z80_WR, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource WarningBrush}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="IORQ" Width="62">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate x:DataType="models:LogElement">
-                            <TextBlock Text="{Binding Z80_IORQ, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="MREQ" Width="68">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate x:DataType="models:LogElement">
-                            <TextBlock Text="{Binding Z80_MREQ, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="RFSH" Width="64">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate x:DataType="models:LogElement">
-                            <TextBlock Text="{Binding Z80_RFSH, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="M1" Width="54">
-                    <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate x:DataType="models:LogElement">
-                            <TextBlock Text="{Binding Z80_M1, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource DangerBrush}" />
-                        </DataTemplate>
-                    </DataGridTemplateColumn.CellTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="FASE" Binding="{Binding TracePhase}" Width="125" />
-                <DataGridTextColumn Header="MNEMONICO" Binding="{Binding Mnemonic}" Width="*" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="360" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="320" MinWidth="260" MaxWidth="600" />
+            </Grid.ColumnDefinitions>
+            <DataGrid Grid.Column="0"
+                      Name="BusLogGrid"
+                      Margin="0"
+                      RowHeight="30"
+                      ColumnHeaderHeight="28"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      ItemsSource="{Binding LogTable}"
+                      SelectedItem="{Binding SelectedLog, Mode=TwoWay}"
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      HeadersVisibility="Column">
+                <Interaction.Behaviors>
+                    <global:AutoScrollBehavior IsAutoScrollEnabled="{Binding IsAutoScrollEnabled}"
+                                               SuspendAutoScrollCommand="{Binding SuspendBusLogAutoScrollCommand}" />
+                </Interaction.Behaviors>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="T / WAIT" Binding="{Binding TStateText}" Width="92" />
+                    <DataGridTextColumn Header="ADDR" Binding="{Binding AddressHex}" Width="78" />
+                    <DataGridTextColumn Header="DATA" Binding="{Binding DataHex}" Width="70" />
+                    <DataGridTemplateColumn Header="RD" Width="50">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="models:LogElement">
+                                <TextBlock Text="{Binding Z80_RD, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="WR" Width="50">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="models:LogElement">
+                                <TextBlock Text="{Binding Z80_WR, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource WarningBrush}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="IORQ" Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="models:LogElement">
+                                <TextBlock Text="{Binding Z80_IORQ, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="MREQ" Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="models:LogElement">
+                                <TextBlock Text="{Binding Z80_MREQ, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource AccentBrush}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="RFSH" Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="models:LogElement">
+                                <TextBlock Text="{Binding Z80_RFSH, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTemplateColumn Header="M1" Width="50">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate x:DataType="models:LogElement">
+                                <TextBlock Text="{Binding Z80_M1, Converter={StaticResource BoolToDotConverter}}" Classes="busDot" Foreground="{DynamicResource DangerBrush}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="FASE" Binding="{Binding TracePhase}" Width="108" />
+                    <DataGridTextColumn Header="MNEMONICO" Binding="{Binding Mnemonic}" Width="*" MinWidth="110" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <GridSplitter Grid.Column="1" Width="5" ResizeDirection="Columns"
+                          HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                          Background="{DynamicResource BorderHairlineBrush}" />
+            <ScrollViewer Grid.Column="2" HorizontalScrollBarVisibility="Disabled"
+                          HorizontalContentAlignment="Stretch"
+                          VerticalScrollBarVisibility="Auto">
+                <controls:InstructionView Margin="14,10" />
+            </ScrollViewer>
+        </Grid>
+        <Border Grid.Row="2" Padding="10,4" BorderThickness="0,1,0,0"
+                BorderBrush="{DynamicResource BorderHairlineBrush}"
+                IsVisible="{Binding InstructionClockStatus, Converter={x:Static adc:StringConverters.IsNotNullOrEmpty}}">
+            <TextBlock Text="{Binding InstructionClockStatus}" Classes="caption"
+                       TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding InstructionClockStatus}" />
+        </Border>
     </Grid>
 </UserControl>
