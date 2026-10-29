@@ -119,6 +119,32 @@ internal static class ClockTraceTrackerTests
         for (uint t = 3; t <= 11; ++t) output.Observe(L(131 + t, 0x3F, 0));
         output.Observe(L(143, 0x3E, 4, 0x2002));
         Check("OUT conserva 11 T nominali con lettura registri", output.Summary.Contains("11 T programma · 1 WAIT · 130 clock debugger"));
+        foreach (uint first in new[] { 100u, uint.MaxValue - 10 })
+        {
+            var boundary = new ClockTraceTracker();
+            var rows = new[] { L(first, 0x3E, 4), L(unchecked(first + 1), 0x1A, 4),
+                L(unchecked(first + 2), 0x3D, 0), L(unchecked(first + 3), 0x39, 0) };
+            foreach (var row in rows) boundary.Observe(row);
+            uint before = unchecked(first + 3), after = unchecked(before + 94);
+            Check("conferma al confine controlla clock iniziale e durata",
+                !boundary.ConfirmBoundaryRegisterRead(unchecked(before - 1), after, 0x2001) &&
+                !boundary.ConfirmBoundaryRegisterRead(before, unchecked(after - 1), 0x2001) &&
+                boundary.ConfirmBoundaryRegisterRead(before, after, 0x2001));
+            var nextT1 = L(unchecked(after + 1), 0x3E, 4, 0x2001);
+            boundary.Observe(nextT1);
+            Check("snapshot al confine conserva T4 e riparte da T1 anche al rollover",
+                rows[^1].TStateText == "T4" && nextT1.TStateText == "T1" &&
+                boundary.Summary.Contains("4 T programma · 0 WAIT · 94 clock debugger"));
+        }
+        var repeated = new ClockTraceTracker();
+        repeated.Observe(L(1, 0x3E, 4)); repeated.Observe(L(2, 0x1A, 4));
+        repeated.Observe(L(3, 0x3D, 0)); repeated.Observe(L(4, 0x39, 0));
+        Check("riletture consecutive al confine accumulano solo clock debugger",
+            repeated.ConfirmBoundaryRegisterRead(4, 98, 0x2001) &&
+            repeated.ConfirmBoundaryRegisterRead(98, 192, 0x2001));
+        repeated.Observe(L(193, 0x3E, 4, 0x2001));
+        Check("ripresa dopo due letture conserva T1 e 188 clock debugger",
+            repeated.CurrentTState == 1 && repeated.Summary.Contains("4 T programma · 0 WAIT · 188 clock debugger"));
         return failures;
     }
 }

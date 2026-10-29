@@ -10,6 +10,10 @@ public partial class MainViewModel
     private Func<uint, bool>? _instructionClockReader;
     private uint? _completedManualInstructionClock;
     private bool _instructionClockStopRequested;
+    private Func<uint, bool>? _boundaryRegisterSnapshotSender;
+    private string? _instructionClockBeforeBoundarySnapshot;
+    private uint? _instructionClockRegisterPc;
+    private byte? _instructionClockFlags, _instructionClockB;
     [ObservableProperty] private bool _isInstructionClockRunning;
     [ObservableProperty] private string _instructionClockStatus = string.Empty;
 
@@ -17,7 +21,10 @@ public partial class MainViewModel
         ? "Clock esterno: usa Debug e Step con WAIT, se supportati dal firmware. Gli impulsi manuali richiedono il clock da Arduino."
         : "Completa i T-state rimanenti e si ferma prima del T1 successivo. " +
         "Richiede clock automatico fermo e Debug disattivato. " +
-        "Senza WAIT o letture dei registri. Per durate condizionali servono registri aggiornati.";
+        (HasRegisterBoundarySnapshotSupport && AutoRefreshRegisters
+            ? "Poi legge i registri con clock debugger e ripristina PC e SP prima del prossimo T1. "
+            : "Senza letture automatiche dei registri. ") +
+        "Per durate condizionali servono registri aggiornati.";
 
     partial void OnIsInstructionClockRunningChanged(bool value)
     {
@@ -38,10 +45,15 @@ public partial class MainViewModel
     [RelayCommand(CanExecute = nameof(CanPulseClock))]
     private void AdvanceInstructionClock() => StartInstructionClock(() => _serialManager.PulseClock(), null);
 
-    private void StartInstructionClock(Func<bool> sendPulse, Func<uint, bool>? readInstruction)
+    private void StartInstructionClock(Func<bool> sendPulse, Func<uint, bool>? readInstruction,
+        Func<uint, bool>? readRegisters = null)
     {
-        _instructionClockStepper = new InstructionClockStepper(_lastManualClockSample?.ClockNumber,
+        _instructionClockStepper = new InstructionClockStepper(_boundaryRegisterPosition?.Clock ?? _lastManualClockSample?.ClockNumber,
             _confirmedManualRegisterPulse);
+        _boundaryRegisterSnapshotSender = readRegisters;
+        _instructionClockRegisterPc = _boundaryRegisterPosition is not null && _registersAreCurrent ? PcReg : null;
+        _instructionClockFlags = _instructionClockRegisterPc is not null ? FReg : null;
+        _instructionClockB = _instructionClockRegisterPc is not null ? BReg : null;
         _instructionClockPulseSender = sendPulse;
         _instructionClockReader = readInstruction;
         _instructionClockStopRequested = false;
@@ -55,7 +67,7 @@ public partial class MainViewModel
                 throw new InvalidOperationException("Posizione T-state dopo la lettura dei registri sconosciuta: leggere l'istruzione o usare i clock singoli fino a T1.");
             if (_lastManualClockSample?.Waiting == true && _confirmedManualRegisterPulse != _lastManualClockSample)
                 throw new InvalidOperationException("La traccia proviene da un WAIT: riprendere con un clock singolo prima dell'avanzamento contato.");
-            if (CurrentInstruction is { } instruction && _lastManualClockSample?.ClockNumber is { } clock &&
+            if (_boundaryRegisterPosition is null && CurrentInstruction is { } instruction && _lastManualClockSample?.ClockNumber is { } clock &&
                 clock != _completedManualInstructionClock && _clockTrace.CurrentTState is { } elapsed &&
                 _clockTrace.CurrentInstructionAddress == instruction.Address)
                 _instructionClockStepper.SetInstruction(instruction, elapsed, clock,
@@ -99,7 +111,7 @@ public partial class MainViewModel
             else if (complete)
             {
                 _completedManualInstructionClock = sample.ClockNumber;
-                FinishInstructionClock($"Istruzione completata · {count} · clock fermo prima del prossimo T1.");
+                FinishInstructionClock($"Istruzione completata · {count} · clock fermo prima del prossimo T1.", readRegisters: true);
             }
             else if (stepper.NeedsInstruction)
             {
@@ -123,7 +135,9 @@ public partial class MainViewModel
             CurrentInstruction is not { } instruction || _lastManualClockSample?.ClockNumber is not { } clock) return;
         try
         {
-            stepper.SetInstruction(instruction, 1, clock);
+            stepper.SetInstruction(instruction, 1, clock,
+                _instructionClockRegisterPc == instruction.Address ? _instructionClockFlags : null,
+                _instructionClockRegisterPc == instruction.Address ? _instructionClockB : null);
             SendNextInstructionClockPulse();
         }
         catch (InvalidOperationException ex) { FinishInstructionClock(ex.Message); }
@@ -142,22 +156,33 @@ public partial class MainViewModel
         InstructionClockStatus = "Arresto al termine dell'impulso in corso…";
     }
 
-    private void FinishInstructionClock(string status)
+    private void FinishInstructionClock(string status, bool readRegisters = false)
     {
         _instructionClockStepper = null;
         _instructionClockPulseSender = null;
         _instructionClockReader = null;
         _instructionClockStopRequested = false;
         IsInstructionClockRunning = false;
-        // Reading registers would clock the next opcode's T1/T2 and inject a
-        // dump. Leave that to the explicit register command so one instruction
-        // always ends at its final T-state, even with automatic refresh enabled.
         InstructionClockStatus = status;
+        if (readRegisters && AutoRefreshRegisters && CanSnapshotBoundaryRegisters)
+        {
+            _instructionClockBeforeBoundarySnapshot = status;
+            if (RequestBoundaryRegisterRefresh(_boundaryRegisterSnapshotSender))
+                InstructionClockStatus += " · lettura dei registri…";
+            else
+            {
+                _instructionClockBeforeBoundarySnapshot = null;
+                InstructionClockStatus += " · lettura dei registri non avviata.";
+            }
+        }
+        _boundaryRegisterSnapshotSender = null;
         TryReadInstruction();
     }
 
     private void CancelInstructionClock()
     {
+        _instructionClockBeforeBoundarySnapshot = null;
+        _boundaryRegisterSnapshotSender = null;
         _instructionClockStepper = null;
         _instructionClockPulseSender = null;
         _instructionClockReader = null;

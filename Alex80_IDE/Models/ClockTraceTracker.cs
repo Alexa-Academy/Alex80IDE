@@ -12,6 +12,7 @@ public sealed class ClockTraceTracker
     private uint address;
     private string lastProgram = "";
     private RegisterPause? registerPause, confirmedPause;
+    private (uint After, ushort Pc)? boundaryRead;
     private sealed record RegisterPause(LogElement Row, bool Synced, int T, int Waits,
         int Debug, uint Address, string LastProgram, string Summary);
     public string Summary { get; private set; } = "Nessun intervallo completo misurato.";
@@ -21,7 +22,27 @@ public sealed class ClockTraceTracker
     { previous = null; InvalidateSynchronization(); t = waits = debug = 0; lastProgram = ""; Summary = "Nessun intervallo completo misurato."; }
 
     public void InvalidateSynchronization()
-    { synced = false; registerPause = confirmedPause = null; }
+    { synced = false; registerPause = confirmedPause = null; boundaryRead = null; }
+
+    public bool ConfirmBoundaryRegisterRead(uint before, uint after, ushort pc)
+    {
+        if (!synced || previous is not { IsManualPulse: true } || (boundaryRead?.After ?? previous.ClockNumber) != before ||
+            unchecked(after - before) != 94) return false;
+        boundaryRead = (after, pc);
+        debug += 94;
+        lastProgram = $"Ultimo intervallo da {address:X4}: {t} T programma · {waits} WAIT";
+        Summary = lastProgram + $" · {debug} clock debugger";
+        return true;
+    }
+
+    private bool TryResumeAfterBoundaryRead(LogElement row)
+    {
+        var read = boundaryRead;
+        boundaryRead = null;
+        return read is { } boundary && row.IsManualPulse && !row.IsInjected && !row.IsReset &&
+            row.Waiting == false && row.HardwareHalt == false && row.IsInstructionStartTState &&
+            row.Address == boundary.Pc && row.ClockNumber == unchecked(boundary.After + 1);
+    }
 
     // Only the successful PULSE -> matching DUMP -> PULSEEND transaction can
     // authorize bridging a gap. An arbitrary dump or a clock gap cannot do so.
@@ -67,7 +88,7 @@ public sealed class ClockTraceTracker
         row.ObservedPhase = !row.Z80_RFSH ? "Refresh" : !row.Z80_IORQ ? "I/O" : row.IsInstructionFetch ? "Fetch" : !row.Z80_MREQ ? "Memoria" : "Interno";
         if (row.ClockNumber is null || row.Waiting is null)
         { row.TStateText = "—"; InvalidateSynchronization(); previous = row; return; }
-        bool consecutive = TryResumeAfterRegisterRead(row) ||
+        bool consecutive = TryResumeAfterBoundaryRead(row) || TryResumeAfterRegisterRead(row) ||
             previous?.ClockNumber is { } clock && unchecked(row.ClockNumber.Value - clock) == 1;
         if (!consecutive) synced = false;
         if (row.IsReset || row.HardwareHalt == true)
@@ -99,8 +120,8 @@ public sealed class ClockTraceTracker
             {
                 lastProgram = $"Ultimo intervallo da {address:X4}: {t} T programma · {waits} WAIT";
                 Summary = lastProgram + (debug > 0 ? $" · {debug} clock debugger" : "");
-                debug = 0;
             }
+            debug = 0;
             synced = true; address = row.Address; t = 1; waits = 0;
         }
         else if (consecutive && previous?.Waiting == true && !row.Z80_M1 &&

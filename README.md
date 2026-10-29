@@ -17,13 +17,19 @@ Features
 
 Registers with manual clock
 
-With the Arduino clock stopped, a counted instruction step always stops on
-the instruction's final T-state, before the next T1, including when **Aggiorna
-automaticamente i registri** is enabled. Registers remain marked as needing an
-update; automatic register refresh applies to Debug/WAIT steps.
+With the Arduino clock stopped, a counted instruction step always stops before
+the next program T1. With manager 1.3.0 (`REGBND:ON`), **Aggiorna automaticamente
+i registri** also reads registers after the last T-state. The firmware supplies
+the register-read program instead of the next original opcode, restores PC/SP
+and stops on the injected jump's final T-state. The next user pulse starts the
+original instruction at T1. Its 94 injected clocks are reported separately;
+no extra program T1/T2 or WAIT rows are added. The refresh register R advances.
+Firmware without `REGBND` stops without automatic register reads, marking the
+last snapshot stale. Automatic refresh continues to apply to Debug/WAIT steps.
 
-On ALEX80µ with manager firmware 1.1.0 (`REGSNAP:ON`), **Rileggi dalla scheda**
-can explicitly request a register read at that boundary or at T1. This request
+On ALEX80µ, **Rileggi dalla scheda** uses the new read at a completed boundary
+when `REGBND:ON` is available. With older firmware (`REGSNAP:ON`, manager 1.1.0),
+or when already at T1, it can explicitly request the legacy read. This request
 reaches the next opcode fetch's T1/T2, reads registers at a temporary 1 kHz and
 stops the clock again. The trace preserves T1/T2 and separates injection clocks
 and WAIT release from program T-states. The configured frequency is preserved.
@@ -242,8 +248,9 @@ durations are reported without guessing or advancing to the next fetch. With an
 unknown bus position, use single pulses to synchronize at T1. All pulses appear in the bus log,
 including with continuous logging off. **Ferma avanzamento** stops after the
 pending pulse; errors, HALT, reset and disconnection also end the operation.
-This command does not inject automatic register reads, even when that option
-is enabled: registers remain marked stale and no debugger clocks are added.
+With `REGBND:ON` and automatic register updates enabled, completion requests a
+94-clock snapshot and restores PC/SP before the next program T1. Older managers
+and a disabled automatic flag leave registers stale without extra clocks.
 It requires the same manual-clock capability, stopped automatic clock and
 disabled Debug as a single pulse; eZ80 continues using its existing ZDI controls.
 The toolbar's Step uses this same path when the Arduino clock is stopped and
@@ -252,9 +259,8 @@ the existing Debug/WAIT step commands, only where supported by the firmware.
 
 In the Registers pane, **Aggiorna automaticamente i registri** (enabled by
 default and saved between sessions) applies register snapshots after steps in
-Debug mode with WAIT. Arduino manual clocking always keeps the last snapshot
-marked as needing an update: observing registers on a Z80 requires extra CPU
-work and is not part of a single clock or a counted instruction. The extended
+Debug mode with WAIT and after counted instructions with `REGBND:ON`. A raw
+single pulse keeps the last snapshot marked as needing an update. The extended
 `clk pulse regs` protocol remains readable for compatibility, including its
 separate debugger clocks; the manual buttons no longer request it. Missing
 program samples still show `T?` rather than inventing a position.

@@ -117,7 +117,7 @@ internal static class InstructionClockStepperTests
         }
         void Info(string settings = "CLKPULSE:ON,ECLK:0,DEBUG:OFF,SCLK:A") =>
             Rx("!INFO:CARD:ALEX80µ,SMEM:A,LOG:OFF," + settings + ";");
-        int sent = 0, reads = 0;
+        int sent = 0, reads = 0, snapshots = 0;
         uint readPc = 0;
         void Begin()
         {
@@ -139,7 +139,13 @@ internal static class InstructionClockStepperTests
                 Serial("instructionWrapMask", 0xFFFFu); Serial("instructionChunkLength", 16);
                 return true;
             };
-            typeof(MainViewModel).GetMethod("StartInstructionClock", flags)!.Invoke(vm, new object[] { send, read });
+            typeof(MainViewModel).GetMethod("StartInstructionClock", flags)!.Invoke(vm, new object[] { send, read, (Func<uint, bool>)(clock =>
+            {
+                snapshots++;
+                Serial("clockPulsePending", true); Serial("clockPulseRegisters", true);
+                Serial("boundaryRegisterStart", clock); Serial("boundaryRegisterDump", null);
+                return true;
+            }) });
         }
         void ReceivePulse(uint clock, byte control, byte trace, ushort pc = 0x2000)
         {
@@ -282,6 +288,35 @@ internal static class InstructionClockStepperTests
                 !manager.IsClockPulsePending && !manager.IsRegisterRequestPending &&
                 vm.LogTable.TakeLast(9).Select(row => row.TStateText).SequenceEqual(new[] { "Tw1", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10" }) &&
                 vm.InstructionClockStatus.Contains("prima del prossimo T1") && vm.DumpCommand.CanExecute(null));
+            Info("CLKPULSE:ON,REGSNAP:ON,REGBND:ON,REGUPDATE:ON,ECLK:0,DEBUG:OFF,SCLK:A");
+            Prepare(1000, 0xC3, 1, 0); before = sent; Begin();
+            ReceivePulse(1001, 0x1A, 4); ReceivePulse(1002, 0x3D, 0); ReceivePulse(1003, 0x39, 0);
+            ReceivePulse(1004, 0x3F, 0); ReceivePulse(1005, 0x1B, 0); ReceivePulse(1006, 0x1B, 0);
+            ReceivePulse(1007, 0x3F, 0); ReceivePulse(1008, 0x1B, 0); ReceivePulse(1009, 0x1B, 0);
+            int rows = vm.LogTable.Count;
+            check("REGBND: JP termina a T10 e richiede solo una lettura al confine",
+                snapshots == 1 && sent == before + 9 && manager.IsClockPulsePending &&
+                vm.LogTable[^1].TStateText == "T10" && !vm.CanPulseClock);
+            byte previousA = vm.AReg;
+            snapshot[0] = 0x42; snapshot[14] = 0; snapshot[15] = 1;
+            Rx("!BDUMP" + Convert.ToBase64String(snapshot) + ";");
+            check("dump al confine resta sospeso fino alla conferma di arresto", vm.AReg == previousA && manager.IsClockPulsePending);
+            byte[] end = { 0, 1, 0, 0, 3, 0xF1, 0, 0, 4, 0x4F }; // 1009 -> 1103
+            Rx("!REGBOUND" + Convert.ToBase64String(end) + ";");
+            check("registri aggiornati senza nuove righe T1/T2 e con 94 clock debugger",
+                vm.AReg == 0x42 && vm.PcReg == 1 && !manager.IsClockPulsePending &&
+                vm.LogTable.Count == rows && vm.LogTable[^1].TStateText == "T10" &&
+                vm.ClockSummary.Contains("10 T programma · 0 WAIT · 94 clock debugger"));
+            before = sent; Begin(); ReceivePulse(1104, 0x3E, 4, 1); Bytes(0x20, 0xFE);
+            ReceivePulse(1105, 0x1A, 4, 1); ReceivePulse(1106, 0x3D, 0, 1); ReceivePulse(1107, 0x39, 0, 1);
+            ReceivePulse(1108, 0x3F, 0, 1); ReceivePulse(1109, 0x1B, 0, 1); ReceivePulse(1110, 0x1B, 0, 1);
+            check("istruzione seguente riparte da T1 e usa i flag riletti per JR non preso",
+                sent == before + 7 && snapshots == 2 && vm.LogTable.TakeLast(7).First().TStateText == "T1" &&
+                vm.LogTable[^1].TStateText == "T7" && vm.ClockSummary.Contains("94 clock debugger"));
+            vm.ResetCommand.Execute(null); Dispatcher.UIThread.RunJobs();
+            Rx("!BDUMP" + Convert.ToBase64String(snapshot) + ";");
+            Rx("!REGBOUND" + Convert.ToBase64String(end) + ";");
+            check("reset ignora dump e conferme al confine tardivi", !manager.IsClockPulsePending && vm.AReg == 0x42);
             Info();
             check("firmware precedente non abilita snapshot o comandi nuovi", !vm.HasRegisterSnapshotSupport && !vm.DumpCommand.CanExecute(null));
             Vm("_autoRefreshRegisters", true);

@@ -303,6 +303,7 @@ failures += SerialPortSelectionTests.Run();
 failures += InstructionReferenceTests.Run();
 failures += ListingExecutionTests.Run();
 failures += RegisterRefreshTests.Run();
+failures += BoundaryRegisterProtocolTests.Run();
 failures += ClockTraceTrackerTests.Run();
 failures += InstructionClockStepperTests.Run();
 failures += BusLogScrollTests.Run();

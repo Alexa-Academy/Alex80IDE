@@ -20,6 +20,7 @@ public class CardConfig
     public bool? ClockPulseSupported { get; set; }
     public bool? RegisterUpdateSupported { get; set; }
     public bool? RegisterSnapshotSupported { get; set; }
+    public bool? RegisterBoundarySnapshotSupported { get; set; }
 
     /// <summary>
     /// Nome con cui la scheda di test eZ80 si presenta nel messaggio !INFO.
@@ -104,6 +105,9 @@ public class CardConfig
                     break;
                 case "REGSNAP":
                     result.RegisterSnapshotSupported = ParseSwitch(value);
+                    break;
+                case "REGBND":
+                    result.RegisterBoundarySnapshotSupported = ParseSwitch(value);
                     break;
             }
         }

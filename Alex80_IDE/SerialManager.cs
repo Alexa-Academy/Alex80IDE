@@ -91,6 +91,8 @@ public partial class SerialManager {
     private bool clockPulsePending;
     private bool clockPulseRegisters;
     private bool clockRegisterSnapshot;
+    private uint? boundaryRegisterStart;
+    private byte[]? boundaryRegisterDump;
     private LogElement? clockPulseSample;
     private ushort? clockPulseDumpPc;
     private CancellationTokenSource? clockPulseTimeout;
@@ -98,10 +100,27 @@ public partial class SerialManager {
     public event Action<LogElement>? ClockPulseReceived;
     public event Action<string>? ClockPulseFailed;
     public event Action<LogElement>? ManualRegisterReadCompleted;
+    public event Action<uint, uint, ushort>? BoundaryRegisterReadCompleted;
 
     public bool PulseClock(bool readRegisters = false) => BeginManualClock(readRegisters, false);
 
     public bool SnapshotManualRegisters() => BeginManualClock(true, true);
+
+    public bool SnapshotBoundaryRegisters(uint clock)
+    {
+        if (!_serialPort.IsOpen || IsReadPending || clockPulsePending || registerRequestPending) return false;
+        boundaryRegisterStart = clock;
+        boundaryRegisterDump = null;
+        clockPulsePending = clockPulseRegisters = true;
+        clockRegisterSnapshot = false;
+        clockPulseSample = null; clockPulseDumpPc = null;
+        ReadStateChanged?.Invoke();
+        clockPulseTimeout?.Cancel();
+        clockPulseTimeout = new CancellationTokenSource();
+        _ = AwaitClockPulseAsync(clockPulseTimeout.Token);
+        SendSerialText("clk regs boundary\r");
+        return true;
+    }
 
     private bool BeginManualClock(bool readRegisters, bool snapshot)
     {
@@ -111,6 +130,8 @@ public partial class SerialManager {
         clockRegisterSnapshot = snapshot;
         clockPulseSample = null;
         clockPulseDumpPc = null;
+        boundaryRegisterStart = null;
+        boundaryRegisterDump = null;
         ReadStateChanged?.Invoke();
         clockPulseTimeout?.Cancel();
         clockPulseTimeout = new CancellationTokenSource();
@@ -136,6 +157,8 @@ public partial class SerialManager {
     }
     private void CompleteClockPulse(string? error = null)
     {
+        boundaryRegisterStart = null;
+        boundaryRegisterDump = null;
         clockPulseSample = null;
         clockPulseDumpPc = null;
         clockRegisterSnapshot = false;
@@ -397,8 +420,39 @@ public partial class SerialManager {
                 }
             }
         }
+        else if (message.StartsWith("!BDUMP") && message.EndsWith(';'))
+        {
+            if (!clockPulsePending || boundaryRegisterStart is null) return;
+            try
+            {
+                var dump = Convert.FromBase64String(message.Substring(6, message.Length - 7));
+                if (dump.Length != 16 || boundaryRegisterDump is not null) throw new FormatException();
+                boundaryRegisterDump = dump;
+            }
+            catch (FormatException) { CompleteClockPulse("Risposta registri al confine non valida."); }
+        }
+        else if (message.StartsWith("!REGBOUND") && message.EndsWith(';'))
+        {
+            if (!clockPulsePending || boundaryRegisterStart is not { } expected) return;
+            try
+            {
+                byte[] frame = Convert.FromBase64String(message.Substring(9, message.Length - 10));
+                if (frame.Length != 10 || boundaryRegisterDump is not { } dump)
+                    throw new FormatException();
+                uint before = ((uint)frame[2] << 24) | ((uint)frame[3] << 16) | ((uint)frame[4] << 8) | frame[5];
+                uint after = ((uint)frame[6] << 24) | ((uint)frame[7] << 16) | ((uint)frame[8] << 8) | frame[9];
+                ushort pc = (ushort)((frame[0] << 8) | frame[1]);
+                if (before != expected || unchecked(after - before) != 94 ||
+                    pc != (ushort)((dump[14] << 8) | dump[15])) throw new FormatException();
+                BoundaryRegisterReadCompleted?.Invoke(before, after, pc);
+                PublishZ80Dump(dump);
+                CompleteClockPulse();
+            }
+            catch (FormatException) { CompleteClockPulse("Lettura dei registri al confine non confermata."); }
+        }
         else if (message == "!PULSEEND;")
         {
+            if (boundaryRegisterStart is not null) { CompleteClockPulse("Arresto prima del fetch non confermato."); return; }
             if (clockPulsePending && clockPulseRegisters) {
                 if (clockPulseSample is { Waiting: true, StartsInstruction: true, IsInstructionFetch: true } sample && clockPulseDumpPc == sample.Address)
                     ManualRegisterReadCompleted?.Invoke(sample);
@@ -413,6 +467,7 @@ public partial class SerialManager {
         else if (message == "!STEP;") CompleteRegisterRequest();
         else if ((message.StartsWith("!LOG") || message.StartsWith("!PULSE")) && message.EndsWith(';'))
         {
+            if (boundaryRegisterStart is not null) { CompleteClockPulse("Clock di programma inatteso durante la lettura dei registri."); return; }
             bool manualPulse = message.StartsWith("!PULSE");
             int headerLength = manualPulse ? 6 : 4;
             string payload = message.Substring(headerLength, message.Length - headerLength - 1);
@@ -518,23 +573,8 @@ public partial class SerialManager {
                     if (clockPulsePending) CompleteClockPulse("Risposta registri Z80 non valida.");
                     return;
                 }
-
-                var a_reg = recBytes[0];
-                var b_reg = recBytes[1];
-                var c_reg = recBytes[2];
-                var d_reg = recBytes[3];
-                var e_reg = recBytes[4];
-                var h_reg = recBytes[5];
-                var l_reg = recBytes[6];
-                var ix_reg = (ushort)(recBytes[7]<<8 | recBytes[8]);
-                var iy_reg = (ushort)(recBytes[9]<<8 | recBytes[10]);
-                var sp_reg = (ushort)(recBytes[11]<<8 | recBytes[12]);
-                var f_reg = recBytes[13];
-                var pc_reg = (ushort)(recBytes[14]<<8 | recBytes[15]);
-                if (clockPulsePending && clockPulseRegisters) clockPulseDumpPc = pc_reg;
-
-                DumpReceived?.Invoke(a_reg, b_reg, c_reg, d_reg, e_reg, h_reg, l_reg, ix_reg, iy_reg, sp_reg, pc_reg, f_reg);
-                CompleteRegisterRequest();
+                if (boundaryRegisterStart is not null) CompleteClockPulse("Risposta registri al confine inattesa.");
+                else PublishZ80Dump(recBytes);
             }
         }
         else if (message == "!OK;") 
@@ -563,6 +603,16 @@ public partial class SerialManager {
         }
     }
     
+    private void PublishZ80Dump(byte[] data)
+    {
+        ushort pc = (ushort)((data[14] << 8) | data[15]);
+        if (clockPulsePending && clockPulseRegisters) clockPulseDumpPc = pc;
+        DumpReceived?.Invoke(data[0], data[1], data[2], data[3], data[4], data[5], data[6],
+            (ushort)((data[7] << 8) | data[8]), (ushort)((data[9] << 8) | data[10]),
+            (ushort)((data[11] << 8) | data[12]), pc, data[13]);
+        CompleteRegisterRequest();
+    }
+
     public async Task<bool> OpenCloseSerialPortAsync(string portName, int baudRate) {
           if (_serialPort.IsOpen) {
               _serialPort.Close();

@@ -155,6 +155,7 @@ public partial class MainViewModel : ObservableObject
         HasClockPulseSupport = false;
         HasRegisterUpdateSupport = false;
         HasRegisterSnapshotSupport = false;
+        HasRegisterBoundarySnapshotSupport = false;
         _manualRegisterRefreshRequested = false;
         DebugEnabled = false;
         MonitorEnabled = null;
@@ -510,7 +511,7 @@ public partial class MainViewModel : ObservableObject
         IsBoardConnected && !IsInstructionClockRunning &&
         !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending &&
         (IsEz80 ||
-         CanSnapshotManualRegisters ||
+         CanSnapshotManualRegisters || CanSnapshotBoundaryRegisters ||
          (IsAlex80Micro && IsMemoryFromArduino && DebugEnabled && (!IsClockFromArduino || IsClockActive)));
 
     /// <summary>
@@ -1427,6 +1428,7 @@ public partial class MainViewModel : ObservableObject
                 HasClockPulseSupport = cardConfig.ClockPulseSupported == true;
                 HasRegisterUpdateSupport = cardConfig.RegisterUpdateSupported == true;
                 HasRegisterSnapshotSupport = cardConfig.RegisterSnapshotSupported == true;
+                HasRegisterBoundarySnapshotSupport = cardConfig.RegisterBoundarySnapshotSupported == true;
                 if (cardConfig.DebugEnabled is { } debugEnabled) DebugEnabled = debugEnabled;
                 MonitorEnabled = cardConfig.MonitorEnabled;
                 RememberIdentifiedSerialPort();

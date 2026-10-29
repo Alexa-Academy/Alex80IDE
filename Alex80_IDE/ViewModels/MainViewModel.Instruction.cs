@@ -104,9 +104,22 @@ public partial class MainViewModel
             _clockTrace.ConfirmManualRegisterRead(log);
             _confirmedManualRegisterPulse = log;
         });
+        _serialManager.BoundaryRegisterReadCompleted += (before, after, pc) => Dispatcher.UIThread.Post(() =>
+        {
+            _clockTrace.ConfirmBoundaryRegisterRead(before, after, pc);
+            ClockSummary = _clockTrace.Summary;
+            _boundaryRegisterPosition = (after, pc);
+            _completedManualInstructionClock = after;
+            _confirmedManualRegisterPulse = null;
+            if (_instructionClockBeforeBoundarySnapshot is { } status)
+                InstructionClockStatus = status + " · registri aggiornati.";
+            _instructionClockBeforeBoundarySnapshot = null;
+        });
         _serialManager.ClockPulseFailed += error => Dispatcher.UIThread.Post(() =>
         {
             _manualRegisterRefreshRequested = false;
+            _boundaryRegisterPosition = null;
+            _instructionClockBeforeBoundarySnapshot = null;
             MarkRegistersStale();
             RegisterRefreshStatus = error;
             _clockTrace.InvalidateSynchronization(); InvalidateInstruction(); InstructionStatus = error;
@@ -144,6 +157,7 @@ public partial class MainViewModel
         _lastManualClockSample = null;
         _completedManualInstructionClock = null;
         _confirmedManualRegisterPulse = null;
+        _boundaryRegisterPosition = null;
         OnPropertyChanged(nameof(InstructionTitle)); OnPropertyChanged(nameof(InstructionPrediction));
         InstructionStatus = "Ferma la CPU e rileggi i registri per vedere l'istruzione al PC.";
     }
@@ -159,6 +173,7 @@ public partial class MainViewModel
         if (!IsBoardConnected || IsEz80 || IsClockActive || DebugEnabled || log.IsReset || log.HardwareHalt == true) return;
         _lastManualClockSample = log;
         _confirmedManualRegisterPulse = null;
+        _boundaryRegisterPosition = null;
         bool firstFetch = log.StartsInstruction == true && !log.Z80_M1 && log.Z80_IORQ && log.Z80_RFSH && !log.IsInjected;
         if (firstFetch && !_manualFetchActive) RefreshStoppedInstruction(log.Address, force: true, manualClock: true);
         _manualFetchActive = firstFetch;

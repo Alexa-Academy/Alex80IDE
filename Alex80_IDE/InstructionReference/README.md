@@ -19,7 +19,7 @@ On eZ80, `rb` uses the existing ZDI routine, which restores PC afterwards.
 
 **Un colpo di clock** is available in Board Settings and the bus log when the
 manager advertises `CLKPULSE:ON`. Stop the automatic Arduino clock and disable
-Debug first. With **Aggiorna automaticamente i registri** off, each click sends
+Debug first. Each click sends
 `clk pulse`, generates exactly one LOW–HIGH–LOW cycle using the normal memory
 service, and leaves CLK low, without WAIT or register injection.
 The configured frequency determines pulse width;
@@ -31,16 +31,27 @@ logging disabled; ordinary logging does not duplicate it. The IDE blocks another
 pulse until the reply and any instruction-byte read finish, and handles errors
 or a missing reply with a five-second timeout for this basic pulse.
 
-With the automatic register flag on (the saved default) and `REGUPDATE:ON`
-advertised, the IDE sends `clk pulse regs`. A pulse reaching a held first-opcode
+The legacy `clk pulse regs` protocol remains supported by the serial parser.
+A pulse reaching a held first-opcode
 read adds the debugger's register-read clocks, restores PC/SP and stops CLK low
 again. It returns the original `!PULSE`, an optional `!DUMP`, then `!PULSEEND`.
-Pulses inside an instruction do not seek ahead to obtain registers. The IDE
+Pulses inside an instruction do not seek ahead to obtain registers. The client
 waits for the final marker; the timeout allows for injection at the configured
 frequency. Full logging identifies all additional clocks as register reads.
 After a step, the same flag selects the normal step/dump or `s noregs` (`!STEP`
 completion). Older managers keep their original commands; manual snapshots
 require the updated library manager sketch.
+
+For a counted instruction, manager 1.3.0 advertises `REGBND:ON`. With automatic
+updates enabled, the IDE requests `clk regs boundary` after the final program
+T-state. All 94 clocks belong to injected PUSH/LD SP/JP instructions. The clock
+stops on the final JP operand cycle, before fetching the original next opcode.
+`!BDUMP` holds a provisional snapshot; a matching `!REGBOUND` confirms PC and
+the initial/final physical counters before registers are published. The trace
+retains the completed instruction's last row and counts 94 debugger clocks;
+the next user pulse is T1. Current flags/B remain available to determine the
+next conditional instruction's duration. Older firmware never receives this
+command and continues to stop without automatic snapshots. R still advances.
 
 The card becomes **Istruzione sul bus**: the first recognizable M1 identifies
 the current instruction, and a short `rb` updates its bytes without generating
