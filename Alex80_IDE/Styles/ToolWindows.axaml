@@ -40,11 +40,11 @@
     </Style>
 
     <Style Selector="Button.toolStripButton.active /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource AccentStrongBrush}" />
+        <Setter Property="Background" Value="{DynamicResource BadgeBackgroundBrush}" />
     </Style>
 
     <Style Selector="Button.toolStripButton.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+        <Setter Property="Background" Value="{DynamicResource BadgeBackgroundBrush}" />
     </Style>
 
     <Style Selector="Button.toolStripButton PathIcon.stripIcon">
@@ -58,7 +58,7 @@
     </Style>
 
     <Style Selector="Button.toolStripButton.active PathIcon.stripIcon">
-        <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
     </Style>
 
     <!-- Intestazione del pannello: titolo della tool window mostrata e pulsante di chiusura. -->
