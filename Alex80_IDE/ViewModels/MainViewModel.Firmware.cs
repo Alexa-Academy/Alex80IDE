@@ -27,7 +27,7 @@ public partial class MainViewModel
     {
         get
         {
-            if (!IsBoardConnected) return CardBadgeText;
+            if (!IsBoardConnected) return IsWaitingForBoard ? "Porta aperta · attesa della scheda" : CardBadgeText;
             var text = CardName;
             if (!string.IsNullOrWhiteSpace(FirmwareVersion)) text += $" · firmware {FirmwareVersion}";
             if (IsFirmwareUpdateRequired) text += " · aggiornamento richiesto";
@@ -40,7 +40,9 @@ public partial class MainViewModel
     {
         get
         {
-            if (!IsBoardConnected) return "Nessuna scheda connessa.";
+            if (!IsBoardConnected) return IsWaitingForBoard
+                ? "La porta seriale è aperta: attendo il messaggio di identificazione della scheda."
+                : "Nessuna scheda connessa.";
             if (!IsAlex80Micro) return CardConnectionText;
             var requirement = $"Versione minima del firmware ALEX80µ richiesta dall'IDE: {RequiredFirmwareVersion}.";
             if (IsFirmwareVersionUnknown)

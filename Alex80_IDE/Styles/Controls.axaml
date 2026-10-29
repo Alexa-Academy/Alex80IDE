@@ -66,6 +66,15 @@
         <Setter Property="Padding" Value="12,8" />
     </Style>
 
+    <Style Selector="Border.connectionNotice">
+        <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentStrongBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="16,12" />
+        <Setter Property="BoxShadow" Value="0 4 14 0 #40000000" />
+    </Style>
+
     <Style Selector="Border.toolBar">
         <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderHairlineBrush}" />

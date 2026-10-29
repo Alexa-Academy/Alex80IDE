@@ -91,6 +91,7 @@ public partial class MainViewModel : ObservableObject
         ReadMemoryCommand.NotifyCanExecuteChanged();
         WriteMemoryCommand.NotifyCanExecuteChanged();
         NotifyCpuContextChanged();
+        if (IsSerialOpened && IsBoardConnected) ShowConnectionEstablished();
     }
     
     [ObservableProperty]
@@ -168,6 +169,11 @@ public partial class MainViewModel : ObservableObject
             IsAlex80Full = false;
             IsAlex80Micro = false;
         }
+
+        ToggleButtonContent = value ? "Disconnetti" : "Connetti";
+        if (value) ShowConnectionProgress();
+        else HideConnectionNotice();
+        NotifyFirmwareStatusChanged();
 
         // Aprendo o chiudendo la porta il confronto riparte da zero: i registri di
         // prima appartengono a una sessione che non c'e' piu'.
@@ -1809,8 +1815,8 @@ public partial class MainViewModel : ObservableObject
             SerialMessageText = string.Empty;
             bool isOpen = await _serialManager.OpenCloseSerialPortAsync(PortsList[SelectedIdx], SelectedBaudRate);
             ToggleButtonContent = isOpen ? "Disconnetti" : "Connetti";
+            if (isOpen && IsWaitingForBoard) ShowUnidentifiedBoardNotice();
 
-    
         }
         catch (UnauthorizedAccessException ex)
         {

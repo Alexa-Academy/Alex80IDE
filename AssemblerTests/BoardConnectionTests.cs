@@ -38,7 +38,11 @@ internal static class BoardConnectionTests
         }
         try
         {
+            Check("connessione: nessuna notifica prima dell'apertura", !vm.IsConnectionNoticeVisible);
             vm.IsSerialOpened = true;
+            Check("connessione: attesa visibile mentre la porta è aperta", vm.IsConnectionNoticeVisible &&
+                vm.IsConnectionInProgress && vm.ConnectionNoticeText.Contains("in corso") &&
+                vm.CardConnectionText.Contains("attesa") && vm.ToggleButtonContent == "Disconnetti");
             var originalOutput = Console.Out;
             var receivedOutput = new StringWriter();
             try
@@ -50,6 +54,12 @@ internal static class BoardConnectionTests
             Check("connessione: stato reale completo applicato alla UI", vm.IsBoardConnected &&
                 vm.IsClockFromArduino && vm.IsMemoryFromArduino && vm.ClockFrequency == "32768" &&
                 vm.IsClockActive && vm.LogEnabled && vm.DebugEnabled && vm.MonitorEnabled == false);
+            Check("connessione: identificazione confermata senza indicatore di attesa", vm.IsConnectionNoticeVisible &&
+                !vm.IsConnectionInProgress && vm.ConnectionNoticeText == "Connessa: ALEX80µ");
+            // The console runner has no platform timer loop. Invoke its expiration
+            // callback, then verify that a configuration refresh cannot revive it.
+            typeof(MainViewModel).GetMethod("HideConnectionNotice", flags)!.Invoke(vm, null);
+            Check("connessione: scadenza rimuove la conferma ma mantiene la scheda", !vm.IsConnectionNoticeVisible && vm.IsBoardConnected);
             Check("configurazione ricevuta non invia comandi alla scheda",
                 !receivedOutput.ToString().Contains("Porta seriale non aperta."));
             Check("etichette log/debug aggiornate", vm.BusLogToggleText == "Disabilita log continuo" && vm.CanDumpRegisters);
@@ -61,6 +71,7 @@ internal static class BoardConnectionTests
             var firmwareNotifications = new HashSet<string>();
             vm.PropertyChanged += (_, e) => firmwareNotifications.Add(e.PropertyName ?? "");
             Receive("CARD:ALEX80µ,FWVER:1.0.0");
+            Check("connessione: aggiornamenti INFO non ripresentano la notifica", !vm.IsConnectionNoticeVisible);
             Check("firmware corrente: versione mostrata e requisito soddisfatto",
                 vm.FirmwareVersion == "1.0.0" && vm.CardConnectionText == "ALEX80µ · firmware 1.0.0" &&
                 !vm.HasFirmwareWarning && vm.RequiredFirmwareVersion == "1.0.0" &&
@@ -88,6 +99,8 @@ internal static class BoardConnectionTests
                 vm.MonitorEnabled == true && vm.MonitorStatusText.Contains("attivo"));
 
             vm.IsSerialOpened = false;
+            Check("disconnessione: notifica e indicatore rimossi", !vm.IsConnectionNoticeVisible &&
+                !vm.IsConnectionInProgress && vm.ToggleButtonContent == "Connetti");
             Check("disconnessione: nessuno stato resta dalla sessione precedente", !vm.IsBoardConnected &&
                 !vm.LogEnabled && !vm.DebugEnabled && !vm.IsClockActive && vm.MonitorEnabled is null);
             Check("disconnessione: versione e avvisi azzerati", vm.FirmwareVersion == "" &&
@@ -106,6 +119,8 @@ internal static class BoardConnectionTests
             Receive("CARD:eZ80Test,SCLK:E,FCLK:0,ECLK:1,SMEM:E");
             Check("INFO eZ80 esistente resta compatibile", vm.IsEz80 && vm.IsBoardConnected &&
                 !vm.CanUseDebug && !vm.CanUseBusLog && vm.MonitorEnabled is null && vm.BusLogTool.IsAvailable);
+            Check("connessione: conferma identifica anche eZ80", vm.IsConnectionNoticeVisible &&
+                !vm.IsConnectionInProgress && vm.ConnectionNoticeText == "Connessa: eZ80Test");
             Check("eZ80: versione e requisito micro non ereditati", vm.FirmwareVersion == "" &&
                 !vm.HasFirmwareWarning && vm.RequiredFirmwareVersion == "" && vm.CardConnectionText == "eZ80Test");
 
@@ -131,6 +146,7 @@ internal static class BoardConnectionTests
         }
         finally
         {
+            vm.IsSerialOpened = false;
             ((System.Timers.Timer)typeof(MainViewModel).GetField("_serialPortCheckTimer", flags)!.GetValue(vm)!).Dispose();
             manager.SerialPort.Dispose();
         }

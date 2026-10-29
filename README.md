@@ -204,7 +204,11 @@ The top toolbar provides **Clock da Arduino**, **Memoria da Arduino**, the
 clock frequency in Hz and a clock start/stop button showing its current state.
 Frequency and start/stop are enabled only with an Arduino clock source; Arduino
 controls are disabled for eZ80. The connected board and firmware are highlighted
-in the status bar. **Debug WAIT** sits beside the manual stepping controls in
+in the status bar. A non-modal notification shows connection progress until the
+board identifies itself, then confirms its name for 2.5 seconds. If identification
+retries finish without a response, it shows a short diagnostic message; the
+status bar continues to indicate that the serial port is waiting for a board.
+**Debug WAIT** sits beside the manual stepping controls in
 Bus Log. CPU mode is below the CPU selector in **Assemblatore**, leaving the
 right dock dedicated to Registers.
 

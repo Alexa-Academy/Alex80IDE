@@ -377,6 +377,23 @@
             </Border>
         </Grid>
 
+        <!-- Notifica sovrapposta e non modale: segnala l'attesa senza prendere il
+             fuoco, intercettare clic o spostare i pannelli dell'area di lavoro. -->
+        <Border Grid.Row="2" ZIndex="10" Classes="connectionNotice"
+                IsVisible="{Binding IsConnectionNoticeVisible}" IsHitTestVisible="False"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                MaxWidth="420" Margin="12,10,12,0">
+            <StackPanel Spacing="7">
+                <TextBlock Text="{Binding ConnectionNoticeText}" FontWeight="SemiBold"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding ConnectionNoticeDetail}" Classes="caption"
+                           TextWrapping="Wrap" />
+                <ProgressBar IsIndeterminate="{Binding IsConnectionInProgress}"
+                             IsVisible="{Binding IsConnectionInProgress}"
+                             Height="3" />
+            </StackPanel>
+        </Border>
+
         <!-- Status bar: stato della scheda e contesto di lavoro. PC e SP stanno
              nella tool window dei registri. -->
         <Border Grid.Row="3" Classes="statusBar">
