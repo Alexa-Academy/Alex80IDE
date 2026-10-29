@@ -12,27 +12,34 @@ public partial class MainViewModel
     private uint? _instructionPc;
     private bool _instructionNeedsRead;
     private bool _instructionFromManualClock, _manualFetchActive;
+    private LogElement? _lastManualClockSample;
     [ObservableProperty] private bool _hasClockPulseSupport;
     partial void OnHasClockPulseSupportChanged(bool value) => NotifyManualClockAvailability();
     public string InstructionTitle => _instructionFromManualClock ? "ISTRUZIONE SUL BUS" : "ISTRUZIONE AL PC";
     public bool CanPulseClock => IsSerialOpened && CanControlClock && HasClockPulseSupport &&
         !IsInstructionClockRunning && !IsClockActive && !DebugEnabled && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
     public string ClockPulseToolTip => !HasClockPulseSupport ? "Richiede il manager Arduino aggiornato con supporto clk pulse."
+        : !IsClockFromArduino ? "Clock esterno: Arduino non può generare impulsi. Usa Debug e Step con WAIT, se supportati dal firmware."
         : IsClockActive ? "Ferma il clock automatico per inviare un impulso."
         : DebugEnabled ? "Disattiva Debug per avanzare senza WAIT."
-        : AutoRefreshRegisters && HasRegisterUpdateSupport
-            ? "Invia un ciclo LOW–HIGH–LOW. Ai confini delle istruzioni aggiunge i clock per leggere i registri e si ferma di nuovo."
-            : "Invia un ciclo completo LOW–HIGH–LOW e lascia il clock fermo. Funziona anche con log disattivati.";
+        : "Clock Arduino: invia solo un ciclo LOW–HIGH–LOW e lascia il clock fermo, senza WAIT o letture dei registri. Funziona anche con log disattivati.";
+    public string StepToolTip => !IsEz80 && IsClockFromArduino && HasClockPulseSupport && !IsClockActive
+        ? InstructionClockToolTip
+        : IsEz80 ? "Esegue una sola istruzione via ZDI, entrando nelle CALL."
+        : "Avanza di un'istruzione usando Debug con WAIT, entrando nelle CALL. Richiede il supporto del firmware e un clock in moto.";
     private void NotifyManualClockAvailability()
     {
         OnPropertyChanged(nameof(CanPulseClock)); OnPropertyChanged(nameof(ClockPulseToolTip));
+        OnPropertyChanged(nameof(InstructionClockToolTip));
+        OnPropertyChanged(nameof(StepToolTip));
+        StepCommand.NotifyCanExecuteChanged();
         PulseClockCommand.NotifyCanExecuteChanged();
         AdvanceInstructionClockCommand.NotifyCanExecuteChanged();
     }
     [RelayCommand(CanExecute = nameof(CanPulseClock))]
     private void PulseClock()
     {
-        if (!_serialManager.PulseClock(AutoRefreshRegisters && HasRegisterUpdateSupport)) InstructionStatus = "Impossibile inviare l'impulso di clock.";
+        if (!_serialManager.PulseClock()) InstructionStatus = "Impossibile inviare l'impulso di clock.";
         else MarkRegistersStale();
     }
     [ObservableProperty] private InstructionInfo? _currentInstruction;
@@ -65,9 +72,16 @@ public partial class MainViewModel
             InstructionStatus = _instructionFromManualClock
                 ? (_registersAreCurrent ? "Istruzione corrente · clock manuale fermo · registri aggiornati" : "Istruzione corrente · clock manuale fermo · registri non riletti")
                 : "Prossima istruzione · byte letti dalla scheda";
+            ResumeInstructionClockAfterDecode();
         });
         _serialManager.InstructionReadFailed += (pc, message) => Dispatcher.UIThread.Post(() =>
-        { if (_instructionPc == pc) { CurrentInstruction = null; InstructionStatus = message; } });
+        {
+            if (_instructionPc == pc)
+            {
+                CurrentInstruction = null; InstructionStatus = message;
+                if (IsInstructionClockRunning) FinishInstructionClock(message);
+            }
+        });
         _serialManager.ReadStateChanged += () => Dispatcher.UIThread.Post(() =>
         {
             ReadMemoryCommand.NotifyCanExecuteChanged(); WriteMemoryCommand.NotifyCanExecuteChanged();
@@ -102,14 +116,24 @@ public partial class MainViewModel
     }
     private void TryReadInstruction()
     {
-        if (IsInstructionClockRunning || !_instructionNeedsRead || _instructionPc is not { } pc || _serialManager.IsReadPending || _serialManager.IsClockPulsePending || _serialManager.IsRegisterRequestPending) return;
-        if (_serialManager.ReadInstruction(pc, IsEz80, IsAdl)) _instructionNeedsRead = false;
-        else InstructionStatus = $"PC {pc:X4} · byte dell'istruzione non disponibili.";
+        if ((IsInstructionClockRunning && _instructionClockStepper?.NeedsInstruction != true) ||
+            !_instructionNeedsRead || _instructionPc is not { } pc || _serialManager.IsReadPending ||
+            _serialManager.IsClockPulsePending || _serialManager.IsRegisterRequestPending) return;
+        bool read = IsInstructionClockRunning && _instructionClockReader is { } reader
+            ? reader(pc) : _serialManager.ReadInstruction(pc, IsEz80, IsAdl);
+        if (read) _instructionNeedsRead = false;
+        else
+        {
+            InstructionStatus = $"PC {pc:X4} · byte dell'istruzione non disponibili.";
+            if (IsInstructionClockRunning) FinishInstructionClock(InstructionStatus);
+        }
     }
     private void InvalidateInstruction()
     {
         _instructionPc = null; _instructionNeedsRead = false; CurrentInstruction = null;
         _instructionFromManualClock = _manualFetchActive = false;
+        _lastManualClockSample = null;
+        _completedManualInstructionClock = null;
         OnPropertyChanged(nameof(InstructionTitle)); OnPropertyChanged(nameof(InstructionPrediction));
         InstructionStatus = "Ferma la CPU e rileggi i registri per vedere l'istruzione al PC.";
     }
@@ -123,12 +147,15 @@ public partial class MainViewModel
     private void ObserveManualClock(LogElement log)
     {
         if (!IsBoardConnected || IsEz80 || IsClockActive || DebugEnabled || log.IsReset || log.HardwareHalt == true) return;
+        _lastManualClockSample = log;
         bool firstFetch = log.StartsInstruction == true && !log.Z80_M1 && log.Z80_IORQ && log.Z80_RFSH && !log.IsInjected;
         if (firstFetch && !_manualFetchActive) RefreshStoppedInstruction(log.Address, force: true, manualClock: true);
         _manualFetchActive = firstFetch;
         if (_instructionPc is null) InstructionStatus = "Clock inviato · avanza fino al prossimo fetch per identificare l'istruzione.";
     }
-    private bool CanStepCpu() => IsBoardConnected && !IsInstructionClockRunning && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
+    private bool CanStepCpu() => IsBoardConnected && !IsInstructionClockRunning &&
+        !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending &&
+        (IsEz80 || !IsClockFromArduino || !HasClockPulseSupport || IsClockActive || !DebugEnabled);
     private bool CanToggleBoardClock() => CanControlClock && !IsInstructionClockRunning && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
     [RelayCommand]
     private void OpenInstructionManual()

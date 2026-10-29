@@ -8,6 +8,8 @@ public sealed record InstructionInfo(
     string TimingNote, string ManualUrl, bool Complete = true)
 {
     public int AddressDigits { get; init; } = 4;
+    public int? TakenTStates { get; init; }
+    public int? NotTakenTStates { get; init; }
     public string OpcodeText => string.Join(" ", Array.ConvertAll(Bytes, b => b.ToString("X2")));
     public string Header => $"{Address.ToString(AddressDigits == 6 ? "X6" : "X4")} · {Mnemonic}";
     public string SizeText => Complete ? $"{Bytes.Length} byte" : "Lunghezza non determinata";

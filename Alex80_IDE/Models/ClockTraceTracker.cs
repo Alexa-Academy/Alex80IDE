@@ -15,6 +15,8 @@ public sealed class ClockTraceTracker
     private sealed record RegisterPause(LogElement Row, bool Synced, int T, int Waits,
         int Debug, uint Address, string LastProgram, string Summary);
     public string Summary { get; private set; } = "Nessun intervallo completo misurato.";
+    public int? CurrentTState => synced ? t : null;
+    public uint? CurrentInstructionAddress => synced ? address : null;
     public void Reset()
     { previous = null; InvalidateSynchronization(); t = waits = debug = 0; lastProgram = ""; Summary = "Nessun intervallo completo misurato."; }
 

@@ -90,7 +90,7 @@
                     HorizontalAlignment="Left"
                     Command="{Binding DebugCommand}"
                     Content="{Binding DebugEnabled, Converter={StaticResource EnableDisableConverter}}"
-                    ToolTip.Tip="Ferma la CPU a ogni istruzione, cosi' si puo' procedere a passi e leggere i registri" />
+                    ToolTip.Tip="Debug con WAIT: ferma la CPU a ogni istruzione. Con il clock generato da Arduino, lascia Debug disattivato per usare impulsi e avanzamento senza WAIT." />
 
             <TextBlock Classes="caption"
                        Text="{Binding MonitorStatusText}" />

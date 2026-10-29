@@ -7,14 +7,17 @@ public partial class MainViewModel
 {
     private InstructionClockStepper? _instructionClockStepper;
     private Func<bool>? _instructionClockPulseSender;
+    private Func<uint, bool>? _instructionClockReader;
+    private uint? _completedManualInstructionClock;
     private bool _instructionClockStopRequested;
     [ObservableProperty] private bool _isInstructionClockRunning;
     [ObservableProperty] private string _instructionClockStatus = string.Empty;
 
-    public string InstructionClockToolTip =>
-        "Completa l'istruzione in corso con impulsi singoli e si ferma sul T1 della successiva. " +
+    public string InstructionClockToolTip => !IsClockFromArduino
+        ? "Clock esterno: usa Debug e Step con WAIT, se supportati dal firmware. Gli impulsi manuali richiedono il clock da Arduino."
+        : "Completa i T-state rimanenti e si ferma prima del T1 successivo. " +
         "Richiede clock automatico fermo e Debug disattivato. " +
-        "Non inietta letture dei registri: l'ultima lettura resta da aggiornare.";
+        "Senza WAIT o letture dei registri. Per durate condizionali servono registri aggiornati.";
 
     partial void OnIsInstructionClockRunningChanged(bool value)
     {
@@ -34,16 +37,29 @@ public partial class MainViewModel
     }
 
     [RelayCommand(CanExecute = nameof(CanPulseClock))]
-    private void AdvanceInstructionClock() => StartInstructionClock(() => _serialManager.PulseClock());
+    private void AdvanceInstructionClock() => StartInstructionClock(() => _serialManager.PulseClock(), null);
 
-    private void StartInstructionClock(Func<bool> sendPulse)
+    private void StartInstructionClock(Func<bool> sendPulse, Func<uint, bool>? readInstruction)
     {
-        _instructionClockStepper = new InstructionClockStepper();
+        _instructionClockStepper = new InstructionClockStepper(_lastManualClockSample?.ClockNumber);
         _instructionClockPulseSender = sendPulse;
+        _instructionClockReader = readInstruction;
         _instructionClockStopRequested = false;
         IsInstructionClockRunning = true;
+        InstructionClockStatus = "Completamento dell'istruzione senza WAIT…";
+        try
+        {
+            if (_lastManualClockSample?.Waiting == true)
+                throw new InvalidOperationException("La traccia proviene da un WAIT: riprendere con un clock singolo prima dell'avanzamento contato.");
+            if (CurrentInstruction is { } instruction && _lastManualClockSample?.ClockNumber is { } clock &&
+                clock != _completedManualInstructionClock && _clockTrace.CurrentTState is { } elapsed &&
+                _clockTrace.CurrentInstructionAddress == instruction.Address)
+                _instructionClockStepper.SetInstruction(instruction, elapsed, clock,
+                    _registersAreCurrent && PcReg == instruction.Address ? FReg : null,
+                    _registersAreCurrent && PcReg == instruction.Address ? BReg : null);
+        }
+        catch (InvalidOperationException ex) { FinishInstructionClock(ex.Message); return; }
         MarkRegistersStale();
-        InstructionClockStatus = "Avanzamento fino alla prossima istruzione…";
         SendNextInstructionClockPulse();
     }
 
@@ -56,8 +72,7 @@ public partial class MainViewModel
                 FinishInstructionClock("Configurazione del clock cambiata: avanzamento interrotto.");
                 return;
             }
-            // No automatic dumps inside a burst: every pulse belongs to the
-            // program and the stop remains at T1, before the next opcode read.
+            // Only program clocks: no automatic dump or debugger WAIT.
             if (_instructionClockPulseSender?.Invoke() != true)
                 FinishInstructionClock("Impossibile inviare l'impulso di clock: avanzamento interrotto.");
         }
@@ -78,7 +93,17 @@ public partial class MainViewModel
             if (_instructionClockStopRequested)
                 FinishInstructionClock($"Avanzamento interrotto · {count} · clock fermo.");
             else if (complete)
-                FinishInstructionClock($"Confine istruzione raggiunto · {count} · clock fermo.");
+            {
+                _completedManualInstructionClock = sample.ClockNumber;
+                FinishInstructionClock($"Istruzione completata · {count} · clock fermo prima del prossimo T1.");
+            }
+            else if (stepper.NeedsInstruction)
+            {
+                InstructionClockStatus = "Clock fermo su T1 · lettura dell'istruzione…";
+                // Opcode reads do not pulse CLK; await the complete response
+                // before planning the remaining T-states or sending a pulse.
+                RefreshStoppedInstruction(sample.Address, force: true, manualClock: true);
+            }
             else
             {
                 InstructionClockStatus = $"Avanzamento in corso · {count}…";
@@ -88,9 +113,26 @@ public partial class MainViewModel
         catch (InvalidOperationException ex) { FinishInstructionClock(ex.Message); }
     }
 
+    private void ResumeInstructionClockAfterDecode()
+    {
+        if (_instructionClockStepper is not { NeedsInstruction: true } stepper ||
+            CurrentInstruction is not { } instruction || _lastManualClockSample?.ClockNumber is not { } clock) return;
+        try
+        {
+            stepper.SetInstruction(instruction, 1, clock);
+            SendNextInstructionClockPulse();
+        }
+        catch (InvalidOperationException ex) { FinishInstructionClock(ex.Message); }
+    }
+
     [RelayCommand(CanExecute = nameof(IsInstructionClockRunning))]
     private void StopInstructionClock()
     {
+        if (!_serialManager.IsClockPulsePending)
+        {
+            FinishInstructionClock("Avanzamento interrotto · clock fermo.");
+            return;
+        }
         // Await the pulse already sent; never truncate it or send another one.
         _instructionClockStopRequested = true;
         InstructionClockStatus = "Arresto al termine dell'impulso in corso…";
@@ -100,6 +142,7 @@ public partial class MainViewModel
     {
         _instructionClockStepper = null;
         _instructionClockPulseSender = null;
+        _instructionClockReader = null;
         _instructionClockStopRequested = false;
         IsInstructionClockRunning = false;
         InstructionClockStatus = status;
@@ -110,6 +153,7 @@ public partial class MainViewModel
     {
         _instructionClockStepper = null;
         _instructionClockPulseSender = null;
+        _instructionClockReader = null;
         _instructionClockStopRequested = false;
         IsInstructionClockRunning = false;
         InstructionClockStatus = string.Empty;

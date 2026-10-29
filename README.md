@@ -176,46 +176,46 @@ recording or after a gap. Prefix fetches do not restart the instruction count.
 **T?**, **Tw?** and **—**
 prevent incomplete/legacy traces from being mistaken for measured timings.
 With the updated library manager, **Un colpo di clock** sends one complete pulse
-while the automatic clock is stopped and Debug is off. The instruction card
+while the Arduino clock is stopped and Debug is off. It always sends `clk pulse`,
+even with automatic register updates enabled: no WAIT or register-read clocks
+are added. The instruction card
 updates from the bus fetch without WAIT or extra injected clock cycles, even
 with logging off.
 
 **Avanza un'istruzione** in Board Settings and Bus Log completes the current
 instruction using individually acknowledged `clk pulse` requests, leaving CLK
-low after each pulse and stopping on the next instruction's T1. From T1 to T1
-this advances a whole instruction; from the middle it completes the remainder.
-The actual bus boundary handles conditional timing and prefix continuations
-without guessing a nominal duration. If the initial position is unknown, the
-first observed T1 establishes the boundary. All pulses appear in the bus log,
+low after each pulse and stopping on the current instruction's final T-state,
+before the next T1. From a NOP's T1 it emits T2, T3 and T4 only. On the next click,
+one pulse reaches the new T1; the IDE reads fresh opcode bytes with CLK stopped,
+then sends only the remaining clocks. The existing Z80 timing decoder includes
+prefix costs. Conditional JR/CALL/RET and DJNZ require a current register snapshot
+at the instruction's PC to select the duration; repeated blocks and other unknown
+durations are reported without guessing or advancing to the next fetch. With an
+unknown bus position, use single pulses to synchronize at T1. All pulses appear in the bus log,
 including with continuous logging off. **Ferma avanzamento** stops after the
 pending pulse; errors, HALT, reset and disconnection also end the operation.
 This command does not inject automatic register reads, even when that option
 is enabled: registers remain marked stale and no debugger clocks are added.
 It requires the same manual-clock capability, stopped automatic clock and
 disabled Debug as a single pulse; eZ80 continues using its existing ZDI controls.
+The toolbar's Step uses this same path when the Arduino clock is stopped and
+Debug is off. External clock cannot be pulsed or stopped by the IDE: it keeps
+the existing Debug/WAIT step commands, only where supported by the firmware.
 
 In the Registers pane, **Aggiorna automaticamente i registri** (enabled by
-default and saved between sessions) applies register snapshots after each step.
-With the updated library manager (`REGUPDATE:ON`), it also requests snapshots
-during manual clocking: when a pulse reaches the held read of a complete
-instruction's first opcode, the manager executes additional debugger clocks to
-read the registers, restores PC/SP and stops CLK low again. Pulses within an
-instruction keep the last snapshot, marked as needing an update. It does not
-advance the program to search for a boundary. Full logging marks the added
-cycles as register reads and excludes them from program disassembly/timing.
-The IDE keeps the instruction's T/WAIT count synchronized across a confirmed
-manual register read using the physical counter in the next pulse. Internal
-clocks are counted separately even with bus logging off; missing program
-samples still show `T?`. The instruction card and Registers pane also agree on
-whether the displayed register snapshot is current.
+default and saved between sessions) applies register snapshots after steps in
+Debug mode with WAIT. Arduino manual clocking always keeps the last snapshot
+marked as needing an update: observing registers on a Z80 requires extra CPU
+work and is not part of a single clock or a counted instruction. The extended
+`clk pulse regs` protocol remains readable for compatibility, including its
+separate debugger clocks; the manual buttons no longer request it. Missing
+program samples still show `T?` rather than inventing a position.
 
 With the flag off, the updated manager steps without injection and manual
 clocking uses exactly one complete pulse. **Rileggi dalla scheda** remains
 available independently of this flag when the board permits a manual read.
 Older firmware keeps its existing commands and may still inject after steps;
 the IDE leaves those automatic snapshots unapplied when the flag is off.
-Manual-clock snapshots require uploading the updated
-`ALEX80ArduinoLibrary/ALEX80u/examples/ALEX80u_manager_terminal` sketch.
 The modular ALEX80's destructive monitor dump remains unavailable. eZ80 keeps
 the existing ZDI step/dump protocol. Serial polling runs while a step/register
 request is pending, including on USB ports with delayed receive notifications;

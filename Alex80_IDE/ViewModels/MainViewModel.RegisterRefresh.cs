@@ -22,8 +22,8 @@ public partial class MainViewModel
     }
 
     public string RegisterRefreshToolTip => HasRegisterUpdateSupport
-        ? "Dopo ogni step e ai confini delle istruzioni nel clock manuale. La lettura aggiunge clock del debugger, poi il clock manuale si ferma di nuovo."
-        : "Applica i dump automatici dopo gli step. Per il singolo clock e per evitare l'iniezione con il flag spento occorre il firmware con REGUPDATE.";
+        ? "Rilegge i registri dopo gli step in modalità Debug con WAIT. Il clock manuale Arduino non legge i registri e non aggiunge WAIT o clock del debugger."
+        : "Applica i dump automatici dopo gli step in modalità Debug. Il clock manuale Arduino genera solo gli impulsi richiesti.";
 
     private void MarkRegistersStale()
     {

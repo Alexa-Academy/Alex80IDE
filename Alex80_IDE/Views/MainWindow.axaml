@@ -108,7 +108,7 @@
                                   Data="{Binding BreakButtonIconKey, Converter={StaticResource ResourceKeyConverter}}" />
                     </Button>
                     <Button Classes="iconOnly"
-                            ToolTip.Tip="Esegue una sola istruzione. È uno step into: dentro le CALL ci entra."
+                            ToolTip.Tip="{Binding StepToolTip}"
                             Command="{Binding StepCommand}"
                             IsEnabled="{Binding IsBoardConnected}">
                         <PathIcon Classes="btnIcon" Data="{DynamicResource StepIconData}" />

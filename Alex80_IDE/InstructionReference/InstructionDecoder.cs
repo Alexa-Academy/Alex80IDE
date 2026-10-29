@@ -106,7 +106,12 @@ public static class InstructionDecoder
             }
             if (!known) { timing = "Non disponibile"; machineText = "—"; nominal = null; }
             return new(address, mnemonic, bytes, semantics.Operation, semantics.Description, semantics.Flags,
-                timing, machineText, nominal, note, manual, known) { AddressDigits = ez80 ? 6 : 4 };
+                timing, machineText, nominal, note, manual, known)
+            {
+                AddressDigits = ez80 ? 6 : 4,
+                TakenTStates = known && !ez80 && !block && alternate > 0 ? t : null,
+                NotTakenTStates = known && !ez80 && !block && alternate > 0 ? alternate : null
+            };
         }
         private void DecodeBase(byte op)
         {

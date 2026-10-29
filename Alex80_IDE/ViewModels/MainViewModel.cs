@@ -1086,6 +1086,11 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanStepCpu))]
     private void Step()
     {
+        if (!IsEz80 && IsClockFromArduino && !IsClockActive && !DebugEnabled && HasClockPulseSupport)
+        {
+            AdvanceInstructionClock();
+            return;
+        }
         InvalidateInstruction();
         MarkRegistersStale();
         if (CanDumpRegisters) _serialManager.RequestRegisters(step: true, readAfterStep: AutoRefreshRegisters);
@@ -1237,6 +1242,9 @@ public partial class MainViewModel : ObservableObject
     
     partial void OnIsClockFromArduinoChanged(bool value)
     {
+        _clockTrace.InvalidateSynchronization();
+        InvalidateInstruction();
+        MarkRegistersStale();
         OnPropertyChanged(nameof(InstructionIdealTime));
         OnPropertyChanged(nameof(CanControlClock));
         StartStopBoardCommand.NotifyCanExecuteChanged();
@@ -1258,6 +1266,9 @@ public partial class MainViewModel : ObservableObject
     
     partial void OnIsMemoryFromArduinoChanged(bool value)
     {
+        _clockTrace.InvalidateSynchronization();
+        InvalidateInstruction();
+        MarkRegistersStale();
         NotifyDumpAvailabilityChanged();
 
         if (_isApplyingCardConfig)
