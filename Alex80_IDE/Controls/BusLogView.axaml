@@ -89,12 +89,12 @@
                         </ToolTip.Tip>
                         <PathIcon Classes="stripIcon" Data="{DynamicResource ClockPulseIconData}" />
                     </Button>
-                    <Button Classes="tool" Command="{Binding AdvanceInstructionClockCommand}"
+                    <Button Classes="tool" Command="{Binding StepCommand}"
                             AutomationProperties.Name="Avanza un'istruzione">
                         <ToolTip.Tip>
                             <StackPanel Spacing="4" MaxWidth="320">
                                 <TextBlock Text="Avanza un'istruzione" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding InstructionClockToolTip}" TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding StepToolTip}" TextWrapping="Wrap" />
                             </StackPanel>
                         </ToolTip.Tip>
                         <StackPanel Orientation="Horizontal" Spacing="6">

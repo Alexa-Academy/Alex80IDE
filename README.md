@@ -245,7 +245,10 @@ are added. The instruction card
 updates from the bus fetch without WAIT or extra injected clock cycles, even
 with logging off.
 
-**Avanza un'istruzione** in Bus Log completes the current
+**1 istruzione** in the top toolbar and Bus Log uses the same command and
+availability rules: Debug/WAIT with a running clock, counted manual pulses with
+the Arduino clock stopped and Debug off, or the existing ZDI step on eZ80.
+In manual-clock mode, it completes the current
 instruction using individually acknowledged `clk pulse` requests, leaving CLK
 low after each pulse and stopping on the current instruction's final T-state,
 before the next T1. From a NOP's T1 it emits T2, T3 and T4 only. On the next click,
@@ -262,8 +265,7 @@ With `REGBND:ON` and automatic register updates enabled, completion requests a
 and a disabled automatic flag leave registers stale without extra clocks.
 It requires the same manual-clock capability, stopped automatic clock and
 disabled Debug as a single pulse; eZ80 continues using its existing ZDI controls.
-The toolbar's Step uses this same path when the Arduino clock is stopped and
-Debug is off. External clock cannot be pulsed or stopped by the IDE: it keeps
+External clock cannot be pulsed or stopped by the IDE: it keeps
 the existing Debug/WAIT step commands, only where supported by the firmware.
 
 In the Registers pane, **Aggiorna automaticamente i registri** (enabled by
