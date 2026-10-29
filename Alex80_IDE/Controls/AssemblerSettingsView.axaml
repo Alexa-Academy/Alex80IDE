@@ -35,6 +35,16 @@
                        Text="{Binding CpuMismatchText}" />
         </StackPanel>
 
+        <StackPanel Spacing="8">
+            <TextBlock Text="MODO DELLA CPU" Classes="caption" />
+            <ToggleSwitch Content="Modo Z80"
+                          IsChecked="{Binding Z80CompatibilityMode, Mode=TwoWay}"
+                          IsEnabled="{Binding CanChooseCpuMode}"
+                          ToolTip.Tip="Spento: indirizzi a 24 bit (ADL). Acceso: modo Z80, solo 64 KB tramite MBASE." />
+            <TextBlock Classes="caption" TextWrapping="Wrap"
+                       Text="La scelta del modo vale solo con una scheda eZ80 collegata. Sulle ALEX80 la CPU è uno Z80." />
+        </StackPanel>
+
         <Border Classes="separatorH" />
 
         <StackPanel Spacing="10">

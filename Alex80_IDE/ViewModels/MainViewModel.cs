@@ -339,7 +339,7 @@ public partial class MainViewModel : ObservableObject
     /// <summary>
     /// Acceso di partenza: senza una scheda collegata il bersaglio del progetto e' quasi
     /// sempre uno Z80, e i registri vanno mostrati a 16 bit. Collegando un eZ80 lo si
-    /// spegne dal pannello Scheda per tornare agli indirizzi a 24 bit.
+    /// spegne dal pannello Assemblatore per tornare agli indirizzi a 24 bit.
     /// </summary>
     [ObservableProperty] private bool _z80CompatibilityMode = true;
 

@@ -200,6 +200,14 @@ same counter: an observed first T-state synchronizes it even at the start of
 recording or after a gap. Prefix fetches do not restart the instruction count.
 **T?**, **Tw?** and **—**
 prevent incomplete/legacy traces from being mistaken for measured timings.
+The top toolbar provides **Clock da Arduino**, **Memoria da Arduino**, the
+clock frequency in Hz and a clock start/stop button showing its current state.
+Frequency and start/stop are enabled only with an Arduino clock source; Arduino
+controls are disabled for eZ80. The connected board and firmware are highlighted
+in the status bar. **Debug WAIT** sits beside the manual stepping controls in
+Bus Log. CPU mode is below the CPU selector in **Assemblatore**, leaving the
+right dock dedicated to Registers.
+
 With the updated library manager, **Un colpo di clock** sends one complete pulse
 while the Arduino clock is stopped and Debug is off. It always sends `clk pulse`,
 even with automatic register updates enabled: no WAIT or register-read clocks
@@ -207,7 +215,7 @@ are added. The instruction card
 updates from the bus fetch without WAIT or extra injected clock cycles, even
 with logging off.
 
-**Avanza un'istruzione** in Board Settings and Bus Log completes the current
+**Avanza un'istruzione** in Bus Log completes the current
 instruction using individually acknowledged `clk pulse` requests, leaving CLK
 low after each pulse and stopping on the current instruction's final T-state,
 before the next T1. From a NOP's T1 it emits T2, T3 and T4 only. On the next click,

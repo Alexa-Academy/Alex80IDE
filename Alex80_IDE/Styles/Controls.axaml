@@ -95,6 +95,27 @@
         <Setter Property="CornerRadius" Value="6" />
     </Style>
 
+    <Style Selector="ToggleButton.stateToggle">
+        <Setter Property="MinHeight" Value="28" />
+        <Setter Property="Padding" Value="10,4" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+
+    <Style Selector="ToggleButton.stateToggle:checked /template/ ContentPresenter, Button.stateToggle.active /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BadgeBackgroundBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentStrongBrush}" />
+        <Setter Property="TextBlock.Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="Button.stateToggle.active PathIcon.btnIcon">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="ToggleButton.stateToggle:disabled, Button.stateToggle:disabled">
+        <Setter Property="Opacity" Value="0.4" />
+    </Style>
+
     <!-- Separatore orizzontale, per le sezioni del pannello laterale. -->
     <Style Selector="Border.separatorH">
         <Setter Property="Background" Value="{DynamicResource BorderSoftBrush}" />
@@ -166,6 +187,19 @@
         <Setter Property="FontFamily" Value="{DynamicResource MonoFontFamily}" />
         <Setter Property="FontSize" Value="12" />
         <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.statusItem.boardConnection">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.statusItem.boardConnection.connected">
+        <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.statusItem.boardConnection.firmwareWarning">
+        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
     </Style>
 
     <Style Selector="TextBlock.statusItem.firmwareWarning">
@@ -273,15 +307,6 @@
     <Style Selector="Border.flagChip.changed TextBlock.flagState">
         <Setter Property="Foreground" Value="{DynamicResource ValueChangedTextBrush}" />
         <Setter Property="FontWeight" Value="SemiBold" />
-    </Style>
-
-    <Style Selector="Border.cardBadge">
-        <Setter Property="Background" Value="{DynamicResource BadgeBackgroundBrush}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource AccentStrongBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="999" />
-        <Setter Property="Padding" Value="9,3" />
-        <Setter Property="MinWidth" Value="120" />
     </Style>
 
     <Style Selector="Button">

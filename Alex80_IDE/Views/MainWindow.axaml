@@ -36,41 +36,37 @@
              controllo non occupa spazio; su Windows e Linux e' qui che compare. -->
         <NativeMenuBar Grid.Row="0" HorizontalAlignment="Left" />
 
-        <!-- Barra globale. A sinistra la scheda: identità e connessione, dove negli IDE
-             JetBrains sta il selettore di progetto. A destra i comandi di esecuzione,
-             dove negli stessi IDE stanno run, debug e stop. -->
+        <!-- Connessione e controlli hardware restano accessibili mentre si osservano
+             i registri. Su finestre strette i gruppi vanno a capo senza coprirsi. -->
         <Border Grid.Row="1" Classes="appBar">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="Alex80 IDE"
-                               FontSize="15"
-                               FontWeight="SemiBold"
-                               VerticalAlignment="Center" />
-                    <Border Classes="separator" />
-                    <TextBlock Text="Porta" Classes="caption" VerticalAlignment="Center" />
-                    <ComboBox x:Name="PortsDropdown"
-                              Width="210"
-                              ItemsSource="{Binding PortsList}"
-                              SelectedIndex="{Binding SelectedIdx, Mode=TwoWay}" />
-                    <TextBlock Text="Baud" Classes="caption" VerticalAlignment="Center" />
-                    <ComboBox x:Name="BaudRateDropdown"
-                              Width="110"
-                              ItemsSource="{Binding BaudRates}"
-                              SelectedItem="{Binding SelectedBaudRate, Mode=TwoWay}"
-                              IsEnabled="{Binding !IsSerialOpened}"
-                              ToolTip.Tip="Velocità della seriale in baud. Seleziona il valore configurato nello sketch prima di aprire la porta." />
-                    <Button Content="{Binding ToggleButtonContent}"
-                            Classes="tool"
-                            Command="{Binding OpenCloseSerialPortCommand}" />
-                    <Border Classes="cardBadge" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding CardBadgeText}"
-                                   Classes="caption"
-                                   Foreground="{DynamicResource AccentBrush}"
-                                   HorizontalAlignment="Center" />
-                    </Border>
-                </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                <WrapPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,2,12,2">
+                        <TextBlock Text="Alex80 IDE"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center" />
+                        <Border Classes="separator" />
+                        <TextBlock Text="Porta" Classes="caption" VerticalAlignment="Center" />
+                        <ComboBox x:Name="PortsDropdown"
+                                  Width="180"
+                                  ItemsSource="{Binding PortsList}"
+                                  SelectedIndex="{Binding SelectedIdx, Mode=TwoWay}" />
+                        <TextBlock Text="Baud" Classes="caption" VerticalAlignment="Center" />
+                        <ComboBox x:Name="BaudRateDropdown"
+                                  Width="100"
+                                  ItemsSource="{Binding BaudRates}"
+                                  SelectedItem="{Binding SelectedBaudRate, Mode=TwoWay}"
+                                  IsEnabled="{Binding !IsSerialOpened}"
+                                  ToolTip.Tip="Velocità della seriale in baud. Seleziona il valore configurato nello sketch prima di aprire la porta." />
+                        <Button Content="{Binding ToggleButtonContent}"
+                                Classes="tool"
+                                Command="{Binding OpenCloseSerialPortCommand}" />
+                    </StackPanel>
+                    <controls:BoardToolbarView Margin="0,2" VerticalAlignment="Center" />
+                </WrapPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top" Margin="0,4,0,0">
                     <!-- Assembla sta con i comandi di esecuzione, come negli IDE: si
                          costruisce e si manda in esecuzione con lo stesso gesto. -->
                     <Button Command="{Binding AssembleCommand}" Classes="iconOnly"
@@ -78,9 +74,6 @@
                         <PathIcon Classes="btnIcon" Data="{DynamicResource AssembleIconData}" />
                     </Button>
                     <Border Classes="separator" />
-                    <!-- Il comando del clock e' passato al pannello Scheda, accanto alla
-                         frequenza che governa: le due cose si usano insieme, e li' possono
-                         spegnersi insieme quando la scheda non ha un clock da comandare. -->
                     <Button Classes="danger iconOnly"
                             ToolTip.Tip="Reset"
                             Command="{Binding ResetCommand}"
@@ -339,11 +332,6 @@
                                               HorizontalScrollBarVisibility="Disabled">
                                     <controls:RegistersView Margin="14" />
                                 </ScrollViewer>
-
-                                <ScrollViewer IsVisible="{Binding BoardTool.IsActive}"
-                                              HorizontalScrollBarVisibility="Disabled">
-                                    <controls:BoardSettingsView Margin="14" />
-                                </ScrollViewer>
                             </Panel>
                         </Grid>
                     </Border>
@@ -394,12 +382,13 @@
         <Border Grid.Row="3" Classes="statusBar">
             <Grid ColumnDefinitions="*,Auto">
                 <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,14,0" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding CardConnectionText}" Classes="statusItem"
+                    <TextBlock Text="{Binding CardConnectionText}" Classes="statusItem boardConnection"
+                               Classes.connected="{Binding IsBoardConnected}"
                                Classes.firmwareWarning="{Binding HasFirmwareWarning}"
                                TextTrimming="CharacterEllipsis"
                                ToolTip.Tip="{Binding CardConnectionToolTip}" />
                     <TextBlock Grid.Column="1" Margin="14,0,0,0"
-                               Text="{Binding IsClockActive, Converter={StaticResource ClockStateConverter}}"
+                               Text="{Binding MonitorStatusText}"
                                Classes="statusItem" />
                     <!-- L'avanzamento della scrittura sulla scheda: sta nella status bar,
                          che e' il posto dove si guarda come sta andando un'operazione. -->
@@ -420,7 +409,7 @@
                          cosa da guardare quando il risultato non e' quello atteso. -->
                     <TextBlock Text="{Binding CpuStatusText}"
                                Classes="statusItem"
-                               ToolTip.Tip="CPU per cui si assembla, e modo di indirizzamento quando i due non coincidono. La CPU si sceglie nel pannello Assemblatore, il modo nel pannello Scheda." />
+                               ToolTip.Tip="CPU per cui si assembla, e modo di indirizzamento quando i due non coincidono. CPU e modo si scelgono nel pannello Assemblatore." />
                 </StackPanel>
             </Grid>
         </Border>

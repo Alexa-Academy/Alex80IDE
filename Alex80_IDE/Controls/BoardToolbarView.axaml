@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:global="clr-namespace:"
+             x:Class="Alex80_IDE.Controls.BoardToolbarView"
+             x:DataType="global:MainViewModel">
+    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+        <StackPanel Orientation="Horizontal" Spacing="6"
+                    IsEnabled="{Binding CanConfigureArduinoSignals}">
+            <ToggleButton Classes="stateToggle"
+                          Content="Clock da Arduino"
+                          IsEnabled="{Binding !IsInstructionClockRunning}"
+                          IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
+                          ToolTip.Tip="Acceso: il clock dello Z80 lo genera Arduino. Spento: arriva dall'oscillatore della scheda. Disponibile sulle schede ALEX80; eZ80 usa ZDI." />
+            <ToggleButton Classes="stateToggle"
+                          Content="Memoria da Arduino"
+                          IsEnabled="{Binding !IsInstructionClockRunning}"
+                          IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
+                          ToolTip.Tip="Acceso: i cicli di memoria li serve Arduino. Spento: rispondono le memorie della scheda. Disponibile sulle schede ALEX80; eZ80 usa ZDI." />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="6"
+                    IsEnabled="{Binding CanControlClock}">
+            <TextBox x:Name="ClockFrequencyBox"
+                     Text="{Binding ClockFrequency, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                     Width="76" Classes="mono"
+                     IsEnabled="{Binding !IsInstructionClockRunning}"
+                     AutomationProperties.Name="Frequenza del clock Arduino"
+                     KeyDown="OnClockFrequencyKeyDown"
+                     ToolTip.Tip="Frequenza del clock Arduino. Premi Invio o esci dal campo per applicarla." />
+            <TextBlock Text="Hz" Classes="caption" VerticalAlignment="Center" />
+            <Button Classes="tool stateToggle"
+                    Classes.active="{Binding IsClockActive}"
+                    Command="{Binding StartStopBoardCommand}"
+                    AutomationProperties.Name="{Binding ClockToggleText, StringFormat='Clock Arduino: {0}'}"
+                    ToolTip.Tip="{Binding ClockToggleText, StringFormat='Clock generato da Arduino: {0}'}">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <PathIcon Classes="btnIcon" Data="{DynamicResource ClockIconData}" />
+                    <TextBlock Text="{Binding IsClockActive, Converter={StaticResource ClockStateConverter}}"
+                               VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </StackPanel>
+</UserControl>

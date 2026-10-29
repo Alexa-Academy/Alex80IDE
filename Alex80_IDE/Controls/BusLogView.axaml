@@ -75,6 +75,10 @@
                         <PathIcon Classes="stripIcon" Data="{DynamicResource RecordLogIconData}" />
                     </Button>
                     <Border Classes="separator" />
+                    <Button Classes="tool stateToggle" Classes.active="{Binding DebugEnabled}"
+                            Command="{Binding DebugCommand}" Content="Debug WAIT"
+                            AutomationProperties.Name="Debug con WAIT"
+                            ToolTip.Tip="Abilita o disabilita Debug con WAIT: ferma la CPU a ogni istruzione. Lascia disattivato per usare impulsi e avanzamento con il clock Arduino. Su eZ80 usa pausa e riprendi." />
                     <Button Classes="toolStripButton" Command="{Binding PulseClockCommand}"
                             AutomationProperties.Name="Un colpo di clock">
                         <ToolTip.Tip>
