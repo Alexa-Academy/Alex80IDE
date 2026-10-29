@@ -304,7 +304,7 @@ internal static class InstructionClockStepperTests
             byte[] end = { 0, 1, 0, 0, 3, 0xF1, 0, 0, 4, 0x4F }; // 1009 -> 1103
             Rx("!REGBOUND" + Convert.ToBase64String(end) + ";");
             check("registri aggiornati senza nuove righe T1/T2 e con 94 clock debugger",
-                vm.AReg == 0x42 && vm.PcReg == 1 && !manager.IsClockPulsePending &&
+                vm.AReg == 0x42 && vm.PcReg == 1 && !manager.IsClockPulsePending && vm.InstructionTitle == "ISTRUZIONE AL PC" &&
                 vm.LogTable.Count == rows && vm.LogTable[^1].TStateText == "T10" &&
                 vm.ClockSummary.Contains("10 T programma · 0 WAIT · 94 clock debugger"));
             before = sent; Begin(); ReceivePulse(1104, 0x3E, 4, 1); Bytes(0x20, 0xFE);
@@ -313,6 +313,9 @@ internal static class InstructionClockStepperTests
             check("istruzione seguente riparte da T1 e usa i flag riletti per JR non preso",
                 sent == before + 7 && snapshots == 2 && vm.LogTable.TakeLast(7).First().TStateText == "T1" &&
                 vm.LogTable[^1].TStateText == "T7" && vm.ClockSummary.Contains("94 clock debugger"));
+            Rx("!REGBOUND" + Convert.ToBase64String(end) + ";");
+            check("errore di conferma aggiorna anche lo stato dello step",
+                !manager.IsClockPulsePending && vm.InstructionClockStatus.Contains("non confermata"));
             vm.ResetCommand.Execute(null); Dispatcher.UIThread.RunJobs();
             Rx("!BDUMP" + Convert.ToBase64String(snapshot) + ";");
             Rx("!REGBOUND" + Convert.ToBase64String(end) + ";");

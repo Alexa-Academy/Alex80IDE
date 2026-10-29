@@ -71,7 +71,10 @@ public partial class MainViewModel
     private void UpdateManualInstructionStatus()
     {
         if (_instructionFromManualClock && CurrentInstruction is not null)
-            InstructionStatus = _registersAreCurrent
+            InstructionStatus = _boundaryRegisterPosition is not null
+                ? (_registersAreCurrent ? "Prossima istruzione · clock fermo prima di T1 · registri aggiornati"
+                    : "Prossima istruzione · registri da aggiornare")
+                : _registersAreCurrent
                 ? "Istruzione corrente · clock manuale fermo · registri aggiornati"
                 : "Istruzione corrente · clock manuale fermo · registri non riletti";
     }

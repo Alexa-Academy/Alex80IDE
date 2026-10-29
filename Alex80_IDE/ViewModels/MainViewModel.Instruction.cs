@@ -15,7 +15,8 @@ public partial class MainViewModel
     private LogElement? _lastManualClockSample;
     [ObservableProperty] private bool _hasClockPulseSupport;
     partial void OnHasClockPulseSupportChanged(bool value) => NotifyManualClockAvailability();
-    public string InstructionTitle => _instructionFromManualClock ? "ISTRUZIONE SUL BUS" : "ISTRUZIONE AL PC";
+    public string InstructionTitle => _instructionFromManualClock && _boundaryRegisterPosition is null
+        ? "ISTRUZIONE SUL BUS" : "ISTRUZIONE AL PC";
     public bool CanPulseClock => IsSerialOpened && CanControlClock && HasClockPulseSupport &&
         !IsInstructionClockRunning && !IsClockActive && !DebugEnabled && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
     public string ClockPulseToolTip => !HasClockPulseSupport ? "Richiede il manager Arduino aggiornato con supporto clk pulse."
@@ -72,6 +73,7 @@ public partial class MainViewModel
             InstructionStatus = _instructionFromManualClock
                 ? (_registersAreCurrent ? "Istruzione corrente · clock manuale fermo · registri aggiornati" : "Istruzione corrente · clock manuale fermo · registri non riletti")
                 : "Prossima istruzione · byte letti dalla scheda";
+            UpdateManualInstructionStatus();
             ResumeInstructionClockAfterDecode();
         });
         _serialManager.InstructionReadFailed += (pc, message) => Dispatcher.UIThread.Post(() =>
@@ -109,6 +111,7 @@ public partial class MainViewModel
             _clockTrace.ConfirmBoundaryRegisterRead(before, after, pc);
             ClockSummary = _clockTrace.Summary;
             _boundaryRegisterPosition = (after, pc);
+            OnPropertyChanged(nameof(InstructionTitle));
             _completedManualInstructionClock = after;
             _confirmedManualRegisterPulse = null;
             if (_instructionClockBeforeBoundarySnapshot is { } status)
@@ -119,6 +122,8 @@ public partial class MainViewModel
         {
             _manualRegisterRefreshRequested = false;
             _boundaryRegisterPosition = null;
+            if (_instructionClockBeforeBoundarySnapshot is { } status)
+                InstructionClockStatus = status + " · " + error;
             _instructionClockBeforeBoundarySnapshot = null;
             MarkRegistersStale();
             RegisterRefreshStatus = error;
