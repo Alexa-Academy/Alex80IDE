@@ -222,6 +222,12 @@ USB port name must be selected again before it can be remembered.
 
 The top toolbar provides **Clock da Arduino**, **Memoria da Arduino**, the
 clock frequency in Hz and a clock start/stop button showing its current state.
+Spaced vertical dividers separate connection, clock and action controls. **Assembla**
+follows the clock controls, then **Reset**, **NMI** (**Avvia** for eZ80) and
+**1 istruzione**. Instruction advance remains available with the Bus Log pane
+closed, with a stop button during counted manual stepping. With a running clock,
+Z80 stepping uses Debug/WAIT where supported; with the Arduino clock stopped and
+Debug off, it completes the instruction using manual pulses.
 Frequency and start/stop are enabled only with an Arduino clock source; Arduino
 controls are disabled for eZ80. The connected board and firmware are highlighted
 in the status bar. A non-modal notification shows connection progress until the

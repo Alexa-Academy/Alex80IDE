@@ -350,14 +350,13 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     [ObservableProperty] private bool _z80CompatibilityMode = true;
 
-    /// <summary>Tipo di scheda collegata, usato per decidere cosa fa "play".</summary>
+    /// <summary>Tipo di scheda collegata, usato per decidere come avviare la CPU.</summary>
     [ObservableProperty] private bool _isAlex80Full;
     [ObservableProperty] private bool _isAlex80Micro;
 
-    /// <summary>
-    /// "Play" fa cose diverse a seconda della scheda, ma il significato per chi
-    /// lo preme e' lo stesso: manda in esecuzione il programma appena caricato.
-    /// </summary>
+    /// <summary>Il nome esplicita il comando effettivo della scheda.</summary>
+    public string RunButtonText => IsEz80Context ? "Avvia" : "NMI";
+
     public string RunToolTip => IsEz80Context
         ? "Carica il PC con l'indirizzo indicato e avvia la CPU"
         : "Invia NMI: fa saltare lo Z80 al vettore di avvio";
@@ -656,6 +655,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsBoardConnected));
         OnPropertyChanged(nameof(IsWaitingForBoard));
         OnPropertyChanged(nameof(IsEz80Context));
+        OnPropertyChanged(nameof(RunButtonText));
         OnPropertyChanged(nameof(RunToolTip));
         OnPropertyChanged(nameof(CanRun));
         OnPropertyChanged(nameof(CanConfigureArduinoSignals));

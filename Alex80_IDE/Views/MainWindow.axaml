@@ -39,61 +39,63 @@
         <!-- Connessione e controlli hardware restano accessibili mentre si osservano
              i registri. Su finestre strette i gruppi vanno a capo senza coprirsi. -->
         <Border Grid.Row="1" Classes="appBar">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                <WrapPanel Orientation="Horizontal">
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,2,12,2">
-                        <TextBlock Text="Alex80 IDE"
-                                   FontSize="15"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center" />
-                        <Border Classes="separator" />
-                        <TextBlock Text="Porta" Classes="caption" VerticalAlignment="Center" />
-                        <ComboBox x:Name="PortsDropdown"
-                                  Width="180"
-                                  IsEnabled="{Binding !IsSerialOpened}"
-                                  ToolTip.Tip="Le porte usate con una scheda riconosciuta vengono preselezionate quando ricompaiono. Premi Connetti per aprire la connessione."
-                                  ItemsSource="{Binding PortsList}"
-                                  SelectedIndex="{Binding SelectedIdx, Mode=TwoWay}" />
-                        <TextBlock Text="Baud" Classes="caption" VerticalAlignment="Center" />
-                        <ComboBox x:Name="BaudRateDropdown"
-                                  Width="100"
-                                  ItemsSource="{Binding BaudRates}"
-                                  SelectedItem="{Binding SelectedBaudRate, Mode=TwoWay}"
-                                  IsEnabled="{Binding !IsSerialOpened}"
-                                  ToolTip.Tip="Velocità della seriale in baud. Seleziona il valore configurato nello sketch prima di aprire la porta." />
-                        <Button Content="{Binding ToggleButtonContent}"
-                                Classes="tool"
-                                Command="{Binding OpenCloseSerialPortCommand}" />
-                    </StackPanel>
-                    <controls:BoardToolbarView Margin="0,2" VerticalAlignment="Center" />
-                </WrapPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Top" Margin="0,4,0,0">
-                    <!-- Assembla sta con i comandi di esecuzione, come negli IDE: si
-                         costruisce e si manda in esecuzione con lo stesso gesto. -->
-                    <Button Command="{Binding AssembleCommand}" Classes="iconOnly"
-                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource AssembleIconData}" />
-                    </Button>
+            <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,2">
+                    <TextBlock Text="Alex80 IDE"
+                               FontSize="15"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
                     <Border Classes="separator" />
-                    <Button Classes="danger iconOnly"
+                    <TextBlock Text="Porta" Classes="caption" VerticalAlignment="Center" />
+                    <ComboBox x:Name="PortsDropdown"
+                              Width="180"
+                              IsEnabled="{Binding !IsSerialOpened}"
+                              ToolTip.Tip="Le porte usate con una scheda riconosciuta vengono preselezionate quando ricompaiono. Premi Connetti per aprire la connessione."
+                              ItemsSource="{Binding PortsList}"
+                              SelectedIndex="{Binding SelectedIdx, Mode=TwoWay}" />
+                    <TextBlock Text="Baud" Classes="caption" VerticalAlignment="Center" />
+                    <ComboBox x:Name="BaudRateDropdown"
+                              Width="100"
+                              ItemsSource="{Binding BaudRates}"
+                              SelectedItem="{Binding SelectedBaudRate, Mode=TwoWay}"
+                              IsEnabled="{Binding !IsSerialOpened}"
+                              ToolTip.Tip="Velocità della seriale in baud. Seleziona il valore configurato nello sketch prima di aprire la porta." />
+                    <Button Content="{Binding ToggleButtonContent}"
+                            Classes="tool"
+                            Command="{Binding OpenCloseSerialPortCommand}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,2">
+                    <Border Classes="separator" Margin="16,0" />
+                    <controls:BoardToolbarView VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- I comandi seguono il clock anche quando la barra va a capo. -->
+                <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" Margin="0,2">
+                    <Border Classes="separator" Margin="10,0" />
+                    <Button Command="{Binding AssembleCommand}" Classes="tool"
+                            AutomationProperties.Name="Assembla"
+                            ToolTip.Tip="{Binding CommandModifierName, StringFormat='Assembla ({0}+B)'}">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Classes="btnIcon" Data="{DynamicResource AssembleIconData}" />
+                            <TextBlock Text="Assembla" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="danger tool"
+                            AutomationProperties.Name="Reset"
                             ToolTip.Tip="Reset"
                             Command="{Binding ResetCommand}"
                             IsEnabled="{Binding IsBoardConnected}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource ResetIconData}" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Classes="btnIcon" Data="{DynamicResource ResetIconData}" />
+                            <TextBlock Text="Reset" VerticalAlignment="Center" />
+                        </StackPanel>
                     </Button>
-                    <!-- Un solo comando, significato uniforme: manda in
-                         esecuzione il programma caricato. Sull'Alex80 e' un NMI,
-                         sull'eZ80 e' il caricamento del PC seguito da continue. -->
-                    <Button Classes="iconOnly"
+                    <!-- Z80 invia NMI; eZ80 carica il PC e avvia tramite ZDI. -->
+                    <Button Classes="tool"
+                            Content="{Binding RunButtonText}"
                             Command="{Binding RunCommand}"
                             IsEnabled="{Binding CanRun}"
-                            ToolTip.Tip="{Binding RunToolTip}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource RunIconData}" />
-                    </Button>
-                    <!-- Ogni accesso a memoria via ZDI richiede il core fermo:
-                         averlo sotto controllo esplicito rende evidente in che
-                         stato si sta leggendo. -->
+                            ToolTip.Tip="{Binding RunToolTip}" />
                     <Button Classes="iconOnly"
                             Command="{Binding ToggleBreakCommand}"
                             IsVisible="{Binding IsEz80Context}"
@@ -102,14 +104,25 @@
                         <PathIcon Classes="btnIcon"
                                   Data="{Binding BreakButtonIconKey, Converter={StaticResource ResourceKeyConverter}}" />
                     </Button>
-                    <Button Classes="iconOnly"
+                    <Button Classes="tool"
+                            AutomationProperties.Name="Avanza un'istruzione"
                             ToolTip.Tip="{Binding StepToolTip}"
                             Command="{Binding StepCommand}"
                             IsEnabled="{Binding IsBoardConnected}">
-                        <PathIcon Classes="btnIcon" Data="{DynamicResource StepIconData}" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <PathIcon Classes="btnIcon" Data="{DynamicResource StepIconData}" />
+                            <TextBlock Text="1 istruzione" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button Classes="iconOnly"
+                            Command="{Binding StopInstructionClockCommand}"
+                            IsVisible="{Binding IsInstructionClockRunning}"
+                            AutomationProperties.Name="Ferma avanzamento"
+                            ToolTip.Tip="Ferma avanzamento al termine dell'impulso in corso">
+                        <PathIcon Classes="btnIcon" Data="{DynamicResource StopIconData}" />
                     </Button>
                 </StackPanel>
-            </Grid>
+            </WrapPanel>
         </Border>
 
         <!-- Area di lavoro. Le strip di bordo sono sempre visibili: ogni pannello si apre
