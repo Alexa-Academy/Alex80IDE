@@ -203,7 +203,7 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsClockActiveChanged(bool value)
     {
-        if (value) { InvalidateInstruction(); MarkRegistersStale(); }
+        if (value) { _clockTrace.InvalidateSynchronization(); InvalidateInstruction(); MarkRegistersStale(); }
         NotifyManualClockAvailability();
         OnPropertyChanged(nameof(ClockToggleText));
         NotifyDumpAvailabilityChanged();
@@ -868,6 +868,7 @@ public partial class MainViewModel : ObservableObject
         _hasRegisterSnapshot = true;
         _registersAreCurrent = true;
         RegisterRefreshStatus = "Registri aggiornati all'ultima lettura dalla scheda.";
+        UpdateManualInstructionStatus();
         OnPropertyChanged(nameof(InstructionPrediction));
     }
 

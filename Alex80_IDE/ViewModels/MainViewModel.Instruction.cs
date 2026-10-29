@@ -77,8 +77,10 @@ public partial class MainViewModel
             if (!_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending) TryReadInstruction();
         });
         _serialManager.ClockPulseReceived += log => Dispatcher.UIThread.Post(() => ObserveManualClock(log));
+        _serialManager.ManualRegisterReadCompleted += log => Dispatcher.UIThread.Post(() =>
+            _clockTrace.ConfirmManualRegisterRead(log));
         _serialManager.ClockPulseFailed += error => Dispatcher.UIThread.Post(() =>
-        { InvalidateInstruction(); InstructionStatus = error; });
+        { _clockTrace.InvalidateSynchronization(); InvalidateInstruction(); InstructionStatus = error; });
     }
     private void RefreshStoppedInstruction(uint pc, bool force = false, bool manualClock = false)
     {

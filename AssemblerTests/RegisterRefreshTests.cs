@@ -70,6 +70,38 @@ internal static class RegisterRefreshTests
             Serial("clockPulsePending", true); Serial("clockPulseRegisters", false);
             Rx("!PULSE" + Convert.ToBase64String(sample) + ";");
             Check("impulso legacy si conclude al singolo campione", !manager.IsClockPulsePending);
+
+            // Actual parser -> transaction completion -> dispatcher -> trace path.
+            vm.ClearLogsCommand.Execute(null); Dispatcher.UIThread.RunJobs();
+            void Pulse(uint clock, byte control, byte trace, bool regs = false, ushort pc = 0x2000)
+            {
+                Serial("clockPulsePending", true); Serial("clockPulseRegisters", regs);
+                byte[] payload = { (byte)(pc >> 8), (byte)pc, 0x3C, control, trace,
+                    (byte)(clock >> 24), (byte)(clock >> 16), (byte)(clock >> 8), (byte)clock };
+                Rx("!PULSE" + Convert.ToBase64String(payload) + ";");
+            }
+            int confirmedReads = 0;
+            manager.ManualRegisterReadCompleted += _ => confirmedReads++;
+            Pulse(100, 0x3F, 0); Pulse(101, 0x3E, 4); Pulse(102, 0x1A, 5, regs: true);
+            Dump(0x30); Rx("!PULSEEND;");
+            Pulse(233, 0x1A, 4); Pulse(234, 0x3D, 0); Pulse(235, 0x39, 0);
+            Pulse(236, 0x3E, 4, pc: 0x2001);
+            Check("seriale/UI: T riprendono dopo iniezione senza log", confirmedReads == 1 &&
+                vm.LogTable[3].TStateText == "Tw1" && vm.LogTable[4].TStateText == "T3" &&
+                vm.LogTable[5].TStateText == "T4" && vm.LogTable[3].IsManualPulse);
+            Check("seriale/UI: riepilogo distingue clock programma e debugger",
+                vm.ClockSummary.Contains("4 T programma · 1 WAIT · 130 clock debugger"));
+            Pulse(237, 0x1A, 5, regs: true, pc: 0x2001);
+            Rx("!PULSEEND;"); Pulse(368, 0x1A, 4, pc: 0x2001);
+            Check("fine impulso senza dump non autorizza la risincronizzazione", confirmedReads == 1 && vm.LogTable[^1].TStateText.Contains('?'));
+            Pulse(369, 0x3D, 0); Pulse(370, 0x3E, 4); Pulse(371, 0x1A, 5, regs: true);
+            Dump(0x30, 0x3000); Rx("!PULSEEND;"); Pulse(502, 0x1A, 4);
+            Check("dump a un altro PC non autorizza la risincronizzazione", confirmedReads == 1 && vm.LogTable[^1].TStateText.Contains('?'));
+
+            vm.CurrentInstruction = Alex80_IDE.InstructionReference.InstructionDecoder.Decode(0x2000, new byte[] { 0x3C });
+            Vm("_instructionFromManualClock", true);
+            typeof(MainViewModel).GetMethod("MarkRegistersStale", flags)!.Invoke(vm, null);
+            Check("stato istruzione e stato registri rimangono coerenti", vm.InstructionStatus.Contains("registri non riletti") && vm.RegisterRefreshStatus.Contains("da aggiornare"));
             Serial("registerRequestPending", true); Rx("!DUMPbad!;");
             Check("dump malformato sblocca la UI e segnala l'errore", !manager.IsRegisterRequestPending && vm.RegisterRefreshStatus.Contains("non valida"));
             Serial("registerRequestPending", true); Rx("!DUMPAA==;");

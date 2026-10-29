@@ -15,6 +15,7 @@ public partial class LogElement : ObservableObject
     public bool Z80_M1 { get; set; }
     public bool IsInjected { get; }
     public bool IsReset { get; }
+    public bool IsManualPulse { get; }
     // I segnali del bus sono attivi bassi. RFSH alto esclude il refresh.
     public bool IsInstructionFetch => !IsInjected && !IsReset && !Z80_M1 &&
                                       !Z80_MREQ && !Z80_RD && Z80_RFSH;
@@ -37,7 +38,7 @@ public partial class LogElement : ObservableObject
     public string AddressHex => Address.ToString("X4");
     public string DataHex => Data.ToString("X2");
     
-    public LogElement(ushort address, byte data, bool z80_rd, bool z80_wr, bool z80_iorq, bool z80_mreq, bool z80_rfsh, bool z80_m1, string mnemonic, bool injected = false, bool reset = false, uint? clockNumber = null, byte? traceFlags = null)
+    public LogElement(ushort address, byte data, bool z80_rd, bool z80_wr, bool z80_iorq, bool z80_mreq, bool z80_rfsh, bool z80_m1, string mnemonic, bool injected = false, bool reset = false, uint? clockNumber = null, byte? traceFlags = null, bool manualPulse = false)
     {
         Address = address;
         Data = data;
@@ -50,6 +51,7 @@ public partial class LogElement : ObservableObject
         Mnemonic = mnemonic;
         IsInjected = injected;
         IsReset = reset;
+        IsManualPulse = manualPulse;
         ClockNumber = clockNumber;
         Waiting = traceFlags is { } flags ? (flags & 1) != 0 : null;
         FullTrace = traceFlags is { } mode ? (mode & 2) != 0 : null;

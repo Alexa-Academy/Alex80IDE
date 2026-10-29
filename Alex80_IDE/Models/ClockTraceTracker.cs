@@ -2,8 +2,8 @@ using System;
 
 namespace Alex80_IDE.Models;
 
-// Interpret only consecutive, clock-numbered samples. A table row index is not
-// a clock counter: compact/legacy traces can omit arbitrary stretches of WAIT.
+// Interpret consecutive, clock-numbered samples, bridging only a confirmed
+// manual register read. Compact traces can omit arbitrary stretches of WAIT.
 public sealed class ClockTraceTracker
 {
     private LogElement? previous;
@@ -11,18 +11,58 @@ public sealed class ClockTraceTracker
     private int t, waits, debug;
     private uint address;
     private string lastProgram = "";
+    private RegisterPause? registerPause, confirmedPause;
+    private sealed record RegisterPause(LogElement Row, bool Synced, int T, int Waits,
+        int Debug, uint Address, string LastProgram, string Summary);
     public string Summary { get; private set; } = "Nessun intervallo completo misurato.";
     public void Reset()
-    { previous = null; synced = false; t = waits = debug = 0; lastProgram = ""; Summary = "Nessun intervallo completo misurato."; }
+    { previous = null; InvalidateSynchronization(); t = waits = debug = 0; lastProgram = ""; Summary = "Nessun intervallo completo misurato."; }
+
+    public void InvalidateSynchronization()
+    { synced = false; registerPause = confirmedPause = null; }
+
+    // Only the successful PULSE -> matching DUMP -> PULSEEND transaction can
+    // authorize bridging a gap. An arbitrary dump or a clock gap cannot do so.
+    public void ConfirmManualRegisterRead(LogElement pulse)
+    {
+        if (registerPause?.Row == pulse) confirmedPause = registerPause;
+    }
+
+    private bool TryResumeAfterRegisterRead(LogElement row)
+    {
+        var pause = confirmedPause;
+        confirmedPause = null;
+        if (pause is null || !row.IsManualPulse || row.IsInjected || row.IsReset ||
+            row.HardwareHalt != false || row.Waiting != false || !row.IsInstructionFetch ||
+            row.Address != pause.Row.Address || row.ClockNumber is not { } clock) return false;
+        uint distance = unchecked(clock - pause.Row.ClockNumber!.Value);
+        // The manager bounds a manual injection to 512 clocks. The next pulse
+        // is one additional clock, with the CPU still at the original fetch.
+        if (distance < 2 || distance > 513) return false;
+        previous = pause.Row;
+        synced = pause.Synced; t = pause.T; waits = pause.Waits;
+        address = pause.Address; lastProgram = pause.LastProgram;
+        debug = pause.Debug + (int)distance - 1;
+        Summary = lastProgram == "" ? pause.Summary : lastProgram + $" · {debug} clock debugger";
+        return true;
+    }
+
+    private void RememberRegisterPause(LogElement row)
+    {
+        registerPause = row.IsManualPulse && row.Waiting == true &&
+            row.StartsInstruction == true && row.IsInstructionFetch && row.ClockNumber.HasValue
+            ? new(row, synced, t, waits, debug, address, lastProgram, Summary) : null;
+    }
     public void Observe(LogElement row)
     {
         row.ObservedPhase = !row.Z80_RFSH ? "Refresh" : !row.Z80_IORQ ? "I/O" : row.IsInstructionFetch ? "Fetch" : !row.Z80_MREQ ? "Memoria" : "Interno";
         if (row.ClockNumber is null || row.Waiting is null)
-        { row.TStateText = "—"; synced = false; previous = row; return; }
-        bool consecutive = previous?.ClockNumber is { } clock && unchecked(row.ClockNumber.Value - clock) == 1;
+        { row.TStateText = "—"; InvalidateSynchronization(); previous = row; return; }
+        bool consecutive = TryResumeAfterRegisterRead(row) ||
+            previous?.ClockNumber is { } clock && unchecked(row.ClockNumber.Value - clock) == 1;
         if (!consecutive) synced = false;
         if (row.IsReset || row.HardwareHalt == true)
-        { row.TStateText = "—"; synced = false; previous = row; return; }
+        { row.TStateText = "—"; InvalidateSynchronization(); previous = row; return; }
         if (row.IsInjected)
         {
             debug++;
@@ -33,7 +73,7 @@ public sealed class ClockTraceTracker
         }
         if (!row.Z80_M1 && !row.Z80_IORQ)
         {
-            synced = false; row.TStateText = "—"; row.ObservedPhase = "Acknowledge interrupt";
+            InvalidateSynchronization(); row.TStateText = "—"; row.ObservedPhase = "Acknowledge interrupt";
             if (previous is { Z80_M1: false }) { previous.TStateText = "—"; previous.ObservedPhase = "Acknowledge interrupt"; }
             previous = row; return;
         }
@@ -54,10 +94,11 @@ public sealed class ClockTraceTracker
         {
             waits++; row.TStateText = synced ? $"Tw{waits}" : "Tw?";
             if (row.Waiting == false) row.ObservedPhase = "Fine WAIT";
-            previous = row; return;
+            RememberRegisterPause(row); previous = row; return;
         }
         else if (synced) t++;
         row.TStateText = synced ? $"T{t}" : row.Waiting == true ? "Tw?" : "T?";
+        RememberRegisterPause(row);
         previous = row;
     }
 }

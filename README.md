@@ -172,6 +172,11 @@ read the registers, restores PC/SP and stops CLK low again. Pulses within an
 instruction keep the last snapshot, marked as needing an update. It does not
 advance the program to search for a boundary. Full logging marks the added
 cycles as register reads and excludes them from program disassembly/timing.
+The IDE keeps the instruction's T/WAIT count synchronized across a confirmed
+manual register read using the physical counter in the next pulse. Internal
+clocks are counted separately even with bus logging off; missing program
+samples still show `T?`. The instruction card and Registers pane also agree on
+whether the displayed register snapshot is current.
 
 With the flag off, the updated manager steps without injection and manual
 clocking uses exactly one complete pulse. **Rileggi dalla scheda** remains

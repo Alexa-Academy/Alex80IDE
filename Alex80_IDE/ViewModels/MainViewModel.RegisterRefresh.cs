@@ -32,6 +32,15 @@ public partial class MainViewModel
             ? "Ultima lettura conservata · registri da aggiornare."
             : "Nessuna lettura dei registri ricevuta.";
         OnPropertyChanged(nameof(InstructionPrediction));
+        UpdateManualInstructionStatus();
+    }
+
+    private void UpdateManualInstructionStatus()
+    {
+        if (_instructionFromManualClock && CurrentInstruction is not null)
+            InstructionStatus = _registersAreCurrent
+                ? "Istruzione corrente · clock manuale fermo · registri aggiornati"
+                : "Istruzione corrente · clock manuale fermo · registri non riletti";
     }
 
     private bool ShouldApplyRegisterDump()

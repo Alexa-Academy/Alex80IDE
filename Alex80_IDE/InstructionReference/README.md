@@ -127,6 +127,21 @@ extra nominal T-state. Internal register reads, reset and interrupt acknowledge
 are kept out of the program's nominal count. Missing samples invalidate the
 relative count until the next known boundary. **T?** and **Tw?** mark incomplete
 intervals. Clearing the table or changing serial session resets reconstruction.
+
+Manual register reads are a verified exception to the consecutive-sample rule.
+The IDE correlates the requested `!PULSE`, a valid `!DUMP` at the same PC and
+successful `!PULSEEND`. It saves the program's T/WAIT position at the held fetch.
+If the next manual pulse resumes that same fetch, its physical counter provides
+the exact number of added debugger clocks (bounded by the manager's 512-clock
+injection limit). The tracker restores the saved position and reports those
+internal clocks separately, including with ordinary logging off or compact.
+Full-log injection rows do not count them a second time. The released WAIT
+remains a WAIT extension; the following program clocks resume at T3, T4, etc.
+No firmware protocol change is required beyond the existing `REGUPDATE` support.
+
+A failed/unconfirmed read, mismatched PC, missing program clocks, reset,
+automatic-clock start or legacy trace cannot authorize that recovery. An
+instruction whose beginning was never observed also remains incomplete.
 The summary reports the last complete program interval, WAITs, and subsequent
 debugger clocks separately. eZ80 ZDI does not provide a measured bus-clock trace.
 

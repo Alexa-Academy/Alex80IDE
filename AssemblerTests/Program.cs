@@ -302,6 +302,7 @@ failures += BoardConnectionTests.Run();
 failures += InstructionReferenceTests.Run();
 failures += ListingExecutionTests.Run();
 failures += RegisterRefreshTests.Run();
+failures += ClockTraceTrackerTests.Run();
 
 Console.WriteLine(failures == 0 ? "\nTUTTI I TEST PASSATI" : $"\n{failures} TEST FALLITI");
 return failures;

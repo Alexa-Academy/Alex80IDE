@@ -90,16 +90,21 @@ public partial class SerialManager {
     public event Action<uint, string>? InstructionReadFailed;
     private bool clockPulsePending;
     private bool clockPulseRegisters;
+    private LogElement? clockPulseSample;
+    private ushort? clockPulseDumpPc;
     private CancellationTokenSource? clockPulseTimeout;
     public bool IsClockPulsePending => clockPulsePending;
     public event Action<LogElement>? ClockPulseReceived;
     public event Action<string>? ClockPulseFailed;
+    public event Action<LogElement>? ManualRegisterReadCompleted;
 
     public bool PulseClock(bool readRegisters = false)
     {
         if (!_serialPort.IsOpen || IsReadPending || clockPulsePending || registerRequestPending) return false;
         clockPulsePending = true;
         clockPulseRegisters = readRegisters;
+        clockPulseSample = null;
+        clockPulseDumpPc = null;
         ReadStateChanged?.Invoke();
         clockPulseTimeout?.Cancel();
         clockPulseTimeout = new CancellationTokenSource();
@@ -125,6 +130,8 @@ public partial class SerialManager {
     }
     private void CompleteClockPulse(string? error = null)
     {
+        clockPulseSample = null;
+        clockPulseDumpPc = null;
         clockPulsePending = false; clockPulseTimeout?.Cancel();
         ReadStateChanged?.Invoke();
         if (error is not null) ClockPulseFailed?.Invoke(error);
@@ -385,7 +392,11 @@ public partial class SerialManager {
         }
         else if (message == "!PULSEEND;")
         {
-            if (clockPulsePending && clockPulseRegisters) CompleteClockPulse();
+            if (clockPulsePending && clockPulseRegisters) {
+                if (clockPulseSample is { } sample && clockPulseDumpPc == sample.Address)
+                    ManualRegisterReadCompleted?.Invoke(sample);
+                CompleteClockPulse();
+            }
         }
         else if (message == "!STEP;") CompleteRegisterRequest();
         else if ((message.StartsWith("!LOG") || message.StartsWith("!PULSE")) && message.EndsWith(';'))
@@ -416,7 +427,8 @@ public partial class SerialManager {
                     var reset = (control & 0x80) != 0;
                     uint? clockNumber = recBytes.Length >= 9 ? ((uint)recBytes[5] << 24) | ((uint)recBytes[6] << 16) | ((uint)recBytes[7] << 8) | recBytes[8] : null;
                     byte? traceFlags = recBytes.Length >= 9 ? recBytes[4] : null;
-                    var log = new LogElement(add, data, rd, wr, iorq, mreq, rfsh, m1, "", injected, reset, clockNumber, traceFlags);
+                    var log = new LogElement(add, data, rd, wr, iorq, mreq, rfsh, m1, "", injected, reset, clockNumber, traceFlags, manualPulse);
+                    if (manualPulse && clockPulsePending && clockPulseRegisters) clockPulseSample = log;
                     if (log.IsInstructionFetch) instructionStartLog = log;
 
                     LogReceived?.Invoke(log);
@@ -507,6 +519,7 @@ public partial class SerialManager {
                 var sp_reg = (ushort)(recBytes[11]<<8 | recBytes[12]);
                 var f_reg = recBytes[13];
                 var pc_reg = (ushort)(recBytes[14]<<8 | recBytes[15]);
+                if (clockPulsePending && clockPulseRegisters) clockPulseDumpPc = pc_reg;
 
                 DumpReceived?.Invoke(a_reg, b_reg, c_reg, d_reg, e_reg, h_reg, l_reg, ix_reg, iy_reg, sp_reg, pc_reg, f_reg);
                 CompleteRegisterRequest();
