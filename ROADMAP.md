@@ -54,6 +54,7 @@ Le note storiche sul lavoro già svolto rimangono in [NOTE-DI-LAVORO.md](NOTE-DI
 | C-03 | Espansione C → assembler nell'editor | Pianificata | C-01; C-02 per le prove sulla scheda |
 | TIM-01 | Vista Timing dei log esistenti | Pianificata | DID-01 |
 | TIM-02 | Acquisizione temporale estesa | Pianificata | TIM-01 e verifica hardware |
+| CPU-01 | Vista didattica interna dello Z80 | Pianificata | Contratto trace DID-01; dati bus/stepping esistenti; integrazione condivisa con TIM-01 |
 | DID-02 | Navigazione C → assembler → timing | Pianificata | C-02, C-03, TIM-01; TIM-02 per misure temporali |
 | REL-01 | Validazione e distribuzione didattica | Pianificata | Progressiva, per ogni traguardo |
 
@@ -258,6 +259,35 @@ e le attività indipendenti da quel repository.
 **Criterio di completamento:** acquisizioni validate contro strumentazione
 esterna, con risoluzione, frequenza sostenibile e limiti documentati per scheda.
 
+## CPU-01 — Vista didattica interna dello Z80
+
+**Obiettivo:** visualizzare registri, ALU, controllo e collegamenti verso memoria
+e I/O durante l'avanzamento per T-state, distinguendo campioni osservati,
+snapshot dei registri e ricostruzione didattica dell'attività interna.
+
+Il [piano dedicato](Z80_INTERNAL_VIEW_PLAN.md) descrive la finestra non modale
+proposta, i componenti riutilizzabili, la copertura iniziale, i limiti dei
+firmware e gli incrementi con stime e criteri di verifica.
+
+- [ ] Validare contratto, allineamento dei campioni e casi pilota NOP/LD/ADD.
+- [ ] Realizzare schema riutilizzabile e finestra non modale con stato condiviso.
+- [ ] Collegare campioni live e consultazione storica, con selezione comune al log.
+- [ ] Aggiungere il catalogo iniziale dei percorsi funzionali e la provenienza dei valori.
+- [ ] Verificare regressioni, comportamento sulle schede supportate e tre piattaforme.
+
+Primo target: ALEX80µ con manager aggiornato e capacità di impulso singolo.
+Il codice attuale dispone già di trace estese e conteggio T: lo stato iniziale
+del 28 ottobre e le attività TIM vanno riletti rispetto a questi aggiornamenti.
+CPU-01 non dipende dal compilatore C né dall'intera implementazione di TIM-01;
+condivide il contratto dei campioni e la futura selezione temporale. Nessuna
+modifica firmware o alla libreria protetta è prevista nel primo rilascio.
+eZ80 rimane escluso.
+
+**Criterio di completamento:** le istruzioni coperte evidenziano blocchi e
+percorsi coerenti con la traccia, senza aggiungere clock o dump per la sola
+visualizzazione; dati mancanti o interni non misurati restano esplicitamente
+indicati. Consultare il passato non invia comandi alla CPU.
+
 ## DID-02 — Navigazione integrata
 
 **Obiettivo:** seguire un'operazione dal C fino alla sua attività osservata sul bus.
@@ -345,6 +375,7 @@ l'identificazione dei log e del firmware realmente usati sulla scheda.
 | Data | Aggiornamento | Verifiche / riferimenti |
 |---|---|---|
 | 2026-10-28 | Creazione della roadmap didattica e del registro per le funzionalità future | Analisi del codice IDE e firmware; nessuna implementazione o prova hardware delle nuove funzionalità |
+| 2026-10-29 | Aggiunta CPU-01 e piano della vista interna Z80 | Analisi di stepping, trace, decoder, finestre e firmware; consultazione manuale Zilog; sola pianificazione |
 
 ## Modello per le funzionalità future
 
