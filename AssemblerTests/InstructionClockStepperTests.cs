@@ -294,6 +294,7 @@ internal static class InstructionClockStepperTests
             ReceivePulse(1004, 0x3F, 0); ReceivePulse(1005, 0x1B, 0); ReceivePulse(1006, 0x1B, 0);
             ReceivePulse(1007, 0x3F, 0); ReceivePulse(1008, 0x1B, 0); ReceivePulse(1009, 0x1B, 0);
             int rows = vm.LogTable.Count;
+            var completedInstruction = vm.CurrentInstruction;
             check("REGBND: JP termina a T10 e richiede solo una lettura al confine",
                 snapshots == 1 && sent == before + 9 && manager.IsClockPulsePending &&
                 vm.LogTable[^1].TStateText == "T10" && !vm.CanPulseClock);
@@ -304,10 +305,16 @@ internal static class InstructionClockStepperTests
             byte[] end = { 0, 1, 0, 0, 3, 0xF1, 0, 0, 4, 0x4F }; // 1009 -> 1103
             Rx("!REGBOUND" + Convert.ToBase64String(end) + ";");
             check("registri aggiornati senza nuove righe T1/T2 e con 94 clock debugger",
-                vm.AReg == 0x42 && vm.PcReg == 1 && !manager.IsClockPulsePending && vm.InstructionTitle == "ISTRUZIONE AL PC" &&
+                vm.AReg == 0x42 && vm.PcReg == 1 && !manager.IsClockPulsePending &&
+                ReferenceEquals(vm.CurrentInstruction, completedInstruction) && vm.InstructionTitle == "ISTRUZIONE COMPLETATA" &&
+                vm.InstructionStatus.Contains("Istruzione completata") &&
                 vm.LogTable.Count == rows && vm.LogTable[^1].TStateText == "T10" &&
                 vm.ClockSummary.Contains("10 T programma · 0 WAIT · 94 clock debugger"));
-            before = sent; Begin(); ReceivePulse(1104, 0x3E, 4, 1); Bytes(0x20, 0xFE);
+            before = sent; Begin();
+            check("prima del nuovo T1 conserva la descrizione dell'istruzione completata", ReferenceEquals(vm.CurrentInstruction, completedInstruction));
+            ReceivePulse(1104, 0x3E, 4, 1); Bytes(0x20, 0xFE);
+            check("il nuovo T1 aggiorna la descrizione all'istruzione sul bus",
+                vm.CurrentInstruction?.Address == 1 && vm.InstructionTitle == "ISTRUZIONE SUL BUS");
             ReceivePulse(1105, 0x1A, 4, 1); ReceivePulse(1106, 0x3D, 0, 1); ReceivePulse(1107, 0x39, 0, 1);
             ReceivePulse(1108, 0x3F, 0, 1); ReceivePulse(1109, 0x1B, 0, 1); ReceivePulse(1110, 0x1B, 0, 1);
             check("istruzione seguente riparte da T1 e usa i flag riletti per JR non preso",
@@ -320,6 +327,19 @@ internal static class InstructionClockStepperTests
             Rx("!BDUMP" + Convert.ToBase64String(snapshot) + ";");
             Rx("!REGBOUND" + Convert.ToBase64String(end) + ";");
             check("reset ignora dump e conferme al confine tardivi", !manager.IsClockPulsePending && vm.AReg == 0x42);
+            Prepare(1300, 0xD3, 0); Begin();
+            ReceivePulse(1301, 0x1A, 4); ReceivePulse(1302, 0x3D, 0); ReceivePulse(1303, 0x39, 0);
+            ReceivePulse(1304, 0x3F, 0); ReceivePulse(1305, 0x1B, 0); ReceivePulse(1306, 0x1B, 0);
+            ReceivePulse(1307, 0x3F, 0); ReceivePulse(1308, 0x27, 0, 0); ReceivePulse(1309, 0x27, 0, 0); ReceivePulse(1310, 0x27, 0, 0);
+            var completedOutput = vm.CurrentInstruction;
+            snapshot[14] = 0x20; snapshot[15] = 2;
+            Rx("!BDUMP" + Convert.ToBase64String(snapshot) + ";");
+            byte[] outputEnd = { 0x20, 2, 0, 0, 5, 0x1E, 0, 0, 5, 0x7C }; // 1310 -> 1404
+            Rx("!REGBOUND" + Convert.ToBase64String(outputEnd) + ";");
+            check("OUT resta visibile a T11 mentre PC indica l'istruzione successiva",
+                ReferenceEquals(vm.CurrentInstruction, completedOutput) && vm.CurrentInstruction?.Address == 0x2000 &&
+                vm.PcReg == 0x2002 && vm.LogTable[^1].TStateText == "T11" &&
+                vm.InstructionTitle == "ISTRUZIONE COMPLETATA" && vm.InstructionStatus.Contains("registri aggiornati"));
             Info();
             check("firmware precedente non abilita snapshot o comandi nuovi", !vm.HasRegisterSnapshotSupport && !vm.DumpCommand.CanExecute(null));
             Vm("_autoRefreshRegisters", true);

@@ -15,8 +15,11 @@ public partial class MainViewModel
     private LogElement? _lastManualClockSample;
     [ObservableProperty] private bool _hasClockPulseSupport;
     partial void OnHasClockPulseSupportChanged(bool value) => NotifyManualClockAvailability();
-    public string InstructionTitle => _instructionFromManualClock && _boundaryRegisterPosition is null
-        ? "ISTRUZIONE SUL BUS" : "ISTRUZIONE AL PC";
+    private bool IsManualInstructionCompleted => _instructionFromManualClock && CurrentInstruction is not null &&
+        (_boundaryRegisterPosition is not null || _lastManualClockSample?.ClockNumber is { } clock &&
+         clock == _completedManualInstructionClock);
+    public string InstructionTitle => IsManualInstructionCompleted ? "ISTRUZIONE COMPLETATA"
+        : _instructionFromManualClock ? "ISTRUZIONE SUL BUS" : "ISTRUZIONE AL PC";
     public bool CanPulseClock => IsSerialOpened && CanControlClock && HasClockPulseSupport &&
         !IsInstructionClockRunning && !IsClockActive && !DebugEnabled && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
     public string ClockPulseToolTip => !HasClockPulseSupport ? "Richiede il manager Arduino aggiornato con supporto clk pulse."
@@ -61,6 +64,7 @@ public partial class MainViewModel
     }
     partial void OnCurrentInstructionChanged(InstructionInfo? value)
     {
+        OnPropertyChanged(nameof(InstructionTitle));
         OnPropertyChanged(nameof(HasInstruction)); OnPropertyChanged(nameof(InstructionIdealTime));
         OnPropertyChanged(nameof(InstructionPrediction));
     }
@@ -113,6 +117,7 @@ public partial class MainViewModel
             _boundaryRegisterPosition = (after, pc);
             OnPropertyChanged(nameof(InstructionTitle));
             _completedManualInstructionClock = after;
+            UpdateManualInstructionStatus();
             _confirmedManualRegisterPulse = null;
             if (_instructionClockBeforeBoundarySnapshot is { } status)
                 InstructionClockStatus = status + " · registri aggiornati.";

@@ -1326,7 +1326,9 @@ public partial class MainViewModel : ObservableObject
             FReg = fReg;
 
             ApplyRegisterDump();
-            if (!IsEz80 && (DebugEnabled || _instructionFromManualClock))
+            // A boundary snapshot updates PC to the next instruction, while
+            // the manual-clock card still describes the completed bus trace.
+            if (!IsEz80 && (DebugEnabled || _instructionFromManualClock) && !IsManualInstructionCompleted)
                 RefreshStoppedInstruction(PcReg, force: true, manualClock: _instructionFromManualClock);
         });
     }

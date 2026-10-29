@@ -164,6 +164,7 @@ public partial class MainViewModel
         _instructionClockStopRequested = false;
         IsInstructionClockRunning = false;
         InstructionClockStatus = status;
+        UpdateManualInstructionStatus();
         if (readRegisters && AutoRefreshRegisters && CanSnapshotBoundaryRegisters)
         {
             _instructionClockBeforeBoundarySnapshot = status;

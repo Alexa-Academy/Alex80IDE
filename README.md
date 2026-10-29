@@ -24,6 +24,9 @@ the register-read program instead of the next original opcode, restores PC/SP
 and stops on the injected jump's final T-state. The next user pulse starts the
 original instruction at T1. Its 94 injected clocks are reported separately;
 no extra program T1/T2 or WAIT rows are added. The refresh register R advances.
+The instruction card keeps the completed instruction and is labelled
+**ISTRUZIONE COMPLETATA**, while the Registers pane shows the next PC. The card
+changes to the next instruction only when its first T1 appears on the bus.
 Firmware without `REGBND` stops without automatic register reads, marking the
 last snapshot stale. Automatic refresh continues to apply to Debug/WAIT steps.
 
