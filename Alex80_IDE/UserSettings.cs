@@ -18,6 +18,9 @@ public sealed class UserSettings
     /// <summary>Porte con schede identificate, dalla più recente. Solo preselezione.</summary>
     public List<string> RecentSerialPorts { get; set; } = new();
 
+    /// <summary>Baud rate delle connessioni identificate, per nome della porta.</summary>
+    public Dictionary<string, int> SerialPortBaudRates { get; set; } = new();
+
     /// <summary>Rilegge i registri dopo gli step e ai confini delle istruzioni nel clock manuale.</summary>
     public bool AutoRefreshRegisters { get; set; } = true;
 

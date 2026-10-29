@@ -128,7 +128,7 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnSelectedBaudRateChanged(int value)
     {
-        if (BaudRates.Contains(value)) UpdateSettings(settings => settings.BaudRate = value);
+        if (!_isRestoringSerialBaudRate && BaudRates.Contains(value)) UpdateSettings(settings => settings.BaudRate = value);
     }
     
     [ObservableProperty]
@@ -1176,8 +1176,12 @@ public partial class MainViewModel : ObservableObject
         InitializeRegisterCells();
 
         var savedSettings = UserSettings.Load();
-        _serialPortSelection = new SerialPortSelectionState(savedSettings.RecentSerialPorts,
-            ports => UpdateSettings(settings => settings.RecentSerialPorts = ports.ToList()));
+        _serialPortSelection = new SerialPortSelectionState(savedSettings.RecentSerialPorts, savedSettings.SerialPortBaudRates,
+            (ports, baudRates) => UpdateSettings(settings =>
+            {
+                settings.RecentSerialPorts = ports.ToList();
+                settings.SerialPortBaudRates = baudRates.ToDictionary(pair => pair.Key, pair => pair.Value);
+            }));
         _busLogScroll = new BusLogScrollState(savedSettings.BusLogAutoScrollEnabled,
             enabled => UpdateSettings(settings => settings.BusLogAutoScrollEnabled = enabled));
         _autoRefreshRegisters = savedSettings.AutoRefreshRegisters;

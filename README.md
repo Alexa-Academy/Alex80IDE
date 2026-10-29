@@ -203,7 +203,10 @@ prevent incomplete/legacy traces from being mistaken for measured timings.
 The port selector remembers the ten most recently used ports on which an ALEX80
 or eZ80 board identified itself. It preselects the most recent available port at
 startup or when devices reappear, preserving an explicit manual selection and
-the currently open port. Preselection never opens a connection or assumes a board
+the currently open port. Each port also remembers the baud rate of its last
+identified connection and restores it when selected. Failed connection attempts
+do not replace that value; older history entries use the existing baud selection
+until their first successful connection. Preselection never opens a connection or assumes a board
 type: **Connetti** and the board's INFO response are still required. A changed
 USB port name must be selected again before it can be remembered.
 
