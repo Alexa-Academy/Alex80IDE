@@ -1176,6 +1176,8 @@ public partial class MainViewModel : ObservableObject
         InitializeRegisterCells();
 
         var savedSettings = UserSettings.Load();
+        _serialPortSelection = new SerialPortSelectionState(savedSettings.RecentSerialPorts,
+            ports => UpdateSettings(settings => settings.RecentSerialPorts = ports.ToList()));
         _busLogScroll = new BusLogScrollState(savedSettings.BusLogAutoScrollEnabled,
             enabled => UpdateSettings(settings => settings.BusLogAutoScrollEnabled = enabled));
         _autoRefreshRegisters = savedSettings.AutoRefreshRegisters;
@@ -1423,6 +1425,7 @@ public partial class MainViewModel : ObservableObject
                 HasRegisterSnapshotSupport = cardConfig.RegisterSnapshotSupported == true;
                 if (cardConfig.DebugEnabled is { } debugEnabled) DebugEnabled = debugEnabled;
                 MonitorEnabled = cardConfig.MonitorEnabled;
+                RememberIdentifiedSerialPort();
                 AppendSerialLine($"UI config: CARD={CardName}, IsSerialOpened={IsSerialOpened}");
             }
             finally
@@ -1441,36 +1444,7 @@ public partial class MainViewModel : ObservableObject
         try
         {
             var availablePorts = SerialPortHelper.GetSerialPorts();
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (availablePorts.SequenceEqual(PortsList))
-                    return;
-
-                var openPortName = _serialManager.SerialPort.IsOpen
-                    ? _serialManager.SerialPort.PortName
-                    : null;
-                var selectedPortName = SelectedIdx >= 0 && SelectedIdx < PortsList.Count
-                    ? PortsList[SelectedIdx]
-                    : null;
-
-                // Chiude la seriale solo se la porta realmente aperta è scomparsa.
-                if (openPortName != null && !availablePorts.Contains(openPortName))
-                {
-                    _serialManager.CloseSerialPort();
-                    ToggleButtonContent = "Connetti";
-                }
-
-                PortsList.Clear();
-                foreach (var port in availablePorts)
-                    PortsList.Add(port);
-
-                if (openPortName != null && availablePorts.Contains(openPortName))
-                    SelectedIdx = Array.IndexOf(availablePorts, openPortName);
-                else if (selectedPortName != null && availablePorts.Contains(selectedPortName))
-                    SelectedIdx = Array.IndexOf(availablePorts, selectedPortName);
-                else
-                    SelectedIdx = availablePorts.Length > 0 ? 0 : -1;
-            });
+            Dispatcher.UIThread.Post(() => ApplyAvailableSerialPorts(availablePorts));
         }
         catch (Exception ex)
         {

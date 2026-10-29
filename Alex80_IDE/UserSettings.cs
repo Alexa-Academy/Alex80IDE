@@ -15,6 +15,9 @@ public sealed class UserSettings
     /// <summary>Ultima velocità selezionata per la connessione seriale.</summary>
     public int BaudRate { get; set; } = 115200;
 
+    /// <summary>Porte con schede identificate, dalla più recente. Solo preselezione.</summary>
+    public List<string> RecentSerialPorts { get; set; } = new();
+
     /// <summary>Rilegge i registri dopo gli step e ai confini delle istruzioni nel clock manuale.</summary>
     public bool AutoRefreshRegisters { get; set; } = true;
 

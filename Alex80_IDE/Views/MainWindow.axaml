@@ -50,6 +50,8 @@
                         <TextBlock Text="Porta" Classes="caption" VerticalAlignment="Center" />
                         <ComboBox x:Name="PortsDropdown"
                                   Width="180"
+                                  IsEnabled="{Binding !IsSerialOpened}"
+                                  ToolTip.Tip="Le porte usate con una scheda riconosciuta vengono preselezionate quando ricompaiono. Premi Connetti per aprire la connessione."
                                   ItemsSource="{Binding PortsList}"
                                   SelectedIndex="{Binding SelectedIdx, Mode=TwoWay}" />
                         <TextBlock Text="Baud" Classes="caption" VerticalAlignment="Center" />

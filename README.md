@@ -200,6 +200,13 @@ same counter: an observed first T-state synchronizes it even at the start of
 recording or after a gap. Prefix fetches do not restart the instruction count.
 **T?**, **Tw?** and **—**
 prevent incomplete/legacy traces from being mistaken for measured timings.
+The port selector remembers the ten most recently used ports on which an ALEX80
+or eZ80 board identified itself. It preselects the most recent available port at
+startup or when devices reappear, preserving an explicit manual selection and
+the currently open port. Preselection never opens a connection or assumes a board
+type: **Connetti** and the board's INFO response are still required. A changed
+USB port name must be selected again before it can be remembered.
+
 The top toolbar provides **Clock da Arduino**, **Memoria da Arduino**, the
 clock frequency in Hz and a clock start/stop button showing its current state.
 Frequency and start/stop are enabled only with an Arduino clock source; Arduino

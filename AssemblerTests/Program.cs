@@ -299,6 +299,7 @@ foreach (var (address, ez80, expected) in new (uint, bool, string)[]
 }
 
 failures += BoardConnectionTests.Run();
+failures += SerialPortSelectionTests.Run();
 failures += InstructionReferenceTests.Run();
 failures += ListingExecutionTests.Run();
 failures += RegisterRefreshTests.Run();
