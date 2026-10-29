@@ -19,6 +19,10 @@ public partial class LogElement : ObservableObject
     // I segnali del bus sono attivi bassi. RFSH alto esclude il refresh.
     public bool IsInstructionFetch => !IsInjected && !IsReset && !Z80_M1 &&
                                       !Z80_MREQ && !Z80_RD && Z80_RFSH;
+    // Sampled before the falling edge: M1 is active, RD/MREQ are not yet active.
+    public bool IsInstructionStartTState => !IsInjected && !IsReset && HardwareHalt == false &&
+        !Z80_M1 && Z80_IORQ && Z80_RFSH && Z80_RD && Z80_WR && Z80_MREQ &&
+        Waiting == false && StartsInstruction == true;
     public uint? ClockNumber { get; }
     public bool? Waiting { get; }
     public bool? StartsInstruction { get; }

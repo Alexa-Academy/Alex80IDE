@@ -175,6 +175,20 @@ while the automatic clock is stopped and Debug is off. The instruction card
 updates from the bus fetch without WAIT or extra injected clock cycles, even
 with logging off.
 
+**Avanza un'istruzione** in Board Settings and Bus Log completes the current
+instruction using individually acknowledged `clk pulse` requests, leaving CLK
+low after each pulse and stopping on the next instruction's T1. From T1 to T1
+this advances a whole instruction; from the middle it completes the remainder.
+The actual bus boundary handles conditional timing and prefix continuations
+without guessing a nominal duration. If the initial position is unknown, the
+first observed T1 establishes the boundary. All pulses appear in the bus log,
+including with continuous logging off. **Ferma avanzamento** stops after the
+pending pulse; errors, HALT, reset and disconnection also end the operation.
+This command does not inject automatic register reads, even when that option
+is enabled: registers remain marked stale and no debugger clocks are added.
+It requires the same manual-clock capability, stopped automatic clock and
+disabled Debug as a single pulse; eZ80 continues using its existing ZDI controls.
+
 In the Registers pane, **Aggiorna automaticamente i registri** (enabled by
 default and saved between sessions) applies register snapshots after each step.
 With the updated library manager (`REGUPDATE:ON`), it also requests snapshots

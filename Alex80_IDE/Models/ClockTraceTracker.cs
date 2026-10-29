@@ -81,10 +81,7 @@ public sealed class ClockTraceTracker
         // high (Zilog UM0080, figure 5). This identifies T1 even if recording
         // starts here or earlier samples were omitted. StartsInstruction alone
         // also remains set throughout T2/WAIT and must not restart the counter.
-        bool firstTState = !row.Z80_M1 && row.Z80_IORQ && row.Z80_RFSH &&
-                           row.Z80_RD && row.Z80_WR && row.Z80_MREQ &&
-                           row.Waiting == false && row.StartsInstruction == true;
-        bool newInstruction = firstTState ||
+        bool newInstruction = row.IsInstructionStartTState ||
                               (consecutive && previous is { Z80_M1: true } &&
                                !row.Z80_M1 && row.Z80_IORQ && row.StartsInstruction == true);
         if (newInstruction)

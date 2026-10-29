@@ -41,8 +41,15 @@
                           ToolTip.Tip="Include WAIT ripetuti, lettura dei registri e reset. La tabella cresce anche mentre la CPU è in pausa. Richiede un firmware che supporti questa opzione." />
             </WrapPanel>
             <TextBlock Text="{Binding ClockSummary}" Classes="caption" TextWrapping="Wrap" />
-            <Button Content="Un colpo di clock" Command="{Binding PulseClockCommand}" HorizontalAlignment="Left"
-                    ToolTip.Tip="{Binding ClockPulseToolTip}" />
+            <WrapPanel Orientation="Horizontal">
+                <Button Content="Un colpo di clock" Command="{Binding PulseClockCommand}" Margin="0,0,8,0"
+                        ToolTip.Tip="{Binding ClockPulseToolTip}" />
+                <Button Content="Avanza un'istruzione" Command="{Binding AdvanceInstructionClockCommand}" Margin="0,0,8,0"
+                        ToolTip.Tip="{Binding InstructionClockToolTip}" />
+                <Button Content="Ferma avanzamento" IsVisible="{Binding IsInstructionClockRunning}"
+                        Command="{Binding StopInstructionClockCommand}" />
+            </WrapPanel>
+            <TextBlock Text="{Binding InstructionClockStatus}" Classes="caption" TextWrapping="Wrap" />
             <TextBlock Text="T: posizione nell'istruzione; Tw: attesa. Anche il clock manuale usa questo conteggio. T?/Tw?: intervallo incompleto, in attesa del prossimo T1. —: dato assente o ciclo interno. In modalità compatta possono mancare campioni."
                        Classes="caption" TextWrapping="Wrap" />
         </StackPanel>

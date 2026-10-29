@@ -144,6 +144,7 @@ public partial class MainViewModel : ObservableObject
 
     partial void OnIsSerialOpenedChanged(bool value)
     {
+        CancelInstructionClock();
         ResetListingExecution();
         InvalidateInstruction();
         _clockTrace.Reset(); ClockSummary = _clockTrace.Summary;
@@ -357,7 +358,7 @@ public partial class MainViewModel : ObservableObject
         ? "Carica il PC con l'indirizzo indicato e avvia la CPU"
         : "Invia NMI: fa saltare lo Z80 al vettore di avvio";
 
-    public bool CanRun => IsBoardConnected;
+    public bool CanRun => IsBoardConnected && !IsInstructionClockRunning;
 
     [RelayCommand]
     private void Run()
@@ -501,7 +502,7 @@ public partial class MainViewModel : ObservableObject
     /// </para>
     /// </summary>
     public bool CanDumpRegisters =>
-        IsBoardConnected &&
+        IsBoardConnected && !IsInstructionClockRunning &&
         !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending &&
         (IsEz80 ||
          (IsAlex80Micro && IsMemoryFromArduino && DebugEnabled && (!IsClockFromArduino || IsClockActive)));
@@ -512,14 +513,14 @@ public partial class MainViewModel : ObservableObject
     /// con break e cont. Tenerlo acceso voleva dire un pulsante che cambiava etichetta
     /// senza che sulla scheda cambiasse nulla.
     /// </summary>
-    public bool CanUseDebug => IsBoardConnected && IsAlex80Board;
+    public bool CanUseDebug => IsBoardConnected && IsAlex80Board && !IsInstructionClockRunning;
 
     /// <summary>
     /// Registrare il log vuole una scheda che sappia mostrare il bus. Sull'eZ80 si passa
     /// da ZDI e il firmware risponde "no bus visibility over ZDI": non c'e' niente da
     /// registrare.
     /// </summary>
-    public bool CanUseBusLog => IsBoardConnected && IsAlex80Board;
+    public bool CanUseBusLog => IsBoardConnected && IsAlex80Board && !IsInstructionClockRunning;
 
     /// <summary>
     /// Lo strumento resta raggiungibile anche a scheda scollegata: le righe gia'
@@ -544,7 +545,7 @@ public partial class MainViewModel : ObservableObject
                 return "Collega una scheda per leggere i registri.";
             }
 
-            if (_serialManager.IsReadPending || _serialManager.IsClockPulsePending || _serialManager.IsRegisterRequestPending)
+            if (IsInstructionClockRunning || _serialManager.IsReadPending || _serialManager.IsClockPulsePending || _serialManager.IsRegisterRequestPending)
                 return "Attendi il completamento dell'operazione in corso.";
 
             if (IsAlex80Full)
@@ -946,7 +947,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasLogModeSupport;
 
-    public bool CanConfigureLogMode => IsBoardConnected && IsAlex80Board && HasLogModeSupport;
+    public bool CanConfigureLogMode => IsBoardConnected && IsAlex80Board && HasLogModeSupport && !IsInstructionClockRunning;
 
     partial void OnHasLogModeSupportChanged(bool value) => OnPropertyChanged(nameof(CanConfigureLogMode));
 
@@ -1025,7 +1026,7 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     private bool CanReachBoard()
     {
-        return IsBoardConnected && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
+        return IsBoardConnected && !IsInstructionClockRunning && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
     }
 
     /// <summary>
@@ -1067,6 +1068,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
+        CancelInstructionClock();
         _manualRegisterRefreshRequested = false;
         MarkRegistersStale();
         ResetListingExecution();

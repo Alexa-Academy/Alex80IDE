@@ -29,10 +29,12 @@
             <TextBlock Text="SORGENTI" Classes="caption" />
 
             <ToggleSwitch Content="Clock da Arduino"
+                          IsEnabled="{Binding !IsInstructionClockRunning}"
                           IsChecked="{Binding IsClockFromArduino, Mode=TwoWay}"
                           ToolTip.Tip="Acceso: il clock dello Z80 lo genera l'Arduino, alla frequenza indicata qui sotto. Spento: arriva dall'oscillatore della scheda." />
 
             <ToggleSwitch Content="Memoria da Arduino"
+                          IsEnabled="{Binding !IsInstructionClockRunning}"
                           IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
                           ToolTip.Tip="Acceso: i cicli di memoria li serve l'Arduino. Spento: rispondono le memorie della scheda." />
 
@@ -44,6 +46,7 @@
                     <TextBox x:Name="ClockFrequencyBox"
                              Text="{Binding ClockFrequency, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                              Width="86"
+                             IsEnabled="{Binding !IsInstructionClockRunning}"
                              Classes="mono"
                              KeyDown="OnClockFrequencyKeyDown"
                              ToolTip.Tip="Frequenza del clock generato dall'Arduino. Viene inviata alla scheda quando si preme Invio o si esce dal campo." />
@@ -61,6 +64,11 @@
                 </Button>
                 <Button Classes="tool" Content="Un colpo di clock" HorizontalAlignment="Left"
                         Command="{Binding PulseClockCommand}" ToolTip.Tip="{Binding ClockPulseToolTip}" />
+                <Button Classes="tool" Content="Avanza un'istruzione" HorizontalAlignment="Left"
+                        Command="{Binding AdvanceInstructionClockCommand}" ToolTip.Tip="{Binding InstructionClockToolTip}" />
+                <Button Classes="tool" Content="Ferma avanzamento" HorizontalAlignment="Left"
+                        IsVisible="{Binding IsInstructionClockRunning}" Command="{Binding StopInstructionClockCommand}" />
+                <TextBlock Text="{Binding InstructionClockStatus}" Classes="caption" TextWrapping="Wrap" />
             </StackPanel>
         </StackPanel>
 

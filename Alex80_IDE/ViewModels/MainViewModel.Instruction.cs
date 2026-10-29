@@ -16,7 +16,7 @@ public partial class MainViewModel
     partial void OnHasClockPulseSupportChanged(bool value) => NotifyManualClockAvailability();
     public string InstructionTitle => _instructionFromManualClock ? "ISTRUZIONE SUL BUS" : "ISTRUZIONE AL PC";
     public bool CanPulseClock => IsSerialOpened && CanControlClock && HasClockPulseSupport &&
-        !IsClockActive && !DebugEnabled && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
+        !IsInstructionClockRunning && !IsClockActive && !DebugEnabled && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
     public string ClockPulseToolTip => !HasClockPulseSupport ? "Richiede il manager Arduino aggiornato con supporto clk pulse."
         : IsClockActive ? "Ferma il clock automatico per inviare un impulso."
         : DebugEnabled ? "Disattiva Debug per avanzare senza WAIT."
@@ -27,6 +27,7 @@ public partial class MainViewModel
     {
         OnPropertyChanged(nameof(CanPulseClock)); OnPropertyChanged(nameof(ClockPulseToolTip));
         PulseClockCommand.NotifyCanExecuteChanged();
+        AdvanceInstructionClockCommand.NotifyCanExecuteChanged();
     }
     [RelayCommand(CanExecute = nameof(CanPulseClock))]
     private void PulseClock()
@@ -76,11 +77,18 @@ public partial class MainViewModel
             NotifyDumpAvailabilityChanged();
             if (!_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending) TryReadInstruction();
         });
-        _serialManager.ClockPulseReceived += log => Dispatcher.UIThread.Post(() => ObserveManualClock(log));
+        _serialManager.ClockPulseReceived += log => Dispatcher.UIThread.Post(() =>
+        {
+            ObserveManualClock(log);
+            ObserveInstructionClockPulse(log);
+        });
         _serialManager.ManualRegisterReadCompleted += log => Dispatcher.UIThread.Post(() =>
             _clockTrace.ConfirmManualRegisterRead(log));
         _serialManager.ClockPulseFailed += error => Dispatcher.UIThread.Post(() =>
-        { _clockTrace.InvalidateSynchronization(); InvalidateInstruction(); InstructionStatus = error; });
+        {
+            _clockTrace.InvalidateSynchronization(); InvalidateInstruction(); InstructionStatus = error;
+            if (IsInstructionClockRunning) FinishInstructionClock(error);
+        });
     }
     private void RefreshStoppedInstruction(uint pc, bool force = false, bool manualClock = false)
     {
@@ -94,7 +102,7 @@ public partial class MainViewModel
     }
     private void TryReadInstruction()
     {
-        if (!_instructionNeedsRead || _instructionPc is not { } pc || _serialManager.IsReadPending || _serialManager.IsClockPulsePending || _serialManager.IsRegisterRequestPending) return;
+        if (IsInstructionClockRunning || !_instructionNeedsRead || _instructionPc is not { } pc || _serialManager.IsReadPending || _serialManager.IsClockPulsePending || _serialManager.IsRegisterRequestPending) return;
         if (_serialManager.ReadInstruction(pc, IsEz80, IsAdl)) _instructionNeedsRead = false;
         else InstructionStatus = $"PC {pc:X4} · byte dell'istruzione non disponibili.";
     }
@@ -120,8 +128,8 @@ public partial class MainViewModel
         _manualFetchActive = firstFetch;
         if (_instructionPc is null) InstructionStatus = "Clock inviato · avanza fino al prossimo fetch per identificare l'istruzione.";
     }
-    private bool CanStepCpu() => IsBoardConnected && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
-    private bool CanToggleBoardClock() => CanControlClock && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
+    private bool CanStepCpu() => IsBoardConnected && !IsInstructionClockRunning && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
+    private bool CanToggleBoardClock() => CanControlClock && !IsInstructionClockRunning && !_serialManager.IsReadPending && !_serialManager.IsClockPulsePending && !_serialManager.IsRegisterRequestPending;
     [RelayCommand]
     private void OpenInstructionManual()
     {
