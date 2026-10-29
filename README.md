@@ -164,6 +164,11 @@ nominal T-states from observed clocks; eZ80 uses its own bus-cycle catalog.
 Unavailable or unverified variants are clearly indicated.
 
 The log's **T / WAIT** column separates instruction T-states from WAIT extensions.
+Scrolling the bus log with the wheel/trackpad, scrollbar or navigation keys turns
+off **Scorrimento automatico** so new samples do not pull the view to the bottom.
+The switch saves your manual on/off choice for the next startup; an automatic
+browsing pause affects only the current session, including when other settings
+or the window layout are saved. Turn the switch back on to follow new samples.
 The board's falling-edge counter stays internal to detect missing samples.
 Continuous logging (**Abilita log continuo**) and manual clock samples use the
 same counter: an observed first T-state synchronizes it even at the start of

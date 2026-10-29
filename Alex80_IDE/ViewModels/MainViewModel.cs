@@ -182,9 +182,6 @@ public partial class MainViewModel : ObservableObject
     }
     
     [ObservableProperty] 
-    private bool _isAutoScrollEnabled = true;
-    
-    [ObservableProperty] 
     private int _progressValue;
     
     [ObservableProperty] 
@@ -1187,6 +1184,8 @@ public partial class MainViewModel : ObservableObject
         InitializeRegisterCells();
 
         var savedSettings = UserSettings.Load();
+        _busLogScroll = new BusLogScrollState(savedSettings.BusLogAutoScrollEnabled,
+            enabled => UpdateSettings(settings => settings.BusLogAutoScrollEnabled = enabled));
         _autoRefreshRegisters = savedSettings.AutoRefreshRegisters;
         var savedBaudRate = savedSettings.BaudRate;
         if (BaudRates.Contains(savedBaudRate)) _selectedBaudRate = savedBaudRate;

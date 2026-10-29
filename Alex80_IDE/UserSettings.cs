@@ -18,6 +18,9 @@ public sealed class UserSettings
     /// <summary>Rilegge i registri dopo gli step e ai confini delle istruzioni nel clock manuale.</summary>
     public bool AutoRefreshRegisters { get; set; } = true;
 
+    /// <summary>Ultima scelta manuale dello scorrimento dei log; esclude le pause automatiche.</summary>
+    public bool BusLogAutoScrollEnabled { get; set; } = true;
+
     /// <summary>Accetta anche la sintassi TASM (.EQU, etichette senza due punti, $ esadecimale...).</summary>
     public bool TasmCompatibility { get; set; } = true;
 

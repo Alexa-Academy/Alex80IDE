@@ -2,17 +2,16 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Xaml.Interactivity;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+using System.Collections;
 using System.Linq;
+using System.Windows.Input;
 
 public class AutoScrollBehavior : Behavior<DataGrid>
 {
-    private ScrollBar? _sb;
-    private IEnumerable<object>? _items;
-    private bool _controlled;
+    private ScrollBar? _scrollBar;
     
     /// <summary>
     /// Dependency property to enable or disable auto-scroll.
@@ -26,66 +25,87 @@ public class AutoScrollBehavior : Behavior<DataGrid>
         set => SetValue(IsAutoScrollEnabledProperty, value);
     }
 
+    public static readonly StyledProperty<ICommand?> SuspendAutoScrollCommandProperty =
+        AvaloniaProperty.Register<AutoScrollBehavior, ICommand?>(nameof(SuspendAutoScrollCommand));
+
+    public ICommand? SuspendAutoScrollCommand
+    {
+        get => GetValue(SuspendAutoScrollCommandProperty);
+        set => SetValue(SuspendAutoScrollCommandProperty, value);
+    }
+
     protected override void OnAttached()
     {
         base.OnAttached();
 
-        if (AssociatedObject is not null)
-        {
-            AssociatedObject.TemplateApplied += AssociatedObjectOnTemplateApplied;
-        }
+        if (AssociatedObject is not { } grid) return;
+        grid.TemplateApplied += OnTemplateApplied;
+        grid.LayoutUpdated += OnLayoutUpdated;
+        // Pause before DataGrid handles the gesture, without consuming it.
+        grid.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged, RoutingStrategies.Tunnel, true);
+        grid.AddHandler(InputElement.KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel, true);
+        grid.AddHandler(Gestures.ScrollGestureEvent, OnScrollGesture, RoutingStrategies.Tunnel | RoutingStrategies.Bubble, true);
     }
 
-    private void AssociatedObjectOnTemplateApplied(object? sender, TemplateAppliedEventArgs e)
+    protected override void OnDetaching()
     {
-        _sb = e.NameScope.Find<ScrollBar>("PART_VerticalScrollbar");
-
-        if (_sb is not null && AssociatedObject is not null)
+        DetachScrollBar();
+        if (AssociatedObject is { } grid)
         {
-            _items = AssociatedObject.ItemsSource.Cast<object>();
-
-            AssociatedObject.LayoutUpdated += AssociatedObject_LayoutUpdated;
-
-            _sb.PointerEntered += Sb_PointerEntered;
-            _sb.PointerExited += Sb_PointerExited;
+            grid.TemplateApplied -= OnTemplateApplied;
+            grid.LayoutUpdated -= OnLayoutUpdated;
+            grid.RemoveHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged);
+            grid.RemoveHandler(InputElement.KeyDownEvent, OnKeyDown);
+            grid.RemoveHandler(Gestures.ScrollGestureEvent, OnScrollGesture);
         }
-        else
-        {
-            Debug.WriteLine("Failed to bind autoscroll");
-        }
+        base.OnDetaching();
     }
 
-    private void Sb_PointerExited(object? sender, PointerEventArgs? e)
+    private void OnTemplateApplied(object? sender, TemplateAppliedEventArgs e)
     {
-        _controlled = false;
+        DetachScrollBar();
+        _scrollBar = e.NameScope.Find<ScrollBar>("PART_VerticalScrollbar");
+        _scrollBar?.AddHandler(InputElement.PointerPressedEvent, OnScrollBarPressed, RoutingStrategies.Tunnel, true);
     }
 
-    private void Sb_PointerEntered(object? sender, PointerEventArgs? e)
+    private void DetachScrollBar()
     {
-        _controlled = true;
+        _scrollBar?.RemoveHandler(InputElement.PointerPressedEvent, OnScrollBarPressed);
+        _scrollBar = null;
     }
 
-    private bool CanScroll
+    private void OnPointerWheelChanged(object? sender, PointerWheelEventArgs e)
     {
-        get
-        {
-            return _sb is not null && _sb.Maximum - _sb.Value > 2;
-        }
+        if (e.Delta.Y != 0) SuspendAutoScroll();
     }
 
-    private void AssociatedObject_LayoutUpdated(object? sender, EventArgs? e)
+    private void OnScrollGesture(object? sender, ScrollGestureEventArgs e)
     {
-        if (!_controlled && IsAutoScrollEnabled)
-        {
-            ScrollToEnd();
-        }
+        if (e.Delta.Y != 0) SuspendAutoScroll();
     }
 
-    private void ScrollToEnd()
+    private void OnScrollBarPressed(object? sender, PointerPressedEventArgs e) => SuspendAutoScroll();
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
     {
-        if (CanScroll && _items is not null && _items.Any())
-        {
-            AssociatedObject?.ScrollIntoView(_items.Last(), null);
-        }
+        if (e.Key is Key.Up or Key.Down or Key.PageUp or Key.PageDown or Key.Home or Key.End)
+            SuspendAutoScroll();
+    }
+
+    private void SuspendAutoScroll()
+    {
+        if (IsAutoScrollEnabled && SuspendAutoScrollCommand is { } command && command.CanExecute(null))
+            command.Execute(null);
+    }
+
+    private void OnLayoutUpdated(object? sender, EventArgs e)
+    {
+        if (!IsAutoScrollEnabled || _scrollBar is null || _scrollBar.Maximum - _scrollBar.Value <= 2 ||
+            AssociatedObject is not { } grid) return;
+        // Resolve the current source, including after a DataContext change.
+        var last = grid.ItemsSource is IList list
+            ? (list.Count > 0 ? list[list.Count - 1] : null)
+            : grid.ItemsSource?.Cast<object>().LastOrDefault();
+        if (last is not null) grid.ScrollIntoView(last, null);
     }
 }

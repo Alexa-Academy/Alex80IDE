@@ -26,7 +26,8 @@
 
                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <TextBlock Text="Scorrimento automatico" Classes="caption" VerticalAlignment="Center" />
-                    <ToggleSwitch IsChecked="{Binding IsAutoScrollEnabled, Mode=TwoWay}" />
+                    <ToggleSwitch IsChecked="{Binding IsAutoScrollEnabled, Mode=TwoWay}"
+                                  ToolTip.Tip="La scelta manuale viene ripristinata all'avvio. Scorrendo la tabella si disattiva solo per la sessione corrente." />
                 </StackPanel>
 
                 <Button Content="Cancella log" Classes="tool" Command="{Binding ClearLogsCommand}" />
@@ -64,7 +65,8 @@
                   ScrollViewer.VerticalScrollBarVisibility="Auto"
                   HeadersVisibility="Column">
             <Interaction.Behaviors>
-                <global:AutoScrollBehavior IsAutoScrollEnabled="{Binding IsAutoScrollEnabled}" />
+                <global:AutoScrollBehavior IsAutoScrollEnabled="{Binding IsAutoScrollEnabled}"
+                                           SuspendAutoScrollCommand="{Binding SuspendBusLogAutoScrollCommand}" />
             </Interaction.Behaviors>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="T / WAIT" Binding="{Binding TStateText}" Width="110" />
