@@ -388,23 +388,27 @@
         <!-- Status bar: stato della scheda ed esito dell'ultima assemblata. PC e SP stanno
              nella tool window dei registri. -->
         <Border Grid.Row="3" Classes="statusBar">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-                <StackPanel Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding CardBadgeText}" Classes="statusItem" />
-                    <TextBlock Text="{Binding IsClockActive, Converter={StaticResource ClockStateConverter}}"
+            <Grid ColumnDefinitions="*,Auto">
+                <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,0,14,0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CardConnectionText}" Classes="statusItem"
+                               Classes.firmwareWarning="{Binding HasFirmwareWarning}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding CardConnectionToolTip}" />
+                    <TextBlock Grid.Column="1" Margin="14,0,0,0"
+                               Text="{Binding IsClockActive, Converter={StaticResource ClockStateConverter}}"
                                Classes="statusItem" />
                     <!-- L'avanzamento della scrittura sulla scheda: sta nella status bar,
                          che e' il posto dove si guarda come sta andando un'operazione. -->
-                    <ProgressBar Minimum="0"
+                    <ProgressBar Grid.Column="2" Margin="14,0,0,0" Minimum="0"
                                  Maximum="100"
                                  Width="160"
                                  Height="6"
                                  VerticalAlignment="Center"
                                  Value="{Binding ProgressValue}"
                                  IsVisible="{Binding ProgressVisible}" />
-                </StackPanel>
+                </Grid>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                     <TextBlock Text="{Binding SelectedDocument.FileName, FallbackValue=''}" Classes="statusItem" />
                     <TextBlock Text="{Binding ProjectTitle, StringFormat='progetto: {0}'}" Classes="statusItem" />
                     <!-- La CPU di destinazione si legge qui invece che aprendo il pannello

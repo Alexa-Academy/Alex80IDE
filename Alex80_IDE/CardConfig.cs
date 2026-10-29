@@ -6,6 +6,7 @@ namespace Alex80_IDE;
 public class CardConfig
 {
     public string CardName { get; set; } = string.Empty;   // ALEX80 o ALEX80µ
+    public string FirmwareVersion { get; set; } = string.Empty; // Optional FWVER field.
     public bool IsClockFromArduino { get; set; }   // true se 'A' o 'E'
     public int ClockFrequency { get; set; }    // es. 50
     public bool ClockActive { get; set; }   // true se 1, false se 0
@@ -60,6 +61,9 @@ public class CardConfig
             {
                 case "CARD":
                     result.CardName = value;
+                    break;
+                case "FWVER":
+                    result.FirmwareVersion = value;
                     break;
                 case "SCLK":
                     result.IsClockFromArduino = value.Equals("A", StringComparison.OrdinalIgnoreCase);

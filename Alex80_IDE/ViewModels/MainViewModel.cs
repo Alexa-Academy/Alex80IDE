@@ -84,6 +84,7 @@ public partial class MainViewModel : ObservableObject
     partial void OnCardNameChanged(string value)
     {
         OnPropertyChanged(nameof(CardBadgeText));
+        NotifyFirmwareStatusChanged();
         OnPropertyChanged(nameof(IsBoardConnected));
         OnPropertyChanged(nameof(IsWaitingForBoard));
         ReadMemoryCommand.NotifyCanExecuteChanged();
@@ -156,6 +157,7 @@ public partial class MainViewModel : ObservableObject
         DebugEnabled = false;
         MonitorEnabled = null;
         IsClockActive = false;
+        FirmwareVersion = string.Empty;
         if (!value)
         {
             // Con la porta se ne va anche l'identita' della scheda: tenerla vorrebbe dire
@@ -686,7 +688,11 @@ public partial class MainViewModel : ObservableObject
     // della porta: senza queste due il pannello resterebbe fermo allo stato di prima.
     partial void OnIsAlex80FullChanged(bool value) => NotifyCpuContextChanged();
 
-    partial void OnIsAlex80MicroChanged(bool value) => NotifyCpuContextChanged();
+    partial void OnIsAlex80MicroChanged(bool value)
+    {
+        NotifyCpuContextChanged();
+        NotifyFirmwareStatusChanged();
+    }
 
     partial void OnZ80CompatibilityModeChanged(bool value)
     {
@@ -1395,6 +1401,7 @@ public partial class MainViewModel : ObservableObject
             try
             {
                 CardName = cardConfig.CardName;
+                FirmwareVersion = cardConfig.FirmwareVersion;
                 IsEz80 = cardConfig.IsEz80;
                 IsAlex80Full = cardConfig.IsAlex80Full;
                 IsAlex80Micro = cardConfig.IsAlex80Micro;

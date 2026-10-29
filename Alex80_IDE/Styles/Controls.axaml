@@ -168,6 +168,10 @@
         <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
 
+    <Style Selector="TextBlock.statusItem.firmwareWarning">
+        <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
+    </Style>
+
     <Style Selector="Border.registerChip">
         <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BorderSoftBrush}" />

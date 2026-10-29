@@ -109,6 +109,15 @@ back to the board. Log/debug are cleared for the old session before requesting
 the new snapshot, rather than overwriting the received state after connection.
 Configuration changes in the IDE also request a fresh snapshot for confirmation.
 
+The bottom status bar shows the connected board's firmware version from the
+optional `FWVER` field in `!INFO`. For ALEX80µ, this IDE requires manager firmware
+**1.0.0 or newer** (`RequiredMicroFirmwareVersion` in
+`MainViewModel.Firmware.cs`). An older version shows **aggiornamento richiesto**;
+a missing or malformed version shows **versione da verificare**. Both are
+highlighted, and the tooltip states the required version. Existing firmware
+remains usable; the warning does not disable board commands. No micro firmware
+requirement is applied to modular ALEX80 or experimental eZ80 boards.
+
 The library's `ALEX80u_manager_terminal` example reports `LOG:ON/OFF`,
 `DEBUG:ON/OFF` and `MONITOR:ON/OFF` in the existing `!INFO` frame. Use the updated
 IDE and upload that updated example to synchronize the log state. Older firmware
