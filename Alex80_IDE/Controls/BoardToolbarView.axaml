@@ -21,7 +21,7 @@
                           IsVisible="{Binding HasResetSourceSupport}"
                           IsEnabled="{Binding CanConfigureResetSource}"
                           IsChecked="{Binding IsResetFromArduino, Mode=TwoWay}"
-                          ToolTip.Tip="Acceso: Arduino pilota il reset. Spento: il pin RESET della shield è in ingresso e il pulsante Reset è disabilitato. Con reset esterno, tienilo attivo per cambiare sorgente di clock o memoria; rilascialo prima di tornare al reset da Arduino." />
+                          ToolTip.Tip="Acceso: Arduino pilota il reset. Spento: il pin RESET della shield è in ingresso e il pulsante Reset è disabilitato. Il firmware aggiornato salva la scelta in EEPROM. Con reset esterno, riavvia la CPU dall’hardware dopo aver cambiato sorgente di clock o memoria; rilascia il reset prima di tornare al controllo da Arduino." />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="6"

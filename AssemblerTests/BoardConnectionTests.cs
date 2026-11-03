@@ -122,6 +122,11 @@ internal static class BoardConnectionTests
             Check("reset esterno disabilita pulsante e comando", vm.HasResetSourceSupport &&
                 vm.CanConfigureResetSource && !vm.IsResetFromArduino && !vm.CanReset &&
                 !vm.ResetCommand.CanExecute(null) && vm.ResetToolTip.Contains("esterno"));
+            Receive("CARD:ALEX80µ,SCLK:E,SMEM:E,SRST:E,FCLK:4660,ECLK:0,FWVER:1.4.1");
+            Check("ripristino EEPROM: tre sorgenti esterne configurabili e Reset disabilitato",
+                !vm.IsClockFromArduino && !vm.IsMemoryFromArduino && !vm.IsResetFromArduino &&
+                vm.ClockFrequency == "4660" && vm.CanConfigureArduinoSignals &&
+                vm.CanConfigureResetSource && !vm.CanControlClock && !vm.CanReset);
             var resetOutput = new StringWriter();
             var resetConsole = Console.Out;
             try

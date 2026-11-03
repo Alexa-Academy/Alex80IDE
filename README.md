@@ -160,12 +160,14 @@ Turning it off selects an external reset: the shield RESET pin (MCP2 GPA0) becom
 an input and the IDE Reset button/command is disabled. Turning it on restores
 Arduino control. The optional `SRST:A/E` INFO field advertises both support and
 the current source; older firmware, modular ALEX80 and eZ80 keep their existing
-reset behavior. Selection is not saved across Arduino restarts. If the external
-circuit drives RESET from power-on, initialize `resetFromArduino = false` in the
-manager sketch before uploading, so the pin is an input from startup.
-With external reset selected, hold RESET active LOW to change clock or memory
-source; release it and disconnect the external driver before restoring Arduino
-reset control.
+reset behavior. Manager **1.4.1** saves reset, clock and memory sources, together
+with clock frequency, in Arduino EEPROM. They are restored before configuring
+the pins, so saved external CLK and RESET start directly as inputs. No sketch
+edit is needed after selecting external reset once.
+Clock and memory selection also work with external RESET inactive. In this mode,
+restart the CPU from the external hardware after changing sources; Arduino
+does not generate a reset. Release RESET and disconnect the external driver
+before restoring Arduino reset control.
 
 The bus-log panel has a single toolbar for recording, single-clock pulses,
 instruction advance, auto-scroll, following the listing and clearing the log.
