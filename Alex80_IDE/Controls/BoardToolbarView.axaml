@@ -16,6 +16,12 @@
                           IsEnabled="{Binding !IsInstructionClockRunning}"
                           IsChecked="{Binding IsMemoryFromArduino, Mode=TwoWay}"
                           ToolTip.Tip="Acceso: i cicli di memoria li serve Arduino. Spento: rispondono le memorie della scheda. Disponibile sulle schede ALEX80; eZ80 usa ZDI." />
+            <ToggleButton Classes="stateToggle"
+                          Content="Reset da Arduino"
+                          IsVisible="{Binding HasResetSourceSupport}"
+                          IsEnabled="{Binding CanConfigureResetSource}"
+                          IsChecked="{Binding IsResetFromArduino, Mode=TwoWay}"
+                          ToolTip.Tip="Acceso: Arduino pilota il reset. Spento: il pin RESET della shield è in ingresso e il pulsante Reset è disabilitato. Con reset esterno, tienilo attivo per cambiare sorgente di clock o memoria; rilascialo prima di tornare al reset da Arduino." />
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Spacing="6"

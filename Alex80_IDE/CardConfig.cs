@@ -13,6 +13,7 @@ public class CardConfig
     public bool IsMemFromArduino { get; set; }   // 'A' o 'E'
 
     // Optional fields: old firmware may omit them. Missing is not an OFF report.
+    public bool? IsResetFromArduino { get; set; } // Optional SRST:A/E also advertises selection support.
     public bool? LogEnabled { get; set; }
     public bool? FullLogEnabled { get; set; }
     public bool? DebugEnabled { get; set; }
@@ -79,6 +80,14 @@ public class CardConfig
                     break;
                 case "SMEM":
                     result.IsMemFromArduino = value.Equals("A", StringComparison.OrdinalIgnoreCase);
+                    break;
+                case "SRST":
+                    result.IsResetFromArduino = value.ToUpperInvariant() switch
+                    {
+                        "A" => true,
+                        "E" => false,
+                        _ => null
+                    };
                     break;
                 case "LOG":
                     result.LogEnabled = ParseSwitch(value);

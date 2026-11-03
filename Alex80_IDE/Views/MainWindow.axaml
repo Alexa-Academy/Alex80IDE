@@ -82,9 +82,9 @@
                     </Button>
                     <Button Classes="danger tool"
                             AutomationProperties.Name="Reset"
-                            ToolTip.Tip="Reset"
+                            ToolTip.Tip="{Binding ResetToolTip}"
                             Command="{Binding ResetCommand}"
-                            IsEnabled="{Binding IsBoardConnected}">
+                            IsEnabled="{Binding CanReset}">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <PathIcon Classes="btnIcon" Data="{DynamicResource ResetIconData}" />
                             <TextBlock Text="Reset" VerticalAlignment="Center" />

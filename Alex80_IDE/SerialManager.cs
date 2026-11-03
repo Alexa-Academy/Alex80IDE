@@ -889,6 +889,12 @@ public partial class SerialManager {
         SendSerialText("mem external\r");
         RefreshConfiguration();
     }
+
+    public void SetResetSource(bool arduino)
+    {
+        SendSerialText(arduino ? "reset arduino\r" : "reset external\r");
+        RefreshConfiguration();
+    }
     
     public async Task DrainInputAsync(int quietMs = 200, int maxMs = 2000, CancellationToken ct = default)
     {

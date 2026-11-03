@@ -156,6 +156,8 @@ public partial class MainViewModel : ObservableObject
         HasRegisterUpdateSupport = false;
         HasRegisterSnapshotSupport = false;
         HasRegisterBoundarySnapshotSupport = false;
+        HasResetSourceSupport = false;
+        IsResetFromArduino = true;
         _manualRegisterRefreshRequested = false;
         DebugEnabled = false;
         MonitorEnabled = null;
@@ -235,6 +237,38 @@ public partial class MainViewModel : ObservableObject
     
     [ObservableProperty] 
     private bool _isMemoryFromArduino;
+
+    [ObservableProperty]
+    private bool _isResetFromArduino = true;
+
+    [ObservableProperty]
+    private bool _hasResetSourceSupport;
+
+    public bool CanConfigureResetSource => CanConfigureArduinoSignals && IsAlex80Micro &&
+        HasResetSourceSupport && !IsInstructionClockRunning;
+
+    public bool CanReset => IsBoardConnected && (!IsAlex80Micro || IsResetFromArduino);
+
+    public string ResetToolTip => CanReset ? "Reset" : IsBoardConnected
+        ? "Reset esterno: usa il comando di reset dell’hardware collegato."
+        : "Connetti una scheda per eseguire il reset.";
+
+    private void NotifyResetAvailability()
+    {
+        OnPropertyChanged(nameof(CanConfigureResetSource));
+        OnPropertyChanged(nameof(CanReset));
+        OnPropertyChanged(nameof(ResetToolTip));
+        ResetCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnHasResetSourceSupportChanged(bool value) => NotifyResetAvailability();
+
+    partial void OnIsResetFromArduinoChanged(bool value)
+    {
+        NotifyResetAvailability();
+        if (_isApplyingCardConfig || !CanConfigureResetSource) return;
+        _serialManager.SetResetSource(value);
+    }
 
     private bool _isApplyingCardConfig;
     
@@ -659,6 +693,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(RunToolTip));
         OnPropertyChanged(nameof(CanRun));
         OnPropertyChanged(nameof(CanConfigureArduinoSignals));
+        NotifyResetAvailability();
         OnPropertyChanged(nameof(CanChooseCpuMode));
         OnPropertyChanged(nameof(CanControlClock));
         StartStopBoardCommand.NotifyCanExecuteChanged();
@@ -1050,9 +1085,10 @@ public partial class MainViewModel : ObservableObject
     }
 
     
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanReset))]
     private void Reset()
     {
+        if (!CanReset) return;
         CancelInstructionClock();
         _manualRegisterRefreshRequested = false;
         MarkRegistersStale();
@@ -1424,6 +1460,8 @@ public partial class MainViewModel : ObservableObject
                 OnPropertyChanged(nameof(CanRun));
                 IsClockFromArduino = cardConfig.IsClockFromArduino;
                 IsMemoryFromArduino = cardConfig.IsMemFromArduino;
+                HasResetSourceSupport = IsAlex80Micro && cardConfig.IsResetFromArduino.HasValue;
+                IsResetFromArduino = !IsAlex80Micro || cardConfig.IsResetFromArduino != false;
                 ClockFrequency = cardConfig.ClockFrequency.ToString();
                 IsClockActive = cardConfig.ClockActive;
                 if (cardConfig.LogEnabled is { } logEnabled) LogEnabled = logEnabled;

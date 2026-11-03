@@ -28,6 +28,7 @@ public partial class MainViewModel
 
     partial void OnIsInstructionClockRunningChanged(bool value)
     {
+        NotifyResetAvailability();
         OnPropertyChanged(nameof(CanRun));
         OnPropertyChanged(nameof(CanUseDebug));
         OnPropertyChanged(nameof(CanUseBusLog));

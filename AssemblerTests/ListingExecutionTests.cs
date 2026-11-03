@@ -129,6 +129,9 @@ internal static class ListingExecutionTests
             Log(0x2000, 0x00);
             Log(0xFFFF, 0x00, 0xBF);
             Check("reset rimuove l'indicatore", listing.ExecutionLine == 0);
+            // The reset command now requires an identified, reset-capable board.
+            receive.Invoke(manager, new object[] { "!INFO:CARD:ALEX80µ,SRST:A;" });
+            Dispatcher.UIThread.RunJobs();
             Log(0x2002, 0x00);
             vm.ResetCommand.Execute(null);
             Check("comando reset azzera anche senza log completo", listing.ExecutionLine == 0);

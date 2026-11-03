@@ -26,6 +26,10 @@ internal static class BoardConnectionTests
             malformed.DebugEnabled is null && malformed.MonitorEnabled is null);
         Check("INFO versione firmware opzionale", legacy.FirmwareVersion == "" &&
             CardConfig.Parse("CARD:ALEX80µ,FWVER: 1.0.0 ,FUTURE:abc").FirmwareVersion == "1.0.0");
+        Check("INFO sorgente reset opzionale e validata", legacy.IsResetFromArduino is null &&
+            CardConfig.Parse("SRST:a").IsResetFromArduino == true &&
+            CardConfig.Parse("SRST:e").IsResetFromArduino == false &&
+            CardConfig.Parse("SRST:?").IsResetFromArduino is null);
 
         var vm = new MainViewModel(new NoDialogs());
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -112,13 +116,42 @@ internal static class BoardConnectionTests
                 !vm.IsMemoryFromArduino && vm.ClockFrequency == "100");
             Check("INFO legacy non eredita la versione precedente", vm.FirmwareVersion == "" && vm.IsFirmwareVersionUnknown);
 
+            Check("firmware legacy: reset disponibile, selezione nascosta", vm.CanReset &&
+                vm.ResetCommand.CanExecute(null) && !vm.HasResetSourceSupport && !vm.CanConfigureResetSource);
+            Receive("CARD:ALEX80µ,SRST:E");
+            Check("reset esterno disabilita pulsante e comando", vm.HasResetSourceSupport &&
+                vm.CanConfigureResetSource && !vm.IsResetFromArduino && !vm.CanReset &&
+                !vm.ResetCommand.CanExecute(null) && vm.ResetToolTip.Contains("esterno"));
+            var resetOutput = new StringWriter();
+            var resetConsole = Console.Out;
+            try
+            {
+                Console.SetOut(resetOutput);
+                vm.ResetCommand.Execute(null);
+            }
+            finally { Console.SetOut(resetConsole); }
+            Check("reset esterno non invia comandi neppure da Execute", resetOutput.ToString() == "");
+            vm.IsInstructionClockRunning = true;
+            Check("sorgente reset bloccata durante istruzione manuale", !vm.CanConfigureResetSource);
+            vm.IsInstructionClockRunning = false;
+            Receive("CARD:ALEX80µ,SRST:A");
+            Check("reset Arduino riabilita il comando", vm.IsResetFromArduino && vm.CanReset && vm.ResetCommand.CanExecute(null));
+            Receive("CARD:ALEX80µ,SRST:E");
+            vm.IsSerialOpened = false;
+            Check("disconnessione azzera sorgente e capability reset", !vm.HasResetSourceSupport && vm.IsResetFromArduino && !vm.CanReset);
+            vm.IsSerialOpened = true;
+            Receive("CARD:ALEX80µ");
+            Check("riconnessione legacy ripristina reset", vm.CanReset && !vm.HasResetSourceSupport);
+
             Receive("CARD:ALEX80,FWVER:0.1.0");
             Check("ALEX80 modulare: nessun requisito micro applicato", !vm.HasFirmwareWarning &&
                 vm.RequiredFirmwareVersion == "" && vm.CardConnectionText == "ALEX80 · firmware 0.1.0");
+            Check("reset modulare invariato", vm.CanReset && vm.ResetCommand.CanExecute(null) && !vm.CanConfigureResetSource);
 
             Receive("CARD:eZ80Test,SCLK:E,FCLK:0,ECLK:1,SMEM:E");
             Check("INFO eZ80 esistente resta compatibile", vm.IsEz80 && vm.IsBoardConnected &&
                 !vm.CanUseDebug && !vm.CanUseBusLog && vm.MonitorEnabled is null && vm.BusLogTool.IsAvailable);
+            Check("reset eZ80 invariato", vm.CanReset && vm.ResetCommand.CanExecute(null) && !vm.CanConfigureResetSource);
             Check("connessione: conferma identifica anche eZ80", vm.IsConnectionNoticeVisible &&
                 !vm.IsConnectionInProgress && vm.ConnectionNoticeText == "Connessa: eZ80Test");
             Check("eZ80: versione e requisito micro non ereditati", vm.FirmwareVersion == "" &&

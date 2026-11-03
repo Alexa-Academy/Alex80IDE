@@ -155,6 +155,18 @@ IDE and upload that updated example to synchronize the log state. Older firmware
 remains accepted; missing fields mean the firmware does not report that state,
 so it cannot be recovered from `info`. The board's monitor status is read-only.
 
+With ALEX80µ manager firmware **1.4.0**, the toolbar also offers **Reset da Arduino**.
+Turning it off selects an external reset: the shield RESET pin (MCP2 GPA0) becomes
+an input and the IDE Reset button/command is disabled. Turning it on restores
+Arduino control. The optional `SRST:A/E` INFO field advertises both support and
+the current source; older firmware, modular ALEX80 and eZ80 keep their existing
+reset behavior. Selection is not saved across Arduino restarts. If the external
+circuit drives RESET from power-on, initialize `resetFromArduino = false` in the
+manager sketch before uploading, so the pin is an input from startup.
+With external reset selected, hold RESET active LOW to change clock or memory
+source; release it and disconnect the external driver before restoring Arduino
+reset control.
+
 The bus-log panel has a single toolbar for recording, single-clock pulses,
 instruction advance, auto-scroll, following the listing and clearing the log.
 Toggle icons show their current state and each icon has an action tooltip.
